@@ -79,7 +79,7 @@ export default function Dashboard() {
               className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm hover:shadow-md"
             >
               <Plus size={18} />
-              <span className="hidden sm:inline">New Task</span>
+              <span className="hidden sm:inline">New Reminder</span>
             </Link>
             <button 
               onClick={handleLogout}
@@ -144,7 +144,7 @@ export default function Dashboard() {
           <div className="grid gap-4">
             {displayedTasks.length === 0 ? (
               <div className="text-center py-16 bg-white rounded-2xl border-2 border-gray-200 border-dashed">
-                <p className="text-gray-500 font-medium text-lg">No tasks found in this section.</p>
+                <p className="text-gray-500 font-medium text-lg">No reminders found in this section.</p>
                 {activeTab !== 'previous' && (
                   <p className="text-sm text-gray-400 mt-1">Time to relax or get ahead!</p>
                 )}

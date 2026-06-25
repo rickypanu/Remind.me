@@ -70,7 +70,7 @@ export default function CreateTask() {
       <main className="max-w-2xl mx-auto px-4 mt-8">
         <div className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8 shadow-xl">
           
-          <h2 className="text-2xl font-extrabold text-gray-900 mb-6 tracking-tight">Create New Task</h2>
+          <h2 className="text-2xl font-extrabold text-gray-900 mb-6 tracking-tight">Create New Reminder</h2>
 
           {error && (
             <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-100 text-red-600 flex items-center gap-2 text-sm font-medium">
@@ -83,7 +83,7 @@ export default function CreateTask() {
             
             {/* Title Input */}
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Task Title *</label>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Reminder Title *</label>
               <div className="relative group">
                 <Type className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" size={20} />
                 <input
@@ -166,7 +166,7 @@ export default function CreateTask() {
                 ) : (
                   <>
                     <CheckCircle className="mr-2" size={20} />
-                    Create Task
+                    Create Reminder
                   </>
                 )}
               </button>
