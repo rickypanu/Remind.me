@@ -72,6 +72,9 @@ async def signup(user: UserCreate, db = Depends(get_db)):
     user_dict = user.dict()
     user_dict["password_hash"] = get_password_hash(user_dict.pop("password"))
     
+    # --- ADDED: Capture the exact time the account is created ---
+    user_dict["created_at"] = datetime.utcnow()
+    
     await db["users"].insert_one(user_dict)
     return {"message": "User created successfully"}
 

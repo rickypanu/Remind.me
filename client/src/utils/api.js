@@ -1,16 +1,20 @@
 import axios from 'axios';
 
 const api = axios.create({
-  // Use import.meta.env for Vite, with a fallback to localhost
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api', 
+  baseURL: import.meta.env.VITE_API_BASE_URL, 
 });
 
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
-    if (token) {
+    
+    // Check if the URL is an auth route. If it is, skip adding the token.
+    const isAuthRoute = config.url && config.url.includes('/auth/');
+    
+    if (token && !isAuthRoute) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
     return config;
   },
   (error) => {

@@ -5,7 +5,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Auth from './pages/auth';
 import Dashboard from './pages/dashboard';
 import CreateTask from './pages/createtask';
-
+import Profile from './pages/profile';
+import About from './pages/about';
 // A wrapper component to protect private routes
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('token');
@@ -43,6 +44,22 @@ function App() {
               <ProtectedRoute>
                 <CreateTask />
               </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/about" 
+            element={
+              
+                <About />
+           
             } 
           />
         </Routes>
