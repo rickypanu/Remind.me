@@ -1,0 +1,31 @@
+import os
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+from routes import auth, tasks
+
+# Load environment variables from the .env file
+load_dotenv()
+
+app = FastAPI(title="RemindMe API")
+
+# Fetch origins from .env, with a fallback to localhost
+# We expect a comma-separated string in the .env file
+origins_str = os.getenv("FRONTEND_ORIGINS", "http://localhost:3000,http://localhost:5173")
+origins = origins_str.split(",")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include Routers
+app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
+app.include_router(tasks.router, prefix="/api/tasks", tags=["Tasks"])
+
+@app.get("/")
+async def root():
+    return {"message": "Welcome to the RemindMe API"}
