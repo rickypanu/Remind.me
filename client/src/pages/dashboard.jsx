@@ -17,19 +17,19 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("today");
   const [isMissedOpen, setIsMissedOpen] = useState(false);
-  
-  const queryClient = useQueryClient(); 
+
+  const queryClient = useQueryClient();
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/");
   };
 
-  const { 
-    data, 
-    isLoading: loading, 
-    isError, 
-    error 
+  const {
+    data,
+    isLoading: loading,
+    isError,
+    error,
   } = useQuery({
     queryKey: ["dashboardData"],
     queryFn: async () => {
@@ -42,7 +42,7 @@ export default function Dashboard() {
         tasks: tasksResponse.data,
       };
     },
-    staleTime: 5 * 60 * 1000, 
+    staleTime: 5 * 60 * 1000,
     retry: (failureCount, error) => error.response?.status !== 401,
   });
 
@@ -68,13 +68,24 @@ export default function Dashboard() {
   // This ensures MongoDB strings are treated as UTC, perfectly syncing them to IST for your filters
   const getSafeDate = (dateString) => {
     if (!dateString) return new Date();
-    return new Date(dateString.endsWith('Z') ? dateString : `${dateString}Z`);
+    return new Date(dateString.endsWith("Z") ? dateString : `${dateString}Z`);
   };
 
   // --- Filtering Logic ---
   const now = new Date();
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  );
+  const endOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    23,
+    59,
+    59,
+  );
 
   // 1. Missed (Past due date & not completed)
   const missedTasks = tasks.filter((task) => {
@@ -85,7 +96,11 @@ export default function Dashboard() {
   // 2. Today
   const todayTasks = tasks.filter((task) => {
     const dueDate = getSafeDate(task.due_date);
-    return dueDate >= startOfToday && dueDate <= endOfToday && task.status === "pending";
+    return (
+      dueDate >= startOfToday &&
+      dueDate <= endOfToday &&
+      task.status === "pending"
+    );
   });
 
   // 3. Upcoming
@@ -102,7 +117,7 @@ export default function Dashboard() {
   const getDisplayedTasks = () => {
     if (activeTab === "upcoming") return upcomingTasks;
     if (activeTab === "history") return completedTasks;
-    return todayTasks; 
+    return todayTasks;
   };
 
   const displayedTasks = getDisplayedTasks();
@@ -119,6 +134,7 @@ export default function Dashboard() {
     }
   }, [missedTasks.length]);
 
+  const initial = userInfo?.username?.charAt(0).toUpperCase() || "U";
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <nav className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-200 px-4 py-3 shadow-sm">
@@ -132,10 +148,10 @@ export default function Dashboard() {
 
           <Link
             to="/profile"
-            className="flex items-center gap-2 text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-full transition-colors"
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold text-sm hover:bg-blue-200 transition-colors shadow-sm"
+            aria-label="Profile"
           >
-            <UserIcon size={16} className="text-gray-500" />
-            <span>{userInfo?.username || "Profile"}</span>
+            {initial}
           </Link>
         </div>
       </nav>
@@ -144,7 +160,11 @@ export default function Dashboard() {
         <div className="flex items-end justify-between mt-6 mb-6">
           <div>
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-              {new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}
+              {new Date().toLocaleDateString("en-US", {
+                weekday: "long",
+                month: "short",
+                day: "numeric",
+              })}
             </p>
             <h2 className="text-2xl font-black text-gray-900 mt-0.5">
               Hello, {userInfo?.username?.split(" ")[0] || "..."} 👋
@@ -162,7 +182,7 @@ export default function Dashboard() {
 
         {missedTasks.length > 0 && (
           <div className="mb-6 bg-red-50/70 border border-red-200 rounded-2xl transition-all overflow-hidden">
-            <button 
+            <button
               onClick={() => setIsMissedOpen(!isMissedOpen)}
               className="w-full flex items-center justify-between p-4 text-red-700 hover:bg-red-100/50 transition-colors focus:outline-none"
             >
@@ -178,7 +198,7 @@ export default function Dashboard() {
                 <ChevronDown size={20} className="text-red-500" />
               )}
             </button>
-            
+
             {isMissedOpen && (
               <div className="px-4 pb-4 grid gap-3.5 max-h-[50vh] overflow-y-auto border-t border-red-100 pt-3">
                 {missedTasks.map((task) => (
@@ -208,7 +228,9 @@ export default function Dashboard() {
                 }`}
               >
                 {tab.label}
-                <span className={`px-1.5 py-0.5 rounded-full text-xs ${isActive ? "bg-gray-100 text-gray-800" : "bg-gray-200/80 text-gray-500"}`}>
+                <span
+                  className={`px-1.5 py-0.5 rounded-full text-xs ${isActive ? "bg-gray-100 text-gray-800" : "bg-gray-200/80 text-gray-500"}`}
+                >
                   {tab.count}
                 </span>
               </button>
