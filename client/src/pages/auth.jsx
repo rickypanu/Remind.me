@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, Loader2, CheckCircle, AlertCircle, LayoutDashboard, Eye, EyeOff } from 'lucide-react';
 import api from '../utils/api';
@@ -9,13 +9,21 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [showPassword, setShowPassword] = useState(false); // New state for password visibility
+  const [showPassword, setShowPassword] = useState(false);
   
   const [formData, setFormData] = useState({
     username: '',
     email: '',
     password: '',
   });
+
+  // NEW: Check for existing token on mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [navigate]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -51,7 +59,7 @@ export default function Auth() {
         setSuccess('Account created! You can now log in.');
         setIsLogin(true); 
         setFormData({ username: '', email: '', password: '' }); 
-        setShowPassword(false); // Hide password again on successful signup
+        setShowPassword(false);
       }
     } catch (err) {
       setError(
@@ -67,7 +75,7 @@ export default function Auth() {
     setIsLogin(!isLogin);
     setError('');
     setSuccess('');
-    setShowPassword(false); // Reset eye icon when switching modes
+    setShowPassword(false);
   };
 
   return (
@@ -151,6 +159,7 @@ export default function Auth() {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 focus:outline-none transition-colors"
                 title={showPassword ? "Hide password" : "Show password"}
+                aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>

@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Calendar, AlignLeft, Type, Tag, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import api from '../utils/api';
 
 export default function CreateTask() {
   const navigate = useNavigate();
+  // 1. Initialize the query client
+  const queryClient = useQueryClient(); 
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -38,6 +42,9 @@ export default function CreateTask() {
       };
 
       await api.post('/tasks/', payload);
+      
+      // 2. Clear the dashboard cache so it fetches the new task instantly
+      queryClient.invalidateQueries({ queryKey: ["dashboardData"] });
       
       // Navigate back to the dashboard upon success
       navigate('/dashboard');
@@ -132,6 +139,8 @@ export default function CreateTask() {
                     <option value="Project">Project</option>
                     <option value="Exam">Exam</option>
                     <option value="Reading">Reading</option>
+                    <option value="Extracurricular">Extracurricular</option>
+                    <option value="Personal">Personal</option>
                     <option value="Other">Other</option>
                   </select>
                 </div>

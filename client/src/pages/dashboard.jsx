@@ -1,54 +1,73 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
-  LogOut,
   LayoutDashboard,
   Loader2,
   User as UserIcon,
-  CalendarDays,
-  InfoIcon,
 } from "lucide-react";
 import api from "../utils/api";
 import TaskCard from "../components/TaskCard";
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("today"); // 'today', 'upcoming', 'previous'
-
-  const [userInfo, setUserInfo] = useState(null);
-
-  const fetchDashboardData = async () => {
-    setLoading(true);
-    try {
-      // Fetch both user data and tasks at the same time
-      const [userResponse, tasksResponse] = await Promise.all([
-        api.get("/user/me"), // Adjust this URL if your prefix is different
-        api.get("/tasks/"),
-      ]);
-
-      setUserInfo(userResponse.data);
-      setTasks(tasksResponse.data);
-    } catch (error) {
-      console.error("Failed to fetch dashboard data", error);
-      if (error.response?.status === 401) {
-        handleLogout();
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
+  const [activeTab, setActiveTab] = useState("today");
+  
+  // We need this to manually trigger a refresh when a task is updated on the dashboard
+  const queryClient = useQueryClient(); 
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/");
   };
+
+  // --- React Query Data Fetching ---
+  const { 
+    data, 
+    isLoading: loading, 
+    isError, 
+    error 
+  } = useQuery({
+    queryKey: ["dashboardData"],
+    queryFn: async () => {
+      const [userResponse, tasksResponse] = await Promise.all([
+        api.get("/user/me"),
+        api.get("/tasks/"),
+      ]);
+      return {
+        userInfo: userResponse.data,
+        tasks: tasksResponse.data,
+      };
+    },
+    // Keep data fresh for 5 minutes (adjust as needed)
+    staleTime: 5 * 60 * 1000, 
+    // Don't retry if the request fails due to authentication
+    retry: (failureCount, error) => error.response?.status !== 401,
+  });
+
+  // Handle unauthorized errors (redirect to login)
+  useEffect(() => {
+    if (isError && error.response?.status === 401) {
+      handleLogout();
+    }
+  }, [isError, error]);
+
+  // Handle missing token check
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) navigate("/");
+  }, [navigate]);
+
+  // Extract data from the query result (fallback to empty arrays/null if undefined)
+  const userInfo = data?.userInfo || null;
+  const tasks = data?.tasks || [];
+
+  // A function to pass to TaskCard so it can refresh the list if a task is deleted/completed
+  const refreshTasks = () => {
+    queryClient.invalidateQueries({ queryKey: ["dashboardData"] });
+  };
+
 
   // --- Filtering Logic ---
   const now = new Date();
@@ -85,7 +104,6 @@ export default function Dashboard() {
     return dueDate < startOfToday || task.status === "completed";
   });
 
-  // Decide which array to map over based on active tab
   const displayedTasks =
     activeTab === "today"
       ? todayTasks
@@ -95,46 +113,50 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Top Navigation */}
-      <nav className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-200 px-4 py-4 shadow-sm">
+      {/* 1. Global Navigation */}
+      <nav className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-200 px-4 py-3 shadow-sm">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <LayoutDashboard className="text-blue-600" size={24} />
-            <h1 className="text-xl font-extrabold text-gray-900 tracking-tight">
+            <LayoutDashboard className="text-blue-600" size={22} />
+            <h1 className="text-lg font-black text-gray-900 tracking-tight">
               Remind<span className="text-blue-600">Me</span>
             </h1>
           </div>
-          <div className="flex items-center gap-4">
-            <Link
-              to="/create-task"
-              className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm hover:shadow-md"
-            >
-              <Plus size={18} />
-              <span className="hidden sm:inline">New Reminder</span>
-            </Link>
 
-            <Link
-              to="/about"
-              className="text-gray-400 hover:text-blue-600 p-2 rounded-lg hover:bg-blue-50 transition-colors"
-              title="About"
-            >
-              <InfoIcon size={20} />
-            </Link>
-            <Link
-              to="/profile"
-              className="text-gray-400 hover:text-blue-600 p-2 rounded-lg hover:bg-blue-50 transition-colors"
-              title="Profile"
-            >
-              <UserIcon size={20} />
-            </Link>
-          </div>
+          <Link
+            to="/profile"
+            className="flex items-center gap-2 text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-full transition-colors"
+          >
+            <UserIcon size={16} className="text-gray-500" />
+            <span>{userInfo?.username || "Profile"}</span>
+          </Link>
         </div>
       </nav>
 
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 mt-8">
-        {/* Custom Tab Navigation (Segmented Control style) */}
-        <div className="flex space-x-2 bg-gray-200/50 p-1.5 rounded-xl mb-8 border border-gray-200">
+      {/* Main Container */}
+      <main className="max-w-4xl mx-auto px-4">
+        {/* 2. Workspace Header */}
+        <div className="flex items-end justify-between mt-6 mb-6">
+          <div>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+              {new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}
+            </p>
+            <h2 className="text-2xl font-black text-gray-900 mt-0.5">
+              Hello, {userInfo?.username?.split(" ")[0] || "there"} 👋
+            </h2>
+          </div>
+
+          <Link
+            to="/create-task"
+            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-blue-500/20 active:scale-95 transition-all"
+          >
+            <Plus size={18} strokeWidth={3} />
+            <span className="hidden sm:inline">New Reminder</span>
+          </Link>
+        </div>
+
+        {/* 3. The Content (Tabs & List) */}
+        <div className="flex space-x-2 bg-gray-200/50 p-1.5 rounded-xl mb-6 border border-gray-200">
           <button
             onClick={() => setActiveTab("today")}
             className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all flex justify-center items-center gap-2 ${
@@ -144,12 +166,11 @@ export default function Dashboard() {
             }`}
           >
             Today
-            <span
-              className={`px-2 py-0.5 rounded-full text-xs ${activeTab === "today" ? "bg-gray-100 text-gray-700" : "bg-gray-200 text-gray-500"}`}
-            >
+            <span className={`px-2 py-0.5 rounded-full text-xs ${activeTab === "today" ? "bg-gray-100 text-gray-700" : "bg-gray-200 text-gray-500"}`}>
               {todayTasks.length}
             </span>
           </button>
+          
           <button
             onClick={() => setActiveTab("upcoming")}
             className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all flex justify-center items-center gap-2 ${
@@ -159,21 +180,23 @@ export default function Dashboard() {
             }`}
           >
             Upcoming
-            <span
-              className={`px-2 py-0.5 rounded-full text-xs ${activeTab === "upcoming" ? "bg-gray-100 text-gray-700" : "bg-gray-200 text-gray-500"}`}
-            >
+            <span className={`px-2 py-0.5 rounded-full text-xs ${activeTab === "upcoming" ? "bg-gray-100 text-gray-700" : "bg-gray-200 text-gray-500"}`}>
               {upcomingTasks.length}
             </span>
           </button>
+          
           <button
             onClick={() => setActiveTab("previous")}
-            className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${
+            className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all flex justify-center items-center gap-2 ${
               activeTab === "previous"
                 ? "bg-white text-gray-900 shadow-sm border border-gray-200/50"
                 : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
             }`}
           >
             History
+            <span className={`px-2 py-0.5 rounded-full text-xs ${activeTab === "previous" ? "bg-gray-100 text-gray-700" : "bg-gray-200 text-gray-500"}`}>
+              {previousTasks.length}
+            </span>
           </button>
         </div>
 
@@ -200,7 +223,7 @@ export default function Dashboard() {
                 <TaskCard
                   key={task.id}
                   task={task}
-                  refreshTasks={fetchDashboardData}
+                  refreshTasks={refreshTasks}
                   isPrevious={activeTab === "previous"}
                 />
               ))
