@@ -12,7 +12,7 @@ app = FastAPI(title="RemindMe API")
 origins = [
     "https://remindme-psi.vercel.app", 
     "http://localhost:3000",           
-    "http://localhost:5173",           
+    "http://localhost:5173",   ]        
 
 app.add_middleware(
     CORSMiddleware,
