@@ -34,7 +34,10 @@ app.include_router(notification.router)
 async def root():
     return {"message": "Welcome to the RemindMe API"}
 
-@app.get("/health", tags=["Health"])
-async def health_check():
-   
-    return {"status": "ok", "message": "Backend is awake!"}
+
+@app.api_route("/health", methods=["GET", "HEAD"], status_code=200, tags=["Health"])
+def health_check():
+    """
+    Endpoint for UptimeRobot to ping and keep the server awake.
+    """
+    return {"status": "ok", "message": "Remind me backend is active and awake"}
