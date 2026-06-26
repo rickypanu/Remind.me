@@ -1,11 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, LogOut, Trash2, User as UserIcon, AlertTriangle, Loader2, CalendarDays, Bell } from "lucide-react";
+import {
+  ArrowLeft,
+  LogOut,
+  Trash2,
+  User as UserIcon,
+  AlertTriangle,
+  Loader2,
+  CalendarDays,
+  Bell,
+  Info, // Imported Info icon for the About button
+} from "lucide-react";
 import api from "../utils/api";
 
 const urlBase64ToUint8Array = (base64String) => {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const rawData = window.atob(base64);
   return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
 };
@@ -16,6 +26,11 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // State to track notification permission
+  const [notificationStatus, setNotificationStatus] = useState(
+    "Notification" in window ? Notification.permission : "unsupported",
+  );
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -37,23 +52,34 @@ export default function Profile() {
     navigate("/");
   };
 
-  // Moved inside the component so we have access to userInfo
+  const handleDeleteAccount = async () => {
+    // Added placeholder to prevent ReferenceError from your original JSX
+    setDeleteLoading(true);
+    try {
+      await api.delete("/user/me");
+      handleLogout();
+    } catch (error) {
+      console.error("Failed to delete account:", error);
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   const subscribeUser = async () => {
     try {
       const registration = await navigator.serviceWorker.ready;
       const publicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
-      
+
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicKey)
+        applicationServerKey: urlBase64ToUint8Array(publicKey),
       });
 
-      // Send the subscription AND the user ID to your backend
-      await api.post('/subscribe', {
+      await api.post("/subscribe", {
         subscription: subscription,
-        userId: userInfo.id // Assuming your user object has an 'id' or 'email'
+        userId: userInfo.id,
       });
-      
+
       alert("Notifications are now active!");
     } catch (error) {
       console.error("Failed to subscribe user:", error);
@@ -62,15 +88,16 @@ export default function Profile() {
   };
 
   const requestNotificationPermission = async () => {
-    if (!('Notification' in window)) {
+    if (notificationStatus === "unsupported") {
       alert("This browser does not support desktop notifications");
       return;
     }
 
     const permission = await Notification.requestPermission();
+    setNotificationStatus(permission); // Update UI based on user's choice
+
     if (permission === "granted") {
-      // Call subscribeUser ONLY if permission is granted
-      await subscribeUser(); 
+      await subscribeUser();
     } else {
       alert("Permission denied. You can enable them in your browser settings.");
     }
@@ -104,18 +131,21 @@ export default function Profile() {
       {/* Main Content */}
       <main className="max-w-2xl mx-auto px-4 mt-8">
         {/* User Info Card */}
-        <div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm mb-6 flex flex-col items-center text-center">
-          <div className="h-24 w-24 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mb-4 shadow-inner">
-            <UserIcon size={40} />
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 mb-6 flex flex-col items-center text-center">
+          {/* Avatar - Removed inner shadow, slightly softer colors */}
+          <div className="h-20 w-20 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 mb-4">
+            <UserIcon size={32} />
           </div>
-          <h2 className="text-2xl font-extrabold text-gray-900 capitalize">
+
+          {/* Name & Email - Dialed back from extrabold to bold */}
+          <h2 className="text-xl font-bold text-gray-900 capitalize">
             {userInfo?.username || "User"}
           </h2>
-          <p className="text-gray-500 mt-1">{userInfo?.email}</p>
+          <p className="text-sm text-gray-500 mt-1">{userInfo?.email}</p>
 
-          {/* Member Since Badge */}
+          {/* Member Since Badge - Removed border, made purely flat */}
           {userInfo?.created_at && (
-            <div className="flex items-center gap-1.5 mt-4 px-3 py-1.5 bg-gray-50 border border-gray-100 text-gray-500 rounded-full text-sm font-medium">
+            <div className="flex items-center gap-1.5 mt-5 px-3 py-1 bg-gray-50 text-gray-500 rounded-lg text-xs font-medium">
               <CalendarDays size={14} />
               <span>
                 Member since{" "}
@@ -127,19 +157,50 @@ export default function Profile() {
             </div>
           )}
         </div>
-
+        
         {/* Actions Section */}
         <div className="space-y-4">
-          <button
-            onClick={requestNotificationPermission}
-            className="w-full flex items-center justify-between p-4 bg-white border border-gray-200 rounded-2xl hover:border-gray-300 transition-all text-left mb-4"
+          {/* About App Link */}
+          <Link
+            to="/about"
+            className="w-full flex items-center justify-between p-4 bg-white border border-gray-200 rounded-2xl hover:border-gray-300 hover:shadow-sm transition-all text-left"
           >
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+              <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
+                <Info size={20} />
+              </div>
+              <span className="font-semibold text-gray-800">About</span>
+            </div>
+          </Link>
+
+          {/* Dynamic Notification Button */}
+          <button
+            onClick={requestNotificationPermission}
+            disabled={notificationStatus === "granted"}
+            className={`w-full flex items-center justify-between p-4 bg-white border border-gray-200 rounded-2xl transition-all text-left ${
+              notificationStatus === "granted"
+                ? "opacity-70 cursor-default bg-gray-50"
+                : "hover:border-gray-300 hover:shadow-sm"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className={`p-2 rounded-lg ${
+                  notificationStatus === "granted"
+                    ? "bg-green-50 text-green-600"
+                    : notificationStatus === "denied"
+                      ? "bg-red-50 text-red-600"
+                      : "bg-blue-50 text-blue-600"
+                }`}
+              >
                 <Bell size={20} />
               </div>
               <span className="font-semibold text-gray-800">
-                Enable Notifications
+                {notificationStatus === "granted"
+                  ? "Notifications Enabled"
+                  : notificationStatus === "denied"
+                    ? "Notifications Blocked"
+                    : "Enable Notifications"}
               </span>
             </div>
           </button>
