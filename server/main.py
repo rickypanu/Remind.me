@@ -9,10 +9,10 @@ load_dotenv()
 
 app = FastAPI(title="RemindMe API")
 
-# Fetch origins from .env, with a fallback to localhost
-# We expect a comma-separated string in the .env file
-origins_str = os.getenv("FRONTEND_ORIGINS", "http://localhost:3000,http://localhost:5173")
-origins = origins_str.split(",")
+origins = [
+    "https://remindme-psi.vercel.app", 
+    "http://localhost:3000",           
+    "http://localhost:5173",           
 
 app.add_middleware(
     CORSMiddleware,
