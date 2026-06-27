@@ -39,7 +39,7 @@ export default function About() {
           <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight mb-2">
             Remind<span className="text-blue-600">Me</span>
           </h2>
-          <p className="text-gray-500 font-medium">Version 1.0.0</p>
+          <p className="text-gray-500 font-medium">Version 1.0.1</p>
           <p className="text-gray-600 mt-4 leading-relaxed">
             Take a deep breath and let us remember the details. RemindMe is your quiet corner to organize your day, free up mental space, and focus on what truly matters.
           </p>

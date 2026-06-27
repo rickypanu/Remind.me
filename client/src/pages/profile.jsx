@@ -9,7 +9,8 @@ import {
   Loader2,
   CalendarDays,
   Bell,
-  Info, // Imported Info icon for the About button
+  Info,
+  HelpCircle,
 } from "lucide-react";
 import api from "../utils/api";
 
@@ -27,10 +28,13 @@ export default function Profile() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // State to track notification permission
+  // Tracks basic browser permission status
   const [notificationStatus, setNotificationStatus] = useState(
     "Notification" in window ? Notification.permission : "unsupported",
   );
+
+  // NEW: Tracks if this specific device is actually subscribed
+  const [isSubscribed, setIsSubscribed] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -47,13 +51,28 @@ export default function Profile() {
     fetchUser();
   }, []);
 
+  // NEW: Check if this device already has an active subscription on load
+  useEffect(() => {
+    const checkSubscription = async () => {
+      if ("serviceWorker" in navigator) {
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          const subscription = await registration.pushManager.getSubscription();
+          setIsSubscribed(!!subscription);
+        } catch (error) {
+          console.error("Error checking subscription:", error);
+        }
+      }
+    };
+    checkSubscription();
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/");
   };
 
   const handleDeleteAccount = async () => {
-    // Added placeholder to prevent ReferenceError from your original JSX
     setDeleteLoading(true);
     try {
       await api.delete("/user/me");
@@ -80,10 +99,35 @@ export default function Profile() {
         userId: userInfo.id,
       });
 
-      alert("Notifications are now active!");
+      alert("Notifications are now active for this device!");
+      setIsSubscribed(true); // Update UI state
     } catch (error) {
       console.error("Failed to subscribe user:", error);
-      alert("Failed to enable notifications.");
+      alert("Failed to enable notifications. Please check browser settings.");
+    }
+  };
+
+  const unsubscribeUser = async () => {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+
+      if (subscription) {
+        // 1. Tell the browser to stop pushing to this device
+        await subscription.unsubscribe();
+
+        // 2. Tell your backend to remove this device from the array
+        await api.post("/unsubscribe", {
+          subscription: subscription,
+          userId: userInfo.id,
+        });
+
+        alert("Notifications disabled for this device.");
+        setIsSubscribed(false); // Update UI state
+      }
+    } catch (error) {
+      console.error("Error unsubscribing", error);
+      alert("Failed to disable notifications.");
     }
   };
 
@@ -94,7 +138,7 @@ export default function Profile() {
     }
 
     const permission = await Notification.requestPermission();
-    setNotificationStatus(permission); // Update UI based on user's choice
+    setNotificationStatus(permission);
 
     if (permission === "granted") {
       await subscribeUser();
@@ -132,18 +176,15 @@ export default function Profile() {
       <main className="max-w-2xl mx-auto px-4 mt-8">
         {/* User Info Card */}
         <div className="bg-white p-6 rounded-2xl border border-gray-100 mb-6 flex flex-col items-center text-center">
-          {/* Avatar - Removed inner shadow, slightly softer colors */}
           <div className="h-20 w-20 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 mb-4">
             <UserIcon size={32} />
           </div>
 
-          {/* Name & Email - Dialed back from extrabold to bold */}
           <h2 className="text-xl font-bold text-gray-900 capitalize">
             {userInfo?.username || "User"}
           </h2>
           <p className="text-sm text-gray-500 mt-1">{userInfo?.email}</p>
 
-          {/* Member Since Badge - Removed border, made purely flat */}
           {userInfo?.created_at && (
             <div className="flex items-center gap-1.5 mt-5 px-3 py-1 bg-gray-50 text-gray-500 rounded-lg text-xs font-medium">
               <CalendarDays size={14} />
@@ -157,9 +198,21 @@ export default function Profile() {
             </div>
           )}
         </div>
-        
+
         {/* Actions Section */}
         <div className="space-y-4">
+          {/* Faqs */}
+          <Link
+            to="/faqs"
+            className="w-full flex items-center justify-between p-4 bg-white border border-gray-200 rounded-2xl hover:border-gray-300 hover:shadow-sm transition-all text-left"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
+                <HelpCircle size={20} />
+              </div>
+              <span className="font-semibold text-gray-800">FAQ's</span>
+            </div>
+          </Link>
           {/* About App Link */}
           <Link
             to="/about"
@@ -173,37 +226,49 @@ export default function Profile() {
             </div>
           </Link>
 
-          {/* Dynamic Notification Button */}
-          <button
-            onClick={requestNotificationPermission}
-            disabled={notificationStatus === "granted"}
-            className={`w-full flex items-center justify-between p-4 bg-white border border-gray-200 rounded-2xl transition-all text-left ${
-              notificationStatus === "granted"
-                ? "opacity-70 cursor-default bg-gray-50"
-                : "hover:border-gray-300 hover:shadow-sm"
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className={`p-2 rounded-lg ${
-                  notificationStatus === "granted"
-                    ? "bg-green-50 text-green-600"
-                    : notificationStatus === "denied"
+          {/* Dynamic Notification Button - Toggles based on isSubscribed */}
+          {isSubscribed ? (
+            <button
+              onClick={unsubscribeUser}
+              className="w-full flex items-center justify-between p-4 bg-white border border-gray-200 rounded-2xl hover:border-gray-300 hover:shadow-sm transition-all text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-red-50 text-red-600 rounded-lg">
+                  <Bell size={20} />
+                </div>
+                <span className="font-semibold text-gray-800">
+                  Disable Notifications
+                </span>
+              </div>
+            </button>
+          ) : (
+            <button
+              onClick={requestNotificationPermission}
+              disabled={notificationStatus === "denied"}
+              className={`w-full flex items-center justify-between p-4 bg-white border border-gray-200 rounded-2xl transition-all text-left ${
+                notificationStatus === "denied"
+                  ? "opacity-70 cursor-default bg-gray-50"
+                  : "hover:border-gray-300 hover:shadow-sm"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={`p-2 rounded-lg ${
+                    notificationStatus === "denied"
                       ? "bg-red-50 text-red-600"
                       : "bg-blue-50 text-blue-600"
-                }`}
-              >
-                <Bell size={20} />
-              </div>
-              <span className="font-semibold text-gray-800">
-                {notificationStatus === "granted"
-                  ? "Notifications Enabled"
-                  : notificationStatus === "denied"
+                  }`}
+                >
+                  <Bell size={20} />
+                </div>
+                <span className="font-semibold text-gray-800">
+                  {notificationStatus === "denied"
                     ? "Notifications Blocked"
                     : "Enable Notifications"}
-              </span>
-            </div>
-          </button>
+                </span>
+              </div>
+            </button>
+          )}
 
           {/* Logout Button */}
           <button

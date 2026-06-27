@@ -7,6 +7,7 @@ import Dashboard from './pages/dashboard';
 import CreateTask from './pages/createtask';
 import Profile from './pages/profile';
 import About from './pages/about';
+import FAQ from './pages/faqs';
 
 // Create a client for React Query
 const queryClient = new QueryClient();
@@ -64,6 +65,12 @@ function App() {
               path="/about" 
               element={
                 <About />
+              } 
+            />
+            <Route 
+              path="/faqs" 
+              element={
+                <FAQ />
               } 
             />
             

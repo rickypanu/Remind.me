@@ -19,8 +19,7 @@ VAPID_CLAIMS = {"sub": os.getenv("VAPID_EMAIL")}
 
 if not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
     raise ValueError("Missing VAPID keys in environment variables!")
-
-# IMPROVEMENT 1: Allow custom titles so notifications look cleaner
+#  Allow custom titles so notifications look cleaner
 def send_push(subscription_info: dict, title: str, message: str):
     if not subscription_info:
         return
@@ -51,7 +50,6 @@ async def remind_todays_tasks():
     
     tasks = await db["tasks"].find(query).to_list(length=None)
     
-    # IMPROVEMENT 2: Group tasks by user so they only get ONE notification
     user_tasks = {}
     for task in tasks:
         user_id = task.get("user_id")
@@ -59,12 +57,11 @@ async def remind_todays_tasks():
             user_tasks[user_id] = []
         user_tasks[user_id].append(task['title'])
 
-    # Send one summary notification per user
     for user_id, task_titles in user_tasks.items():
         user = await db["users"].find_one({"_id": user_id})
         
-        if user and "push_subscription" in user:
-            # Format the message dynamically based on how many tasks they have
+        # UPDATED: Check for the array 'push_subscriptions'
+        if user and "push_subscriptions" in user:
             if len(task_titles) == 1:
                 title = "Today's Task"
                 body = f"Don't forget to: {task_titles[0]}"
@@ -72,7 +69,9 @@ async def remind_todays_tasks():
                 title = f"{len(task_titles)} Tasks Today"
                 body = f"You have {len(task_titles)} things to do, starting with: {task_titles[0]}"
                 
-            send_push(user["push_subscription"], title, body)
+            # UPDATED: Loop through all devices (laptop, mobile, etc.) and send to each
+            for subscription in user["push_subscriptions"]:
+                send_push(subscription, title, body)
 
 
 async def remind_tomorrows_tasks():
@@ -90,7 +89,6 @@ async def remind_tomorrows_tasks():
     
     tasks = await db["tasks"].find(query).to_list(length=None)
     
-    # Group tasks by user
     user_tasks = {}
     for task in tasks:
         user_id = task.get("user_id")
@@ -101,7 +99,8 @@ async def remind_tomorrows_tasks():
     for user_id, task_titles in user_tasks.items():
         user = await db["users"].find_one({"_id": user_id})
         
-        if user and "push_subscription" in user:
+        # UPDATED: Check for the array 'push_subscriptions'
+        if user and "push_subscriptions" in user:
             if len(task_titles) == 1:
                 title = "Tomorrow's Agenda"
                 body = f"Heads up for tomorrow: {task_titles[0]}"
@@ -109,7 +108,9 @@ async def remind_tomorrows_tasks():
                 title = f"{len(task_titles)} Tasks Tomorrow"
                 body = f"Get ready! You have {len(task_titles)} tasks scheduled for tomorrow."
                 
-            send_push(user["push_subscription"], title, body)
+            # UPDATED: Loop through all devices
+            for subscription in user["push_subscriptions"]:
+                send_push(subscription, title, body)
 
 IST = pytz.timezone('Asia/Kolkata')
 
@@ -117,12 +118,8 @@ IST = pytz.timezone('Asia/Kolkata')
 async def start_scheduler():
     scheduler = AsyncIOScheduler(timezone=IST)
     
-    # IMPROVEMENT 3: Clean, logical production schedules
-    # Remind about today's tasks at 8:00 AM, 1:00 PM (13:00), and 6:00 PM (18:00)
     scheduler.add_job(remind_todays_tasks, CronTrigger(hour="8,13,18", minute="0"))
-    
-    # Remind about tomorrow's tasks at 8:00 PM (20:00) the night before
-    scheduler.add_job(remind_tomorrows_tasks, CronTrigger(hour="20", minute="0"))
+    scheduler.add_job(remind_tomorrows_tasks, CronTrigger(hour="18,22", minute="0"))
     
     scheduler.start()
     print("Background task scheduler started with production intervals!")
