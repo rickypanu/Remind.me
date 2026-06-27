@@ -10,7 +10,8 @@ load_dotenv()
 app = FastAPI(title="RemindMe API")
 
 origins = [
-    "https://remindme-psi.vercel.app", 
+    "https://remindme-psi.vercel.app",
+    "https://getremindme.vercel.app/", 
     "http://localhost:3000",           
     "http://localhost:5173",   
 ]        
@@ -27,8 +28,8 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 app.include_router(tasks.router, prefix="/tasks", tags=["Tasks"])
 app.include_router(user.router, prefix="/user", tags=["User"])
-app.include_router(webpush.router)
-app.include_router(notification.router)
+app.include_router(webpush.router, tags=["Notification"])
+app.include_router(notification.router, tags=["Notification"])
 
 @app.get("/")
 async def root():
