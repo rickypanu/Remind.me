@@ -11,7 +11,7 @@ app = FastAPI(title="RemindMe API")
 
 origins = [
     "https://remindme-psi.vercel.app",
-    "https://getremindme.vercel.app/", 
+    "https://getremindme.vercel.app", 
     "http://localhost:3000",           
     "http://localhost:5173",   
 ]        
