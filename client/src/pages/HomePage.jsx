@@ -31,7 +31,7 @@ const Homepage = () => {
         
         <div className="flex justify-center">
           {/* Replaced <link> with <Link to="..."> */}
-          <Link to="/auth">
+          <Link to="/login">
             <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-full font-bold text-lg flex items-center gap-2 shadow-lg shadow-blue-600/20 transition-all transform hover:-translate-y-1">
               Start for Free Today <ArrowRight size={20} />
             </button>
@@ -149,7 +149,7 @@ const Homepage = () => {
             When you stop trying to remember everything, you reduce anxiety and increase your creative focus. Let us do the remembering for you.
           </p>
           {/* Replaced broken syntax with proper <Link> component */}
-          <Link to="/auth">
+          <Link to="/login">
             <button className="bg-gray-900 text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-800 transition-colors shadow-lg">
               Create Your Free Account
             </button>

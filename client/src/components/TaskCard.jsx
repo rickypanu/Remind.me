@@ -1,18 +1,47 @@
-import React, { useState } from 'react';
-import { CheckCircle, Circle, Trash2, Clock, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { CheckCircle, Circle, Trash2, Clock, AlertTriangle, Loader2 } from 'lucide-react';
 import api from '../utils/api';
 
 export default function TaskCard({ task, refreshTasks, isPrevious }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   
+  // --- NEW UX STATES ---
+  const [localStatus, setLocalStatus] = useState(task.status);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false); // Handles the exit delay
+
+  // Keep local state in sync if data changes from the parent
+  useEffect(() => {
+    setLocalStatus(task.status);
+  }, [task.status]);
+
   const handleStatusChange = async () => {
+    // Prevent spam clicking while loading or transitioning
+    if (isUpdating || isTransitioning) return;
+    
+    setIsUpdating(true);
+    const newStatus = localStatus === 'pending' ? 'completed' : 'pending';
+    
     try {
-      const newStatus = task.status === 'pending' ? 'completed' : 'pending';
+      // 1. Wait for API to finish saving
       await api.put(`/tasks/${task.id}?status=${newStatus}`);
-      refreshTasks();
+      
+      // 2. API Success -> Immediately update the local UI (Turns text gray & checkmark green)
+      setLocalStatus(newStatus);
+      setIsUpdating(false);
+      setIsTransitioning(true);
+      
+      // 3. Add a 600ms delay before telling the Dashboard to fetch new data.
+      // This gives the user time to see the satisfying green checkmark!
+      setTimeout(() => {
+        refreshTasks();
+        setIsTransitioning(false);
+      }, 600);
+      
     } catch (error) {
       console.error("Failed to update status", error);
+      setIsUpdating(false);
     }
   };
 
@@ -37,8 +66,6 @@ export default function TaskCard({ task, refreshTasks, isPrevious }) {
     }
   };
 
-  // --- TIMEZONE FIX & OVERDUE LOGIC ---
-  // Ensure the date string from Mongo is treated as UTC by appending 'Z' if missing
   const dateString = task.due_date.endsWith('Z') ? task.due_date : `${task.due_date}Z`;
   const taskDate = new Date(dateString);
   
@@ -47,12 +74,15 @@ export default function TaskCard({ task, refreshTasks, isPrevious }) {
     hour: '2-digit', minute: '2-digit'
   });
 
-  const isCompleted = task.status === 'completed';
+  // Use localStatus instead of task.status for immediate visual feedback
+  const isCompleted = localStatus === 'completed';
   const isOverdue = taskDate < new Date() && !isCompleted;
 
   return (
     <>
-      <div className={`p-4 sm:p-5 rounded-2xl border transition-all duration-200 group ${
+      <div className={`p-4 sm:p-5 rounded-2xl border transition-all duration-300 group ${
+        isTransitioning ? 'opacity-50 scale-[0.98]' : '' // Slight shrink effect before it disappears
+      } ${
         isCompleted || isPrevious 
           ? 'bg-gray-50/80 border-gray-100 opacity-80' 
           : 'bg-white border-gray-200 shadow-sm hover:shadow hover:border-blue-200'
@@ -62,9 +92,14 @@ export default function TaskCard({ task, refreshTasks, isPrevious }) {
           {/* Status Toggle */}
           <button 
             onClick={handleStatusChange} 
-            className="mt-1 focus:outline-none transition-transform active:scale-95 shrink-0"
+            disabled={isUpdating || isTransitioning}
+            className={`mt-1 focus:outline-none transition-transform shrink-0 ${
+              isUpdating || isTransitioning ? 'cursor-default' : 'active:scale-95'
+            }`}
           >
-            {isCompleted ? (
+            {isUpdating ? (
+              <Loader2 className="text-blue-500 animate-spin" size={24} strokeWidth={2.5} />
+            ) : isCompleted ? (
               <CheckCircle className="text-green-500 transition-colors" size={24} strokeWidth={2.5} />
             ) : (
               <Circle className="text-gray-300 hover:text-blue-500 transition-colors" size={24} strokeWidth={2.5} />
@@ -88,18 +123,18 @@ export default function TaskCard({ task, refreshTasks, isPrevious }) {
               )}
             </div>
             
-            <h3 className={`text-base sm:text-lg font-bold leading-tight ${isCompleted ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
+            <h3 className={`text-base sm:text-lg font-bold leading-tight transition-colors duration-300 ${isCompleted ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
               {task.title}
             </h3>
             
             {task.description && (
-              <p className={`mt-1 text-sm line-clamp-2 ${isCompleted ? 'text-gray-400' : 'text-gray-600'}`}>
+              <p className={`mt-1 text-sm line-clamp-2 transition-colors duration-300 ${isCompleted ? 'text-gray-400' : 'text-gray-600'}`}>
                 {task.description}
               </p>
             )}
           </div>
 
-          {/* Delete Button (Subtle, reveals on hover for cleaner UI) */}
+          {/* Delete Button */}
           <button 
             onClick={() => setShowConfirm(true)} 
             className="text-gray-300 hover:text-red-500 focus:outline-none p-2 rounded-xl hover:bg-red-50 transition-all shrink-0 sm:opacity-0 sm:group-hover:opacity-100"
@@ -136,8 +171,9 @@ export default function TaskCard({ task, refreshTasks, isPrevious }) {
               <button 
                 onClick={confirmDelete}
                 disabled={isDeleting}
-                className="flex-1 py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-colors shadow-md disabled:opacity-50 flex justify-center items-center"
+                className="flex-1 py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-colors shadow-md disabled:opacity-50 flex justify-center items-center gap-2"
               >
+                {isDeleting && <Loader2 className="animate-spin" size={18} />}
                 {isDeleting ? "Deleting..." : "Delete"}
               </button>
             </div>
