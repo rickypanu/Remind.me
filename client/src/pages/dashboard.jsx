@@ -5,10 +5,13 @@ import {
   Plus,
   LayoutDashboard,
   Loader2,
-  User as UserIcon,
   AlertCircle,
   ChevronDown,
   ChevronUp,
+  Coffee,
+  Sun,
+  CalendarDays,
+  History as HistoryIcon
 } from "lucide-react";
 import api from "../utils/api";
 import TaskCard from "../components/TaskCard";
@@ -65,7 +68,6 @@ export default function Dashboard() {
   };
 
   // --- IST / TIMEZONE FIX HELPER ---
-  // This ensures MongoDB strings are treated as UTC, perfectly syncing them to IST for your filters
   const getSafeDate = (dateString) => {
     if (!dateString) return new Date();
     return new Date(dateString.endsWith("Z") ? dateString : `${dateString}Z`);
@@ -122,10 +124,11 @@ export default function Dashboard() {
 
   const displayedTasks = getDisplayedTasks();
 
+  // Updated tabs array with Icons included
   const tabs = [
-    { id: "today", label: "Today", count: todayTasks.length },
-    { id: "upcoming", label: "Upcoming", count: upcomingTasks.length },
-    { id: "history", label: "History", count: completedTasks.length },
+    { id: "today", label: "Today", count: todayTasks.length, icon: Sun },
+    { id: "upcoming", label: "Upcoming", count: upcomingTasks.length, icon: CalendarDays },
+    { id: "history", label: "History", count: completedTasks.length, icon: HistoryIcon },
   ];
 
   useEffect(() => {
@@ -135,6 +138,7 @@ export default function Dashboard() {
   }, [missedTasks.length]);
 
   const initial = userInfo?.username?.charAt(0).toUpperCase() || "U";
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <nav className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-200 px-4 py-3 shadow-sm">
@@ -214,9 +218,11 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Updated Tabs Section with Icons */}
         <div className="flex space-x-1.5 bg-gray-200/60 p-1.5 rounded-xl mb-6 border border-gray-200">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
+            const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
@@ -227,9 +233,12 @@ export default function Dashboard() {
                     : "text-gray-500 hover:text-gray-700"
                 }`}
               >
+                <Icon size={16} className={isActive ? "text-blue-600" : "text-gray-400"} />
                 {tab.label}
                 <span
-                  className={`px-1.5 py-0.5 rounded-full text-xs ${isActive ? "bg-gray-100 text-gray-800" : "bg-gray-200/80 text-gray-500"}`}
+                  className={`px-1.5 py-0.5 rounded-full text-xs ${
+                    isActive ? "bg-gray-100 text-gray-800" : "bg-gray-200/80 text-gray-500"
+                  }`}
                 >
                   {tab.count}
                 </span>
@@ -238,19 +247,24 @@ export default function Dashboard() {
           })}
         </div>
 
+        {/* Added min-height to loader container so layout doesn't shift */}
         {loading ? (
-          <div className="flex justify-center items-center py-20 text-blue-600">
+          <div className="flex justify-center items-center min-h-[300px] text-blue-600">
             <Loader2 className="animate-spin" size={32} />
           </div>
         ) : (
           <div className="grid gap-4">
             {displayedTasks.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-2xl border-2 border-gray-200 border-dashed">
-                <p className="text-gray-500 font-medium text-lg">
+              // Updated Empty State UI
+              <div className="text-center py-16 bg-white rounded-2xl border-2 border-gray-200 border-dashed flex flex-col items-center justify-center">
+                <div className="w-16 h-16 bg-green-50 text-green-500 rounded-full flex items-center justify-center mb-4">
+                  <Coffee size={32} strokeWidth={2.5} />
+                </div>
+                <p className="text-gray-900 font-bold text-lg">
                   No reminders found here.
                 </p>
-                <p className="text-sm text-gray-400 mt-1">
-                  You're all caught up!
+                <p className="text-sm text-gray-500 mt-1">
+                  You're all caught up! Time for a break.
                 </p>
               </div>
             ) : (
