@@ -14,8 +14,8 @@ import {
   BarChart3,
   History as HistoryIcon,
 } from "lucide-react";
-import api from "../utils/api";
-import TaskCard from "../components/TaskCard";
+import api from "../../utils/api";
+import TaskCard from "../../components/TaskCard";
 
 export default function Dashboard() {
   const navigate = useNavigate();

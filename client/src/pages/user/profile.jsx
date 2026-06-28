@@ -11,8 +11,9 @@ import {
   Bell,
   Info,
   HelpCircle,
+  Users2,
 } from "lucide-react";
-import api from "../utils/api";
+import api from "../../utils/api";
 
 const urlBase64ToUint8Array = (base64String) => {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -201,7 +202,19 @@ export default function Profile() {
 
         {/* Actions Section */}
         <div className="space-y-4">
-          {/* Faqs */}
+          {/* Squad */}
+          <Link
+            to="/squad"
+            className="w-full flex items-center justify-between p-4 bg-white border border-gray-200 rounded-2xl hover:border-gray-300 hover:shadow-sm transition-all text-left"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
+                <Users2 size={20} />
+              </div>
+              <span className="font-semibold text-gray-800">Squad</span>
+            </div>
+          </Link>
+          {/* faq's */}
           <Link
             to="/faqs"
             className="w-full flex items-center justify-between p-4 bg-white border border-gray-200 rounded-2xl hover:border-gray-300 hover:shadow-sm transition-all text-left"

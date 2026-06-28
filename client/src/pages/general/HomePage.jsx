@@ -1,21 +1,20 @@
-import React from 'react';
-import { Link } from 'react-router-dom'; // Added import for Link
-import { 
-  ArrowRight, 
-  CheckCircle2, 
-  Zap, 
-  BrainCircuit, 
-  Target, 
-  BookOpen, 
-  Briefcase 
-} from 'lucide-react';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
+import React from "react";
+import { Link } from "react-router-dom"; // Added import for Link
+import {
+  ArrowRight,
+  CheckCircle2,
+  Zap,
+  BrainCircuit,
+  Target,
+  BookOpen,
+  Briefcase,
+} from "lucide-react";
+import Header from "../../components/Header";
+import Footer from "../../components/Footer";
 
 const Homepage = () => {
   return (
     <div className="min-h-screen bg-white text-gray-900 font-sans selection:bg-blue-100">
-      
       <Header />
 
       {/* Hero Section */}
@@ -24,11 +23,13 @@ const Homepage = () => {
           Your mind is for thinking, <br className="hidden md:block" />
           <span className="text-blue-600">not memorizing.</span>
         </h1>
-        
+
         <p className="text-lg md:text-xl text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed">
-          We deliver a frictionless way to capture tasks, set smart alerts, and organize your life. Offload your to-dos to Remind Me, and get your focus back.
+          We deliver a frictionless way to capture tasks, set smart alerts, and
+          organize your life. Offload your to-dos to Remind Me, and get your
+          focus back.
         </p>
-        
+
         <div className="flex justify-center">
           {/* Replaced <link> with <Link to="..."> */}
           <Link to="/login">
@@ -40,21 +41,32 @@ const Homepage = () => {
       </header>
 
       {/* What We Deliver Section */}
-      <section id="features" className="bg-gray-50 py-24 border-y border-gray-100">
+      <section
+        id="features"
+        className="bg-gray-50 py-24 border-y border-gray-100"
+      >
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">What We Deliver</h2>
-            <p className="text-gray-500 max-w-2xl mx-auto text-lg">A streamlined system designed to catch everything before it falls through the cracks.</p>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">
+              What We Deliver
+            </h2>
+            <p className="text-gray-500 max-w-2xl mx-auto text-lg">
+              A streamlined system designed to catch everything before it falls
+              through the cracks.
+            </p>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
               <div className="bg-blue-50 w-14 h-14 rounded-2xl flex items-center justify-center mb-6">
                 <Zap className="text-blue-600" size={28} />
               </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-900">Frictionless Capture</h3>
+              <h3 className="text-xl font-bold mb-3 text-gray-900">
+                Frictionless Capture
+              </h3>
               <p className="text-gray-500 leading-relaxed">
-                Add tasks in seconds. Our minimal interface gets out of your way so you can log your thoughts and get back to work immediately.
+                Add tasks in seconds. Our minimal interface gets out of your way
+                so you can log your thoughts and get back to work immediately.
               </p>
             </div>
 
@@ -62,9 +74,13 @@ const Homepage = () => {
               <div className="bg-emerald-50 w-14 h-14 rounded-2xl flex items-center justify-center mb-6">
                 <Target className="text-emerald-600" size={28} />
               </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-900">Smart Prioritization</h3>
+              <h3 className="text-xl font-bold mb-3 text-gray-900">
+                Smart Prioritization
+              </h3>
               <p className="text-gray-500 leading-relaxed">
-                Not all tasks are equal. We help you separate the urgent from the important, ensuring you always tackle the right thing at the right time.
+                Not all tasks are equal. We help you separate the urgent from
+                the important, ensuring you always tackle the right thing at the
+                right time.
               </p>
             </div>
 
@@ -72,9 +88,13 @@ const Homepage = () => {
               <div className="bg-indigo-50 w-14 h-14 rounded-2xl flex items-center justify-center mb-6">
                 <BrainCircuit className="text-indigo-600" size={28} />
               </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-900">Reliable Automation</h3>
+              <h3 className="text-xl font-bold mb-3 text-gray-900">
+                Reliable Automation
+              </h3>
               <p className="text-gray-500 leading-relaxed">
-                Set recurring routines, location-based pings, and deadline warnings. Once it's in the system, you can trust we will remind you.
+                Set recurring routines, location-based pings, and deadline
+                warnings. Once it's in the system, you can trust we will remind
+                you.
               </p>
             </div>
           </div>
@@ -85,8 +105,13 @@ const Homepage = () => {
       <section id="how-it-works" className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">Built for ambition.</h2>
-            <p className="text-gray-500 max-w-2xl mx-auto text-lg">Whether you are managing a syllabus or a project pipeline, we adapt to your workflow.</p>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">
+              Built for ambition.
+            </h2>
+            <p className="text-gray-500 max-w-2xl mx-auto text-lg">
+              Whether you are managing a syllabus or a project pipeline, we
+              adapt to your workflow.
+            </p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
@@ -96,20 +121,37 @@ const Homepage = () => {
                 <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
                   <BookOpen className="text-blue-600" size={24} />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900">For Students</h3>
+                <h3 className="text-2xl font-bold text-gray-900">
+                  For Students
+                </h3>
               </div>
               <ul className="space-y-4">
                 <li className="flex items-start gap-3 text-gray-600">
-                  <CheckCircle2 size={20} className="text-blue-500 shrink-0 mt-0.5" />
-                  <span>Never miss an assignment deadline or discussion post.</span>
+                  <CheckCircle2
+                    size={20}
+                    className="text-blue-500 shrink-0 mt-0.5"
+                  />
+                  <span>
+                    Never miss an assignment deadline or discussion post.
+                  </span>
                 </li>
                 <li className="flex items-start gap-3 text-gray-600">
-                  <CheckCircle2 size={20} className="text-blue-500 shrink-0 mt-0.5" />
-                  <span>Break down massive term papers into daily, manageable steps.</span>
+                  <CheckCircle2
+                    size={20}
+                    className="text-blue-500 shrink-0 mt-0.5"
+                  />
+                  <span>
+                    Break down massive term papers into daily, manageable steps.
+                  </span>
                 </li>
                 <li className="flex items-start gap-3 text-gray-600">
-                  <CheckCircle2 size={20} className="text-blue-500 shrink-0 mt-0.5" />
-                  <span>Set recurring reminders for study groups and classes.</span>
+                  <CheckCircle2
+                    size={20}
+                    className="text-blue-500 shrink-0 mt-0.5"
+                  />
+                  <span>
+                    Set recurring reminders for study groups and classes.
+                  </span>
                 </li>
               </ul>
             </div>
@@ -124,16 +166,34 @@ const Homepage = () => {
               </div>
               <ul className="space-y-4">
                 <li className="flex items-start gap-3 text-blue-50">
-                  <CheckCircle2 size={20} className="text-blue-300 shrink-0 mt-0.5" />
-                  <span>Track deliverables across multiple clients or projects seamlessly.</span>
+                  <CheckCircle2
+                    size={20}
+                    className="text-blue-300 shrink-0 mt-0.5"
+                  />
+                  <span>
+                    Track deliverables across multiple clients or projects
+                    seamlessly.
+                  </span>
                 </li>
                 <li className="flex items-start gap-3 text-blue-50">
-                  <CheckCircle2 size={20} className="text-blue-300 shrink-0 mt-0.5" />
-                  <span>Prepare for meetings with timely, automated pre-meeting alerts.</span>
+                  <CheckCircle2
+                    size={20}
+                    className="text-blue-300 shrink-0 mt-0.5"
+                  />
+                  <span>
+                    Prepare for meetings with timely, automated pre-meeting
+                    alerts.
+                  </span>
                 </li>
                 <li className="flex items-start gap-3 text-blue-50">
-                  <CheckCircle2 size={20} className="text-blue-300 shrink-0 mt-0.5" />
-                  <span>Leave work at work—capture thoughts instantly and enjoy your evening.</span>
+                  <CheckCircle2
+                    size={20}
+                    className="text-blue-300 shrink-0 mt-0.5"
+                  />
+                  <span>
+                    Leave work at work—capture thoughts instantly and enjoy your
+                    evening.
+                  </span>
                 </li>
               </ul>
             </div>
@@ -144,9 +204,12 @@ const Homepage = () => {
       {/* CTA Section (The Impact) */}
       <section className="py-24 px-6 relative overflow-hidden bg-gray-50 border-t border-gray-100">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl font-bold mb-6 text-gray-900">Experience the impact of a clear mind.</h2>
+          <h2 className="text-4xl font-bold mb-6 text-gray-900">
+            Experience the impact of a clear mind.
+          </h2>
           <p className="text-xl text-gray-500 mb-10 max-w-2xl mx-auto">
-            When you stop trying to remember everything, you reduce anxiety and increase your creative focus. Let us do the remembering for you.
+            When you stop trying to remember everything, you reduce anxiety and
+            increase your creative focus. Let us do the remembering for you.
           </p>
           {/* Replaced broken syntax with proper <Link> component */}
           <Link to="/login">
@@ -158,7 +221,6 @@ const Homepage = () => {
       </section>
 
       <Footer />
-      
     </div>
   );
 };

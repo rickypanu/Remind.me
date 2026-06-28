@@ -1,33 +1,42 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Calendar, AlignLeft, Type, Tag, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
-import api from '../utils/api';
+import {
+  ArrowLeft,
+  Calendar,
+  AlignLeft,
+  Type,
+  Tag,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
+import api from "../../utils/api";
 
 export default function CreateTask() {
   const navigate = useNavigate();
   // 1. Initialize the query client
-  const queryClient = useQueryClient(); 
+  const queryClient = useQueryClient();
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    category: 'Assignment', // Default value
-    due_date: '',
+    title: "",
+    description: "",
+    category: "Assignment", // Default value
+    due_date: "",
   });
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    setError('');
+    setError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       // Convert the local datetime-local string to a standard ISO format for the backend
@@ -38,20 +47,20 @@ export default function CreateTask() {
         description: formData.description,
         category: formData.category,
         due_date: isoDate,
-        status: 'pending' // Default status for new tasks
+        status: "pending", // Default status for new tasks
       };
 
-      await api.post('/tasks/', payload);
-      
+      await api.post("/tasks/", payload);
+
       // 2. Clear the dashboard cache so it fetches the new task instantly
       queryClient.invalidateQueries({ queryKey: ["dashboardData"] });
-      
+
       // Navigate back to the dashboard upon success
-      navigate('/dashboard');
+      navigate("/dashboard");
     } catch (err) {
       setError(
-        err.response?.data?.detail || 
-        'Failed to create task. Make sure all required fields are filled.'
+        err.response?.data?.detail ||
+          "Failed to create task. Make sure all required fields are filled.",
       );
       setLoading(false);
     }
@@ -59,15 +68,17 @@ export default function CreateTask() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-10">
-      
       {/* Top Navigation */}
       <nav className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-200 px-4 py-4 shadow-sm">
         <div className="max-w-3xl mx-auto flex items-center">
-          <Link 
-            to="/dashboard" 
+          <Link
+            to="/dashboard"
             className="flex items-center text-gray-500 hover:text-blue-600 transition-colors font-medium group"
           >
-            <ArrowLeft size={20} className="mr-2 transform group-hover:-translate-x-1 transition-transform" />
+            <ArrowLeft
+              size={20}
+              className="mr-2 transform group-hover:-translate-x-1 transition-transform"
+            />
             <span>Back to Dashboard</span>
           </Link>
         </div>
@@ -76,8 +87,9 @@ export default function CreateTask() {
       {/* Main Content */}
       <main className="max-w-2xl mx-auto px-4 mt-8">
         <div className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8 shadow-xl">
-          
-          <h2 className="text-2xl font-extrabold text-gray-900 mb-6 tracking-tight">Create New Reminder</h2>
+          <h2 className="text-2xl font-extrabold text-gray-900 mb-6 tracking-tight">
+            Create New Reminder
+          </h2>
 
           {error && (
             <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-100 text-red-600 flex items-center gap-2 text-sm font-medium">
@@ -87,12 +99,16 @@ export default function CreateTask() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            
             {/* Title Input */}
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Reminder Title *</label>
+              <label className="block text-sm font-bold text-gray-700 mb-2">
+                Reminder Title *
+              </label>
               <div className="relative group">
-                <Type className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" size={20} />
+                <Type
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors"
+                  size={20}
+                />
                 <input
                   type="text"
                   name="title"
@@ -107,9 +123,14 @@ export default function CreateTask() {
 
             {/* Description Input */}
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Description (Optional)</label>
+              <label className="block text-sm font-bold text-gray-700 mb-2">
+                Description (Optional)
+              </label>
               <div className="relative group">
-                <AlignLeft className="absolute left-4 top-3.5 text-gray-400 group-focus-within:text-blue-500 transition-colors" size={20} />
+                <AlignLeft
+                  className="absolute left-4 top-3.5 text-gray-400 group-focus-within:text-blue-500 transition-colors"
+                  size={20}
+                />
                 <textarea
                   name="description"
                   placeholder="Add any notes, links, or specific requirements here..."
@@ -123,12 +144,16 @@ export default function CreateTask() {
 
             {/* Grid for Category and Date */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
               {/* Category Dropdown */}
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Category *</label>
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  Category *
+                </label>
                 <div className="relative group">
-                  <Tag className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" size={20} />
+                  <Tag
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors"
+                    size={20}
+                  />
                   <select
                     name="category"
                     value={formData.category}
@@ -148,9 +173,14 @@ export default function CreateTask() {
 
               {/* Due Date Input */}
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Due Date & Time *</label>
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  Due Date & Time *
+                </label>
                 <div className="relative group">
-                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" size={20} />
+                  <Calendar
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors"
+                    size={20}
+                  />
                   <input
                     type="datetime-local"
                     name="due_date"

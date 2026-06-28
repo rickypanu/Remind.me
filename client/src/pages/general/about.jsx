@@ -30,7 +30,7 @@ export default function About() {
 
       {/* Main Content */}
       <main className="max-w-2xl mx-auto px-4 mt-8">
-        {/* Header Section */}
+
         {/* Header Section */}
         <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm mb-6 text-center">
           <div className="mx-auto h-16 w-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center mb-4 shadow-lg rotate-3 hover:rotate-0 transition-transform">
