@@ -11,7 +11,8 @@ import {
   Coffee,
   Sun,
   CalendarDays,
-  History as HistoryIcon
+  BarChart3,
+  History as HistoryIcon,
 } from "lucide-react";
 import api from "../utils/api";
 import TaskCard from "../components/TaskCard";
@@ -127,8 +128,18 @@ export default function Dashboard() {
   // Updated tabs array with Icons included
   const tabs = [
     { id: "today", label: "Today", count: todayTasks.length, icon: Sun },
-    { id: "upcoming", label: "Upcoming", count: upcomingTasks.length, icon: CalendarDays },
-    { id: "history", label: "History", count: completedTasks.length, icon: HistoryIcon },
+    {
+      id: "upcoming",
+      label: "Upcoming",
+      count: upcomingTasks.length,
+      icon: CalendarDays,
+    },
+    {
+      id: "history",
+      label: "History",
+      count: completedTasks.length,
+      icon: HistoryIcon,
+    },
   ];
 
   useEffect(() => {
@@ -175,13 +186,23 @@ export default function Dashboard() {
             </h2>
           </div>
 
-          <Link
-            to="/create-task"
-            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-blue-500/20 active:scale-95 transition-all"
-          >
-            <Plus size={18} strokeWidth={3} />
-            <span className="hidden sm:inline">New Reminder</span>
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/report"
+              className="flex items-center gap-1.5 bg-white border-2 border-gray-100 hover:border-blue-100 hover:bg-blue-50 text-gray-700 hover:text-blue-600 px-4 py-2 rounded-xl text-sm font-bold shadow-sm active:scale-95 transition-all"
+            >
+              <BarChart3 size={18} strokeWidth={2.5} />
+              <span className="hidden sm:inline">Weekly Report</span>
+            </Link>
+
+            <Link
+              to="/create-task"
+              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-blue-500/20 active:scale-95 transition-all"
+            >
+              <Plus size={18} strokeWidth={3} />
+              <span className="hidden sm:inline">New Reminder</span>
+            </Link>
+          </div>
         </div>
 
         {missedTasks.length > 0 && (
@@ -233,11 +254,16 @@ export default function Dashboard() {
                     : "text-gray-500 hover:text-gray-700"
                 }`}
               >
-                <Icon size={16} className={isActive ? "text-blue-600" : "text-gray-400"} />
+                <Icon
+                  size={16}
+                  className={isActive ? "text-blue-600" : "text-gray-400"}
+                />
                 {tab.label}
                 <span
                   className={`px-1.5 py-0.5 rounded-full text-xs ${
-                    isActive ? "bg-gray-100 text-gray-800" : "bg-gray-200/80 text-gray-500"
+                    isActive
+                      ? "bg-gray-100 text-gray-800"
+                      : "bg-gray-200/80 text-gray-500"
                   }`}
                 >
                   {tab.count}

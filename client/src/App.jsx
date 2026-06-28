@@ -11,7 +11,7 @@ import Profile from './pages/profile';
 import About from './pages/about';
 import FAQ from './pages/faqs';
 import TermsAndPrivacy from './pages/terms';
-
+import Report from './pages/report';
 
 // Create a client for React Query
 const queryClient = new QueryClient();
@@ -64,6 +64,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Profile />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/report" 
+              element={
+                <ProtectedRoute>
+                  <Report />
                 </ProtectedRoute>
               } 
             />

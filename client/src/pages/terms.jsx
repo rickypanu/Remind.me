@@ -100,7 +100,7 @@ export default function TermsAndPrivacy() {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">4. Contact Us</h3>
                 <p>
-                  If you have any questions about these Terms or our Privacy Policy, please contact us at support@remindme.com.
+                  If you have any questions about these Terms or our Privacy Policy, please contact us at rickypanu2005@gmail.com.
                 </p>
               </div>
             </div>

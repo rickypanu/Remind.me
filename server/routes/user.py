@@ -24,26 +24,6 @@ async def get_user_profile(current_user: dict = Depends(get_current_user)):
         "notifications_enabled": bool(current_user.get("fcm_token")) 
     }
 
-# 2. Add the new route to save/remove the FCM token
-@router.post("/fcm-token")
-async def update_fcm_token(
-    token_data: FCMTokenUpdate,
-    current_user: dict = Depends(get_current_user),
-    db = Depends(get_db)
-):
-    try:
-        user_id_obj = current_user["_id"]
-        
-        # Update the user's document with the new token (or empty string if turning off)
-        await db["users"].update_one(
-            {"_id": user_id_obj},
-            {"$set": {"fcm_token": token_data.fcm_token}}
-        )
-        return {"message": "Notification preferences updated successfully"}
-    except Exception as e:
-        print(f"Error updating FCM token: {e}")
-        raise HTTPException(status_code=500, detail="Failed to update notification settings")
-
 @router.delete("/me", status_code=status.HTTP_200_OK)
 async def delete_user_account(
     current_user: dict = Depends(get_current_user), 

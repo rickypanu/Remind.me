@@ -35,7 +35,7 @@ const Footer = () => {
         <div>
           <h3 className="font-semibold text-gray-900 mb-4">Legal</h3>
           <ul className="flex flex-col gap-3 text-gray-500">
-            <li><Link to="/privacy" className="hover:text-blue-600 transition-colors">Privacy Policy</Link></li>
+            <li><Link to="/terms" className="hover:text-blue-600 transition-colors">Privacy Policy</Link></li>
             <li><Link to="/terms" className="hover:text-blue-600 transition-colors">Terms of Service</Link></li>
             <li><a href="mailto:hello@remindme.com" className="hover:text-blue-600 transition-colors">Contact Us</a></li>
           </ul>
