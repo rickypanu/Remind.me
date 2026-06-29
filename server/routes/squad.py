@@ -112,7 +112,46 @@ async def get_my_squads(
 
     return formatted_squads
 
+@router.delete("/{squad_id}", status_code=status.HTTP_200_OK)
+async def delete_squad(
+    squad_id: str,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    try:
+        # Check if the ID is valid
+        if not ObjectId.is_valid(squad_id):
+            raise HTTPException(status_code=400, detail="Invalid Squad ID format.")
 
+        # Find the squad
+        squad = await db["squads"].find_one({"_id": ObjectId(squad_id)})
+        if not squad:
+            raise HTTPException(status_code=404, detail="Squad not found.")
+
+        # Ensure the current user is the Author
+        user_id = current_user["_id"]
+        is_author = any(
+            member.get("user_id") == user_id and member.get("role") == "Author" 
+            for member in squad.get("members", [])
+        )
+        
+        if not is_author:
+            raise HTTPException(status_code=403, detail="Only the Author can delete this squad.")
+
+        # Delete the squad
+        await db["squads"].delete_one({"_id": ObjectId(squad_id)})
+        
+        # (Optional but recommended) Delete the associated feeds so they don't bloat your database
+        await db["squad_feeds"].delete_many({"squad_id": ObjectId(squad_id)})
+
+        return {"message": "Squad deleted successfully."}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error deleting squad: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+    
 @router.post("/join", status_code=status.HTTP_200_OK)
 async def join_squad(
     join_data: SquadJoin,

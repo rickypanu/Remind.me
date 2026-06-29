@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../utils/api";
 import CreateSquadModal from "./CreateSquadModal";
-import { ArrowLeft, Users, Plus, ArrowRight, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, Users, Plus, ArrowRight, Loader2, Sparkles, Trash2, AlertTriangle } from "lucide-react";
 
 export default function SquadLobby() {
   const navigate = useNavigate();
@@ -14,6 +14,10 @@ export default function SquadLobby() {
   const [isLoading, setIsLoading] = useState(true);
   const [isJoining, setIsJoining] = useState(false);
   const [joinError, setJoinError] = useState("");
+
+  // New State for Delete Modal
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, squadId: null, squadName: "" });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchMySquads = async () => {
     try {
@@ -54,6 +58,29 @@ export default function SquadLobby() {
     navigate(`/squad/${squadId}`);
   };
 
+  // Triggered when clicking the trash icon on the card
+  const openDeleteModal = (e, squadId, squadName) => {
+    e.stopPropagation(); // Prevent card navigation
+    setDeleteModal({ isOpen: true, squadId, squadName });
+  };
+
+  // Triggered when confirming deletion inside the modal
+  const confirmDelete = async () => {
+    if (!deleteModal.squadId) return;
+    
+    setIsDeleting(true);
+    try {
+      await api.delete(`/squads/${deleteModal.squadId}`);
+      setMySquads((prev) => prev.filter((squad) => squad.id !== deleteModal.squadId));
+      setDeleteModal({ isOpen: false, squadId: null, squadName: "" });
+    } catch (error) {
+      console.error("Failed to delete squad:", error);
+      alert(error.response?.data?.detail || "Failed to delete the squad.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 p-6 sm:p-10 font-sans">
       <div className="max-w-6xl mx-auto">
@@ -81,7 +108,7 @@ export default function SquadLobby() {
           {/* Left Column: Actions (Join / Create) */}
           <div className="space-y-6">
             
-            {/* 💅 UPGRADE: Premium Create Card */}
+            {/* Premium Create Card */}
             <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full blur-3xl -mr-10 -mt-10 opacity-60 group-hover:bg-indigo-100 transition-colors duration-500"></div>
               
@@ -103,7 +130,7 @@ export default function SquadLobby() {
               </button>
             </div>
 
-            {/* 💅 UPGRADE: Join Card */}
+            {/* Join Card */}
             <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
               <h2 className="text-xl font-bold text-slate-900 mb-2">
                 Have an Invite?
@@ -148,7 +175,6 @@ export default function SquadLobby() {
                 <span className="animate-pulse font-medium text-sm">Loading your squads...</span>
               </div>
             ) : mySquads.length === 0 ? (
-              
               <div className="bg-white border border-dashed border-slate-300 rounded-2xl p-12 text-center flex flex-col items-center">
                 <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-4">
                   <Users className="w-6 h-6 text-slate-400" />
@@ -159,8 +185,6 @@ export default function SquadLobby() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {mySquads.map((squad) => (
-                  
-                  
                   <div
                     key={squad.id}
                     onClick={() => handleEnterSquad(squad.id)}
@@ -170,11 +194,25 @@ export default function SquadLobby() {
                       <h4 className="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors pr-4">
                         {squad.name}
                       </h4>
-                      {squad.role === "Author" && (
-                        <span className="text-[10px] bg-slate-100 border border-slate-200 text-slate-600 px-2.5 py-1 rounded-md uppercase font-bold tracking-wider shrink-0">
-                          Author
-                        </span>
-                      )}
+                      
+                      {/* --- FIXED: Action Buttons Container (Horizontal Layout) --- */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        {squad.role === "Author" && (
+                          <span className="text-[10px] bg-slate-100 border border-slate-200 text-slate-600 px-2.5 py-1 rounded-md uppercase font-bold tracking-wider">
+                            Author
+                          </span>
+                        )}
+                        
+                        {squad.role === "Author" && (
+                          <button
+                            onClick={(e) => openDeleteModal(e, squad.id, squad.name)}
+                            className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors z-10"
+                            title="Delete Squad"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <div className="mt-auto flex items-center justify-between">
@@ -200,6 +238,44 @@ export default function SquadLobby() {
             fetchMySquads(); 
           }}
         />
+
+        {/* --- NEW: Delete Confirmation Modal --- */}
+        {deleteModal.isOpen && (
+          <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-50 p-4 backdrop-blur-sm transition-opacity animate-fade-in">
+            <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl relative">
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mb-4 mx-auto">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              
+              <h3 className="text-xl font-bold text-center text-slate-900 mb-2">
+                Delete Squad?
+              </h3>
+              <p className="text-center text-slate-500 text-sm mb-6">
+                Are you sure you want to delete <span className="font-semibold text-slate-700">{deleteModal.squadName}</span>? This action cannot be undone and will remove all members.
+              </p>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setDeleteModal({ isOpen: false, squadId: null, squadName: "" })}
+                  disabled={isDeleting}
+                  className="flex-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold py-2.5 rounded-xl transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={isDeleting}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 rounded-xl transition-colors shadow-sm disabled:opacity-70 flex justify-center items-center gap-2"
+                >
+                  {isDeleting ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Deleting...</>
+                  ) : "Delete"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
       </div>
     </div>
   );
