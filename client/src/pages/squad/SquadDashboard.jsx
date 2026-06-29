@@ -57,11 +57,15 @@ export default function SquadDashboard() {
 
   // The WebSocket Connection Effect
   useEffect(() => {
-    const socket = new WebSocket('ws://localhost:8000/chat');
+    const wsUrl = import.meta.env.VITE_WS_URL;
+    // 2. Create the socket using that dynamic URL
+    const socket = new WebSocket(wsUrl);
+
+    // 3. Assign THAT socket to your reference (no hardcoded localhost!)
     ws.current = socket;
 
     socket.onopen = () => {
-      console.log("🟢 WebSocket Successfully Connected!");
+      console.log("WebSocket Successfully Connected!");
     };
 
     socket.onmessage = (event) => {
@@ -70,11 +74,11 @@ export default function SquadDashboard() {
     };
 
     socket.onerror = (error) => {
-      console.warn("🔴 WebSocket Interrupted (Safe to ignore if Strict Mode caused it)");
+      console.warn("WebSocket Interrupted (Safe to ignore if Strict Mode caused it)");
     };
 
     socket.onclose = () => {
-      console.log("⚪ WebSocket Disconnected.");
+      console.log("WebSocket Disconnected.");
     };
 
     return () => {
