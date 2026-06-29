@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, Share2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Share2, Users } from 'lucide-react';
 import api from '../../utils/api';
 
 import WeeklyTimeline from './WeeklyTimeline';
@@ -55,32 +55,30 @@ export default function SquadDashboard() {
     if (squadId) fetchDashboardData();
   }, [squadId]);
 
+  // First WebSocket Connection Effect (Kept to preserve your original logic)
   useEffect(() => {
-  let socket;
-  const connect = () => {
-    socket = new WebSocket(import.meta.env.VITE_WS_URL);
+    let socket;
+    const connect = () => {
+      socket = new WebSocket(import.meta.env.VITE_WS_URL);
 
-    socket.onopen = () => console.log("Connected");
-    socket.onmessage = (event) => { /* ... handle message ... */ };
-    
-    // Auto-reconnect logic
-    socket.onclose = () => {
-      console.log("Disconnected. Reconnecting in 3 seconds...");
-      setTimeout(connect, 3000);
+      socket.onopen = () => console.log("Connected");
+      socket.onmessage = (event) => { /* ... handle message ... */ };
+      
+      // Auto-reconnect logic
+      socket.onclose = () => {
+        console.log("Disconnected. Reconnecting in 3 seconds...");
+        setTimeout(connect, 3000);
+      };
     };
-  };
 
-  connect();
-  return () => socket.close();
-}, []);
+    connect();
+    return () => socket.close();
+  }, []);
 
-  // The WebSocket Connection Effect
+  // Second WebSocket Connection Effect (Populates Chat)
   useEffect(() => {
     const wsUrl = import.meta.env.VITE_WS_URL;
-    // 2. Create the socket using that dynamic URL
     const socket = new WebSocket(wsUrl);
-
-    // 3. Assign THAT socket to your reference (no hardcoded localhost!)
     ws.current = socket;
 
     socket.onopen = () => {
@@ -148,25 +146,20 @@ export default function SquadDashboard() {
     }
   };
 
-  // Send chat message via WebSocket
   // Send chat message (Hybrid: Save to DB, then Broadcast via WS)
   const handleSendMessage = async (text) => {
-    // 1. Construct the message object to broadcast
     const newMessage = {
       id: `ws-${Date.now()}`,
       type: 'chat',
       userId: currentUserId,
-      userName: 'You', // Or use your actual user state
+      userName: 'You', 
       text: text,
       timestamp: new Date().toISOString()
     };
 
     try {
-      // 2. SAVE IT FIRST: Hit your FastAPI POST endpoint to save to MongoDB
-      // Make sure the URL perfectly matches your backend routing
       await api.post(`/squads/${squadId}/chat`, { text: text });
 
-      // 3. BROADCAST IT: Send it through the WebSocket to everyone else
       if (ws.current && ws.current.readyState === WebSocket.OPEN) {
         ws.current.send(JSON.stringify(newMessage));
       } else {
@@ -174,85 +167,122 @@ export default function SquadDashboard() {
       }
     } catch (error) {
       console.error("Failed to save message to the database:", error);
-      // Optional: Add a toast notification here to tell the user the message failed to send
     }
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-400 gap-3">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-        <span className="text-sm font-medium animate-pulse">Loading your squad...</span>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50/50 flex flex-col items-center justify-center text-slate-500 gap-4">
+        <div className="relative flex items-center justify-center">
+          <div className="absolute w-12 h-12 border-4 border-indigo-200 rounded-full animate-ping opacity-75"></div>
+          <Loader2 className="w-10 h-10 animate-spin text-indigo-600 relative z-10" />
+        </div>
+        <span className="text-sm font-semibold tracking-wide animate-pulse">Loading your squad...</span>
       </div>
     );
   }
 
   if (!squad) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
-        <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-center max-w-sm mx-auto">
-          <h2 className="text-xl font-bold text-slate-800 mb-2">Squad Not Found</h2>
-          <p className="text-slate-500 text-sm mb-6">We couldn't locate this squad. The link might be expired or broken.</p>
-          <button onClick={() => navigate(-1)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors w-full">
-            Go Back
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+        <div className="bg-white p-10 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 text-center max-w-md mx-auto">
+          <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <Users className="w-8 h-8" />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-800 mb-3">Squad Not Found</h2>
+          <p className="text-slate-500 text-sm mb-8 leading-relaxed">
+            We couldn't locate this squad. The link might be expired, broken, or you might not have access.
+          </p>
+          <button 
+            onClick={() => navigate(-1)} 
+            className="px-6 py-3 bg-slate-900 text-white rounded-xl font-medium hover:bg-slate-800 hover:shadow-lg hover:-translate-y-0.5 transition-all w-full flex items-center justify-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" /> Go Back
           </button>
         </div>
       </div>
     );
   }
 
+  // Calculate active members for the functional badge
+  const activeCount = Object.keys(currentDayStatuses).length;
+  const totalMembers = members.length;
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 p-4 sm:p-8 font-sans">
-      <div className="max-w-5xl mx-auto space-y-6">
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 p-4 sm:p-6 md:p-8 font-sans selection:bg-indigo-100 selection:text-indigo-900">
+      <div className="max-w-5xl mx-auto space-y-8">
         
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white p-6 md:p-8 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden">
           
-          <div className="flex flex-col items-start gap-4">
+          {/* Subtle background decoration */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-full blur-3xl opacity-60 -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+
+          <div className="flex flex-col items-start gap-5 relative z-10 w-full md:w-auto">
             <button
               onClick={() => navigate(-1)}
-              className="group flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50 px-4 py-2 rounded-xl border border-slate-200 hover:border-indigo-200 transition-all"
+              className="group flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors"
             >
-              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> 
-              Back
+              <div className="bg-slate-100 p-2 rounded-lg group-hover:bg-slate-200 transition-colors">
+                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" /> 
+              </div>
+              Back to Dashboard
             </button>
 
             <div>
-              <div className="flex items-center gap-3 mb-1">
-                <h1 className="text-3xl font-black tracking-tight text-slate-900">{squad.name}</h1>
-                <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2.5 py-1 rounded-md uppercase tracking-widest border border-emerald-200">
-                  Active
-                </span>
+              <div className="flex flex-wrap items-center gap-4 mb-2">
+                <h1 className="text-3xl md:text-4xl font-black tracking-tight text-slate-900">{squad.name}</h1>
+                
+                {/* Functional Active Badge */}
+                <div className="flex items-center gap-2 text-xs bg-emerald-50 text-emerald-700 font-bold px-3 py-1.5 rounded-full border border-emerald-200/60 shadow-sm">
+                  <span className="relative flex h-2 w-2">
+                    {activeCount > 0 && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>}
+                    <span className={`relative inline-flex rounded-full h-2 w-2 ${activeCount > 0 ? 'bg-emerald-500' : 'bg-slate-300'}`}></span>
+                  </span>
+                  {activeCount} / {totalMembers} Active Today
+                </div>
               </div>
-              <p className="text-sm text-slate-500 font-medium">Goal: {squad.goal}</p>
+              
+              <div className="flex items-center gap-2 text-slate-500 font-medium">
+                <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs uppercase tracking-wider font-bold">Goal</span>
+                <p className="text-sm">{squad.goal}</p>
+              </div>
             </div>
           </div>
           
-          <div className="bg-slate-50 border border-slate-200 px-5 py-3 rounded-xl w-full md:w-auto flex flex-col items-start md:items-end hover:border-slate-300 transition-colors">
-            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">
-              <Share2 className="w-3 h-3" /> Invite Code
+          {/* Invite Code Box */}
+          <div className="bg-gradient-to-b from-slate-50 to-white border border-slate-200/80 p-4 rounded-2xl w-full md:w-auto min-w-[200px] shadow-sm relative z-10 flex flex-col items-start md:items-end group hover:border-indigo-200 transition-colors">
+            <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-widest text-slate-400 font-bold mb-2">
+              <Share2 className="w-3.5 h-3.5 group-hover:text-indigo-500 transition-colors" /> Invite Code
             </div>
-            <p className="text-xl font-mono font-bold text-slate-800 tracking-wide">{squad.invite_code}</p>
+            <div className="flex items-center justify-between w-full md:justify-end gap-4">
+              <p className="text-2xl font-mono font-black text-slate-800 tracking-wider bg-slate-100 px-3 py-1 rounded-lg border border-slate-200/50 select-all">
+                {squad.invite_code}
+              </p>
+            </div>
           </div>
-
         </div>
 
-        <WeeklyTimeline 
-          selectedDate={selectedDate} 
-          onDateSelect={setSelectedDate} 
-        />
+        {/* Dashboard Grid & Feed */}
+        <div className="space-y-8">
+          <WeeklyTimeline 
+            selectedDate={selectedDate} 
+            onDateSelect={setSelectedDate} 
+          />
 
-        <SquadGrid 
-          members={members} 
-          selectedDateStatus={currentDayStatuses}
-          currentUserId={currentUserId}
-          onOpenStatusModal={() => setIsModalOpen(true)}
-        />
+          <SquadGrid 
+            members={members} 
+            selectedDateStatus={currentDayStatuses}
+            currentUserId={currentUserId}
+            onOpenStatusModal={() => setIsModalOpen(true)}
+          />
 
-        <SquadFeed 
-          feedItems={feedItems} 
-          onSendMessage={handleSendMessage} 
-          currentUserId={currentUserId} 
-        />
+          <SquadFeed 
+            feedItems={feedItems} 
+            onSendMessage={handleSendMessage} 
+            currentUserId={currentUserId} 
+          />
+        </div>
 
       </div>
 
