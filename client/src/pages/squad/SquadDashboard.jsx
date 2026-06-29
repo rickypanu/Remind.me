@@ -55,6 +55,25 @@ export default function SquadDashboard() {
     if (squadId) fetchDashboardData();
   }, [squadId]);
 
+  useEffect(() => {
+  let socket;
+  const connect = () => {
+    socket = new WebSocket(import.meta.env.VITE_WS_URL);
+
+    socket.onopen = () => console.log("Connected");
+    socket.onmessage = (event) => { /* ... handle message ... */ };
+    
+    // Auto-reconnect logic
+    socket.onclose = () => {
+      console.log("Disconnected. Reconnecting in 3 seconds...");
+      setTimeout(connect, 3000);
+    };
+  };
+
+  connect();
+  return () => socket.close();
+}, []);
+
   // The WebSocket Connection Effect
   useEffect(() => {
     const wsUrl = import.meta.env.VITE_WS_URL;

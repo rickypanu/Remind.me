@@ -1,36 +1,75 @@
 import React, { useState } from 'react';
 import api from '../../utils/api';
+import EmojiPicker from 'emoji-picker-react'; // <-- Import the library
 
 export default function CreateSquadModal({ isOpen, onClose, onSquadCreated }) {
   const [squadName, setSquadName] = useState('');
   const [squadGoal, setSquadGoal] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  
+  // Track which emoji picker is currently open (by index)
+  const [activePickerIndex, setActivePickerIndex] = useState(null);
+  
+  const [statusOptions, setStatusOptions] = useState([
+    { label: 'Crushed it', emoji: '🚀' },
+      {label: "No Progress", "emoji": "❌"}
+  ]);
 
   if (!isOpen) return null;
+
+  const handleOptionChange = (index, field, value) => {
+    const newOptions = [...statusOptions];
+    newOptions[index][field] = value;
+    setStatusOptions(newOptions);
+  };
+
+  const onEmojiClick = (emojiObject, index) => {
+    handleOptionChange(index, 'emoji', emojiObject.emoji);
+    setActivePickerIndex(null); // Close the picker after selection
+  };
+
+  const addOption = () => {
+    setStatusOptions([...statusOptions, { label: '', emoji: '🎯' }]); // Give a default emoji
+  };
+
+  const removeOption = (index) => {
+    const newOptions = statusOptions.filter((_, i) => i !== index);
+    setStatusOptions(newOptions);
+    if (activePickerIndex === index) {
+      setActivePickerIndex(null);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!squadName.trim() || !squadGoal.trim()) return;
     
+    const validOptions = statusOptions.filter(opt => opt.label.trim() && opt.emoji.trim());
+    if (validOptions.length === 0) {
+      setError("Please add at least one valid status option with a label and emoji.");
+      return;
+    }
+
     setIsSubmitting(true);
     setError('');
     
     try {
       const response = await api.post('/squads/', {
         name: squadName,
-        goal: squadGoal
+        goal: squadGoal,
+        status_options: validOptions
       });
       
-      // Clear the form on success
       setSquadName('');
       setSquadGoal('');
+      setStatusOptions([
+        { label: 'Crushed it', emoji: '🚀' },
+        {label: "No Progress", "emoji": "❌"}
+      ]);
+      setActivePickerIndex(null);
       
-      // Pass the new squad data back to the parent to refresh the list
-      if (onSquadCreated) {
-        onSquadCreated(response.data);
-      }
-      
+      if (onSquadCreated) onSquadCreated(response.data);
       onClose();
     } catch (err) {
       console.error("Failed to create squad:", err);
@@ -45,12 +84,13 @@ export default function CreateSquadModal({ isOpen, onClose, onSquadCreated }) {
 
   const handleClose = () => {
     setError('');
+    setActivePickerIndex(null);
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-900/40 flex items-center justify-center z-50 p-4 backdrop-blur-sm transition-opacity">
-      <div className="bg-white border border-gray-200 rounded-2xl max-w-lg w-full p-8 shadow-xl animate-fade-in">
+    <div className="fixed inset-0 bg-gray-900/40 flex items-center justify-center z-50 p-4 backdrop-blur-sm transition-opacity overflow-y-auto">
+      <div className="bg-white border border-gray-200 rounded-2xl max-w-lg w-full p-8 shadow-xl animate-fade-in my-8">
         
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Create New Squad</h2>
@@ -69,7 +109,7 @@ export default function CreateSquadModal({ isOpen, onClose, onSquadCreated }) {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Squad Name */}
+          {/* Squad Name & Goal inputs remain exactly the same... */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Squad Name</label>
             <input 
@@ -83,7 +123,6 @@ export default function CreateSquadModal({ isOpen, onClose, onSquadCreated }) {
             />
           </div>
 
-          {/* Squad Goal */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Primary Goal</label>
             <textarea 
@@ -97,11 +136,70 @@ export default function CreateSquadModal({ isOpen, onClose, onSquadCreated }) {
             ></textarea>
           </div>
 
-          {/* Note about Statuses */}
-          <div className="bg-gray-50 border border-gray-200 p-4 rounded-xl">
-            <p className="text-sm text-gray-600 leading-relaxed">
-              <strong className="text-gray-900 font-semibold">Next Step:</strong> You will be taken to your dashboard where you can customize daily status tags and generate an invite link.
-            </p>
+          {/* Dynamic Status Options with Emoji Picker */}
+          <div>
+            <div className="flex justify-between items-center mb-1.5">
+              <label className="block text-sm font-medium text-gray-700">Daily Status Tags</label>
+            </div>
+            
+            <div className="space-y-3">
+              {statusOptions.map((option, index) => (
+                <div key={index} className="flex gap-2 relative">
+                  
+                  {/* Emoji Button */}
+                  <button
+                    type="button"
+                    onClick={() => setActivePickerIndex(activePickerIndex === index ? null : index)}
+                    className="w-16 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-xl text-center rounded-xl px-2 py-3 focus:outline-none focus:ring-2 focus:ring-black transition flex items-center justify-center cursor-pointer"
+                    disabled={isSubmitting}
+                  >
+                    {option.emoji}
+                  </button>
+
+                  {/* Pop-up Emoji Picker */}
+                  {activePickerIndex === index && (
+                    <div className="absolute top-14 left-0 z-10 shadow-2xl rounded-lg">
+                      <EmojiPicker 
+                        onEmojiClick={(emojiData) => onEmojiClick(emojiData, index)}
+                        autoFocusSearch={false}
+                        width={300}
+                        height={400}
+                      />
+                    </div>
+                  )}
+
+                  <input 
+                    type="text" 
+                    value={option.label}
+                    onChange={(e) => handleOptionChange(index, 'label', e.target.value)}
+                    placeholder="Status Label (e.g., Crushed it)" 
+                    className="flex-1 bg-gray-50 border border-gray-200 text-gray-900 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition"
+                    required
+                    disabled={isSubmitting}
+                  />
+                  
+                  {statusOptions.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeOption(index)}
+                      className="px-3 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition"
+                      disabled={isSubmitting}
+                    >
+                      &times;
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={addOption}
+              disabled={isSubmitting}
+              className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium transition"
+            >
+              + Add another tag
+            </button>
           </div>
 
           {/* Submit Button */}

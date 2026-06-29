@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
+from typing import List, Optional
 from datetime import datetime
 from bson import ObjectId
 from bson.errors import InvalidId
@@ -12,9 +13,15 @@ from database import get_db
 router = APIRouter(prefix="/squads", tags=["Squads"])
 
 # --- Schemas ---
+class StatusOptionCreate(BaseModel):
+    label: str
+    emoji: str
+
 class SquadCreate(BaseModel):
     name: str
     goal: str
+    status_options: Optional[List[StatusOptionCreate]] = None
+
 
 class SquadJoin(BaseModel):
     invite_code: str
@@ -32,7 +39,6 @@ def generate_invite_code(length=8):
 
 
 # --- Core Routes ---
-
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_squad(
     squad_data: SquadCreate,
@@ -42,6 +48,22 @@ async def create_squad(
     try:
         user_id = current_user["_id"]
         invite_code = f"sq_{generate_invite_code()}"
+        
+        # Determine status options: Use custom if provided, otherwise default
+        status_options = []
+        if squad_data.status_options and len(squad_data.status_options) > 0:
+            for idx, opt in enumerate(squad_data.status_options):
+                status_options.append({
+                    "id": str(idx + 1), # Assign sequential IDs (1, 2, 3...)
+                    "label": opt.label,
+                    "emoji": opt.emoji
+                })
+        else:
+            # Fallback defaults if they didn't send any
+            status_options = [
+                {"id": "1", "label": "Crushed it", "emoji": "🚀"},
+                {"id": "2", "label": "No Progress", "emoji": "❌"}
+            ]
 
         new_squad = {
             "name": squad_data.name,
@@ -51,12 +73,7 @@ async def create_squad(
             "members": [
                 {"user_id": user_id, "role": "Author", "joined_at": datetime.utcnow()}
             ],
-            "status_options": [
-                {"id": "1", "label": "Crushed it", "emoji": "🚀"},
-                {"id": "2", "label": "Slacked off", "emoji": "🤡"},
-                {"id": "3", "label": "Shallow/Cap", "emoji": "🧢"},
-                {"id": "4", "label": "No Progress", "emoji": "❌"}
-            ]
+            "status_options": status_options  # Inject dynamic options here
         }
 
         result = await db["squads"].insert_one(new_squad)
@@ -73,8 +90,7 @@ async def create_squad(
     except Exception as e:
         print(f"Error creating squad: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
-
-
+    
 @router.get("/my-squads", status_code=status.HTTP_200_OK)
 async def get_my_squads(
     current_user: dict = Depends(get_current_user),
