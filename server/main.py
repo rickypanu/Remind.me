@@ -2,7 +2,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from routes import auth, tasks, user, webpush, notification
+from routes import auth, tasks, user, webpush, notification, squad, chatwebsocket
 
 # Load environment variables from the .env file
 load_dotenv()
@@ -30,6 +30,9 @@ app.include_router(tasks.router, prefix="/tasks", tags=["Tasks"])
 app.include_router(user.router, prefix="/user", tags=["User"])
 app.include_router(webpush.router, tags=["Notification"])
 app.include_router(notification.router, tags=["Notification"])
+
+app.include_router(squad.router, tags=["Squad"])
+app.include_router(chatwebsocket.router, tags=["Chat"])
 
 @app.get("/")
 async def root():

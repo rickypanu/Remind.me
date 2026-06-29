@@ -13,7 +13,9 @@ import FAQ from "./pages/general/faqs";
 import TermsAndPrivacy from "./pages/general/terms";
 import Report from "./pages/user/report";
 
-import SquadDash from "./pages/squad/SquadDash";
+// Import BOTH Squad components
+import SquadLobby from "./pages/squad/SquadLobby";
+import SquadDashboard from "./pages/squad/SquadDashboard";
 
 // Create a client for React Query
 const queryClient = new QueryClient();
@@ -77,14 +79,31 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            
+            {/* === NEW SQUAD ROUTES === */}
+            
+            {/* 1. The Lobby: View all squads, join, or create */}
             <Route
               path="/squad"
               element={
                 <ProtectedRoute>
-                  <SquadDash />
+                  <SquadLobby />
                 </ProtectedRoute>
               }
             />
+            
+            {/* 2. The Dashboard: Dynamic route for a specific squad */}
+            <Route
+              path="/squad/:squadId"
+              element={
+                <ProtectedRoute>
+                  <SquadDashboard />
+                </ProtectedRoute>
+              }
+            />
+            
+            {/* ========================== */}
+
             <Route path="/about" element={<About />} />
             <Route path="/faqs" element={<FAQ />} />
             <Route path="/terms" element={<TermsAndPrivacy />} />

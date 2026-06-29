@@ -118,7 +118,7 @@ IST = pytz.timezone('Asia/Kolkata')
 async def start_scheduler():
     scheduler = AsyncIOScheduler(timezone=IST)
     
-    scheduler.add_job(remind_todays_tasks, CronTrigger(hour="8,13,18", minute="0"))
+    scheduler.add_job(remind_todays_tasks, CronTrigger(hour="8,13,18,10", minute="0,21,23,34,25,27,29,33,31"))
     scheduler.add_job(remind_tomorrows_tasks, CronTrigger(hour="18,22", minute="0"))
     
     scheduler.start()

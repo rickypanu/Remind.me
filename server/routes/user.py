@@ -9,10 +9,6 @@ from database import get_db
 
 router = APIRouter()
 
-# 1. Add a Pydantic model for the incoming request
-class FCMTokenUpdate(BaseModel):
-    fcm_token: str | None = None # Allow null/empty to turn off notifications
-
 @router.get("/me")
 async def get_user_profile(current_user: dict = Depends(get_current_user)):
     return {
@@ -20,8 +16,6 @@ async def get_user_profile(current_user: dict = Depends(get_current_user)):
         "username": current_user.get("username", "Student"),
         "email": current_user.get("email"),
         "created_at": current_user.get("created_at"),
-        # Return true if they have a token saved
-        "notifications_enabled": bool(current_user.get("fcm_token")) 
     }
 
 @router.delete("/me", status_code=status.HTTP_200_OK)
