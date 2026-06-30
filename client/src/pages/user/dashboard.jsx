@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Plus,
-  LayoutDashboard,
   Loader2,
   AlertCircle,
   ChevronDown,
@@ -11,11 +9,11 @@ import {
   Coffee,
   Sun,
   CalendarDays,
-  BarChart3,
   History as HistoryIcon,
 } from "lucide-react";
 import api from "../../utils/api";
 import TaskCard from "../../components/TaskCard";
+import Header from "../../components/Header";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -68,54 +66,40 @@ export default function Dashboard() {
     queryClient.invalidateQueries({ queryKey: ["dashboardData"] });
   };
 
-  // --- IST / TIMEZONE FIX HELPER ---
+  // --- Time & Date Helpers ---
   const getSafeDate = (dateString) => {
     if (!dateString) return new Date();
     return new Date(dateString.endsWith("Z") ? dateString : `${dateString}Z`);
   };
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  };
+
   // --- Filtering Logic ---
   const now = new Date();
-  const startOfToday = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-  );
-  const endOfToday = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-    23,
-    59,
-    59,
-  );
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
 
-  // 1. Missed (Past due date & not completed)
   const missedTasks = tasks.filter((task) => {
     const dueDate = getSafeDate(task.due_date);
     return dueDate < startOfToday && task.status === "pending";
   });
 
-  // 2. Today
   const todayTasks = tasks.filter((task) => {
     const dueDate = getSafeDate(task.due_date);
-    return (
-      dueDate >= startOfToday &&
-      dueDate <= endOfToday &&
-      task.status === "pending"
-    );
+    return dueDate >= startOfToday && dueDate <= endOfToday && task.status === "pending";
   });
 
-  // 3. Upcoming
   const upcomingTasks = tasks.filter((task) => {
     const dueDate = getSafeDate(task.due_date);
     return dueDate > endOfToday && task.status === "pending";
   });
 
-  // 4. History (Completed)
-  const completedTasks = tasks.filter((task) => {
-    return task.status === "completed";
-  });
+  const completedTasks = tasks.filter((task) => task.status === "completed");
 
   const getDisplayedTasks = () => {
     if (activeTab === "upcoming") return upcomingTasks;
@@ -125,21 +109,10 @@ export default function Dashboard() {
 
   const displayedTasks = getDisplayedTasks();
 
-  // Updated tabs array with Icons included
   const tabs = [
     { id: "today", label: "Today", count: todayTasks.length, icon: Sun },
-    {
-      id: "upcoming",
-      label: "Upcoming",
-      count: upcomingTasks.length,
-      icon: CalendarDays,
-    },
-    {
-      id: "history",
-      label: "History",
-      count: completedTasks.length,
-      icon: HistoryIcon,
-    },
+    { id: "upcoming", label: "Upcoming", count: upcomingTasks.length, icon: CalendarDays },
+    { id: "history", label: "History", count: completedTasks.length, icon: HistoryIcon },
   ];
 
   useEffect(() => {
@@ -148,84 +121,55 @@ export default function Dashboard() {
     }
   }, [missedTasks.length]);
 
-  const initial = userInfo?.username?.charAt(0).toUpperCase() || "U";
-
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <nav className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-200 px-4 py-3 shadow-sm">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <LayoutDashboard className="text-blue-600" size={22} />
-            <h1 className="text-lg font-black text-gray-900 tracking-tight">
-              Remind<span className="text-blue-600">Me</span>
-            </h1>
+    <div className="min-h-screen bg-gray-50/50 pb-20 font-sans">
+      <Header />
+
+      <main className="max-w-4xl mx-auto px-4 sm:px-6">
+        {/* Welcome Section */}
+        <div className="mt-8 mb-10">
+          <div className="inline-block px-3 py-1 mb-3 bg-blue-100/50 text-blue-700 rounded-full text-xs font-bold uppercase tracking-widest border border-blue-200/50">
+            {new Date().toLocaleDateString("en-US", {
+              weekday: "long",
+              month: "short",
+              day: "numeric",
+            })}
           </div>
-
-          <Link
-            to="/profile"
-            className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold text-sm hover:bg-blue-200 transition-colors shadow-sm"
-            aria-label="Profile"
-          >
-            {initial}
-          </Link>
-        </div>
-      </nav>
-
-      <main className="max-w-4xl mx-auto px-4">
-        <div className="flex items-end justify-between mt-6 mb-6">
-          <div>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-              {new Date().toLocaleDateString("en-US", {
-                weekday: "long",
-                month: "short",
-                day: "numeric",
-              })}
-            </p>
-            <h2 className="text-2xl font-black text-gray-900 mt-0.5">
-              Hello, {userInfo?.username?.split(" ")[0] || "..."} 👋
-            </h2>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Link
-              to="/report"
-              className="flex items-center gap-1.5 bg-white border-2 border-gray-100 hover:border-blue-100 hover:bg-blue-50 text-gray-700 hover:text-blue-600 px-4 py-2 rounded-xl text-sm font-bold shadow-sm active:scale-95 transition-all"
-            >
-              <BarChart3 size={18} strokeWidth={2.5} />
-              <span className="hidden sm:inline">Weekly Report</span>
-            </Link>
-
-            <Link
-              to="/create-task"
-              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-blue-500/20 active:scale-95 transition-all"
-            >
-              <Plus size={18} strokeWidth={3} />
-              <span className="hidden sm:inline">New Reminder</span>
-            </Link>
-          </div>
+          <h2 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight">
+            {getGreeting()},{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-500">
+              {userInfo?.username?.split(" ")[0] || "..."}
+            </span>{" "}
+            👋
+          </h2>
         </div>
 
+        {/* Missed Tasks Alert */}
         {missedTasks.length > 0 && (
-          <div className="mb-6 bg-red-50/70 border border-red-200 rounded-2xl transition-all overflow-hidden">
+          <div className="mb-8 bg-white border border-red-200 rounded-2xl shadow-sm overflow-hidden">
             <button
               onClick={() => setIsMissedOpen(!isMissedOpen)}
-              className="w-full flex items-center justify-between p-4 text-red-700 hover:bg-red-100/50 transition-colors focus:outline-none"
+              className="w-full flex items-center justify-between p-4 bg-red-50/50 hover:bg-red-50 transition-colors focus:outline-none group"
             >
-              <div className="flex items-center gap-2">
-                <AlertCircle size={18} className="text-red-600 shrink-0" />
-                <h3 className="text-xs font-black uppercase tracking-wider">
-                  Missed Reminders ({missedTasks.length})
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-red-100 rounded-lg group-hover:scale-105 transition-transform">
+                  <AlertCircle size={20} className="text-red-600 shrink-0" />
+                </div>
+                <h3 className="text-sm font-bold text-red-900">
+                  Missed Reminders <span className="opacity-60 font-medium">({missedTasks.length})</span>
                 </h3>
               </div>
-              {isMissedOpen ? (
-                <ChevronUp size={20} className="text-red-500" />
-              ) : (
-                <ChevronDown size={20} className="text-red-500" />
-              )}
+              <div className="w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-sm border border-red-100">
+                {isMissedOpen ? (
+                  <ChevronUp size={18} className="text-red-500" />
+                ) : (
+                  <ChevronDown size={18} className="text-red-500" />
+                )}
+              </div>
             </button>
 
             {isMissedOpen && (
-              <div className="px-4 pb-4 grid gap-3.5 max-h-[50vh] overflow-y-auto border-t border-red-100 pt-3">
+              <div className="px-4 pb-4 pt-2 grid gap-3 max-h-[50vh] overflow-y-auto bg-red-50/20">
                 {missedTasks.map((task) => (
                   <TaskCard
                     key={task.id}
@@ -239,8 +183,8 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Updated Tabs Section with Icons */}
-        <div className="flex space-x-1.5 bg-gray-200/60 p-1.5 rounded-xl mb-6 border border-gray-200">
+        {/* Segmented Control Tabs */}
+        <div className="flex p-1 bg-gray-200/80 rounded-2xl mb-8 border border-gray-200/50 shadow-inner">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             const Icon = tab.icon;
@@ -248,22 +192,22 @@ export default function Dashboard() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all flex justify-center items-center gap-1.5 ${
+                className={`flex-1 py-2.5 px-2 text-sm font-bold rounded-xl transition-all duration-200 flex justify-center items-center gap-2 ${
                   isActive
-                    ? "bg-white text-gray-900 shadow-sm border border-gray-200/50"
-                    : "text-gray-500 hover:text-gray-700"
+                    ? "bg-white text-gray-900 shadow-sm ring-1 ring-black/5"
+                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
                 }`}
               >
                 <Icon
-                  size={16}
+                  size={18}
                   className={isActive ? "text-blue-600" : "text-gray-400"}
                 />
-                {tab.label}
+                <span className="hidden sm:inline">{tab.label}</span>
                 <span
-                  className={`px-1.5 py-0.5 rounded-full text-xs ${
+                  className={`px-2 py-0.5 rounded-full text-xs transition-colors ${
                     isActive
-                      ? "bg-gray-100 text-gray-800"
-                      : "bg-gray-200/80 text-gray-500"
+                      ? "bg-blue-50 text-blue-700"
+                      : "bg-gray-300/50 text-gray-600"
                   }`}
                 >
                   {tab.count}
@@ -273,24 +217,24 @@ export default function Dashboard() {
           })}
         </div>
 
-        {/* Added min-height to loader container so layout doesn't shift */}
+        {/* Task List / Loading / Empty State */}
         {loading ? (
-          <div className="flex justify-center items-center min-h-[300px] text-blue-600">
-            <Loader2 className="animate-spin" size={32} />
+          <div className="flex flex-col justify-center items-center min-h-[300px] text-blue-600 space-y-4">
+            <Loader2 className="animate-spin" size={36} />
+            <p className="text-sm font-semibold text-gray-500 animate-pulse">Loading reminders...</p>
           </div>
         ) : (
           <div className="grid gap-4">
             {displayedTasks.length === 0 ? (
-              // Updated Empty State UI
-              <div className="text-center py-16 bg-white rounded-2xl border-2 border-gray-200 border-dashed flex flex-col items-center justify-center">
-                <div className="w-16 h-16 bg-green-50 text-green-500 rounded-full flex items-center justify-center mb-4">
-                  <Coffee size={32} strokeWidth={2.5} />
+              <div className="text-center py-20 bg-white rounded-3xl border border-gray-200 shadow-sm flex flex-col items-center justify-center transition-all">
+                <div className="w-20 h-20 bg-gradient-to-br from-green-50 to-emerald-100 text-green-600 rounded-2xl flex items-center justify-center mb-5 shadow-inner rotate-3">
+                  <Coffee size={36} strokeWidth={2.5} className="-rotate-3" />
                 </div>
-                <p className="text-gray-900 font-bold text-lg">
-                  No reminders found here.
-                </p>
-                <p className="text-sm text-gray-500 mt-1">
-                  You're all caught up! Time for a break.
+                <h3 className="text-gray-900 font-black text-xl mb-2">
+                  No reminders found here
+                </h3>
+                <p className="text-base text-gray-500 font-medium">
+                  You're all caught up! Time for a well-deserved break.
                 </p>
               </div>
             ) : (

@@ -226,7 +226,7 @@ export default function SquadDashboard() {
               <div className="bg-slate-100 p-2 rounded-lg group-hover:bg-slate-200 transition-colors">
                 <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" /> 
               </div>
-              Back to Dashboard
+              Back
             </button>
 
             <div>

@@ -1,5 +1,5 @@
-import React from "react";
-import { Link } from "react-router-dom"; // Added import for Link
+import React, { useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom"; // Added useNavigate
 import {
   ArrowRight,
   CheckCircle2,
@@ -8,11 +8,23 @@ import {
   Target,
   BookOpen,
   Briefcase,
+  Users,
 } from "lucide-react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 
 const Homepage = () => {
+  const navigate = useNavigate();
+
+  // Add a useEffect to check for the token on component mount
+  useEffect(() => {
+    // Replace 'token' with the actual key you use to store your auth token
+    const token = localStorage.getItem("token"); 
+    if (token) {
+      navigate("/dashboard");
+    }
+  }, [navigate]);
+
   return (
     <div className="min-h-screen bg-white text-gray-900 font-sans selection:bg-blue-100">
       <Header />
@@ -31,7 +43,6 @@ const Homepage = () => {
         </p>
 
         <div className="flex justify-center">
-          {/* Replaced <link> with <Link to="..."> */}
           <Link to="/login">
             <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-full font-bold text-lg flex items-center gap-2 shadow-lg shadow-blue-600/20 transition-all transform hover:-translate-y-1">
               Start for Free Today <ArrowRight size={20} />
@@ -56,7 +67,10 @@ const Homepage = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          {/* Updated grid to handle 4 cards nicely: md:grid-cols-2 lg:grid-cols-4 */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            
+            {/* Card 1: Frictionless Capture */}
             <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
               <div className="bg-blue-50 w-14 h-14 rounded-2xl flex items-center justify-center mb-6">
                 <Zap className="text-blue-600" size={28} />
@@ -70,6 +84,7 @@ const Homepage = () => {
               </p>
             </div>
 
+            {/* Card 2: Smart Prioritization */}
             <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
               <div className="bg-emerald-50 w-14 h-14 rounded-2xl flex items-center justify-center mb-6">
                 <Target className="text-emerald-600" size={28} />
@@ -84,6 +99,7 @@ const Homepage = () => {
               </p>
             </div>
 
+            {/* Card 3: Reliable Automation */}
             <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
               <div className="bg-indigo-50 w-14 h-14 rounded-2xl flex items-center justify-center mb-6">
                 <BrainCircuit className="text-indigo-600" size={28} />
@@ -97,9 +113,24 @@ const Homepage = () => {
                 you.
               </p>
             </div>
+
+            {/* NEW Card 4: Squad Collaboration */}
+            <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+              <div className="bg-purple-50 w-14 h-14 rounded-2xl flex items-center justify-center mb-6">
+                <Users className="text-purple-600" size={28} />
+              </div>
+              <h3 className="text-xl font-bold mb-3 text-gray-900">
+                Squad Collaboration
+              </h3>
+              <p className="text-gray-500 leading-relaxed">
+                Team up with your squad. Share tasks, sync schedules, and keep everyone accountable without the extra noise.
+              </p>
+            </div>
+
           </div>
         </div>
       </section>
+
 
       {/* Who it's for Section */}
       <section id="how-it-works" className="py-24 bg-white">
@@ -211,7 +242,6 @@ const Homepage = () => {
             When you stop trying to remember everything, you reduce anxiety and
             increase your creative focus. Let us do the remembering for you.
           </p>
-          {/* Replaced broken syntax with proper <Link> component */}
           <Link to="/login">
             <button className="bg-gray-900 text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-800 transition-colors shadow-lg">
               Create Your Free Account
