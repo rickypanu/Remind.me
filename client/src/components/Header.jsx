@@ -100,9 +100,13 @@ const Header = () => {
                 title="Profile"
               >
                 {/* CONDITIONAL RENDER: Image if exists, Icon if null */}
+                {/* CONDITIONAL RENDER: Image if exists, Icon if null */}
                 {avatarUrl ? (
                   <img 
-                    src={avatarUrl} 
+                    src={avatarUrl.startsWith("/uploads") 
+                      ? `${import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "")}${avatarUrl}` 
+                      : avatarUrl
+                    } 
                     alt="User Profile" 
                     className="h-7 w-7 sm:h-8 sm:w-8 rounded-full object-cover border border-gray-200"
                   />
