@@ -16,6 +16,7 @@ import Report from "./pages/user/report";
 // Import BOTH Squad components
 import SquadLobby from "./pages/squad/SquadLobby";
 import SquadDashboard from "./pages/squad/SquadDashboard";
+import SquadAnalytics from "./pages/squad/SquadAnalytics";
 
 // Create a client for React Query
 const queryClient = new QueryClient();
@@ -72,7 +73,7 @@ function App() {
               }
             />
             <Route
-              path="/report"
+              path="/reminder/report"
               element={
                 <ProtectedRoute>
                   <Report />
@@ -101,6 +102,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/squad/:squadId/analytics" element={<ProtectedRoute> <SquadAnalytics /> </ProtectedRoute>} />
             
             {/* ========================== */}
 

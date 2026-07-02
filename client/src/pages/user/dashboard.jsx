@@ -5,11 +5,10 @@ import {
   Loader2,
   AlertCircle,
   ChevronDown,
-  ChevronUp,
   Coffee,
   Sun,
   CalendarDays,
-  History as HistoryIcon,
+  CheckCircle2,
 } from "lucide-react";
 import api from "../../utils/api";
 import TaskCard from "../../components/TaskCard";
@@ -68,7 +67,7 @@ export default function Dashboard() {
 
   // --- Time & Date Helpers ---
   const getSafeDate = (dateString) => {
-    if (!dateString) return new Date();
+    if (!dateString) return null; 
     return new Date(dateString.endsWith("Z") ? dateString : `${dateString}Z`);
   };
 
@@ -86,24 +85,27 @@ export default function Dashboard() {
 
   const missedTasks = tasks.filter((task) => {
     const dueDate = getSafeDate(task.due_date);
-    return dueDate < startOfToday && task.status === "pending";
+    return dueDate && dueDate < startOfToday && task.status === "pending";
   });
 
   const todayTasks = tasks.filter((task) => {
     const dueDate = getSafeDate(task.due_date);
-    return dueDate >= startOfToday && dueDate <= endOfToday && task.status === "pending";
+    return dueDate && dueDate >= startOfToday && dueDate <= endOfToday && task.status === "pending";
   });
 
+  // Upcoming catches EVERYTHING in the future + tasks without dates
   const upcomingTasks = tasks.filter((task) => {
+    if (task.status !== "pending") return false;
     const dueDate = getSafeDate(task.due_date);
-    return dueDate > endOfToday && task.status === "pending";
+    if (!dueDate) return true; // Undated tasks go here
+    return dueDate > endOfToday;
   });
 
   const completedTasks = tasks.filter((task) => task.status === "completed");
 
   const getDisplayedTasks = () => {
     if (activeTab === "upcoming") return upcomingTasks;
-    if (activeTab === "history") return completedTasks;
+    if (activeTab === "completed") return completedTasks;
     return todayTasks;
   };
 
@@ -112,7 +114,7 @@ export default function Dashboard() {
   const tabs = [
     { id: "today", label: "Today", count: todayTasks.length, icon: Sun },
     { id: "upcoming", label: "Upcoming", count: upcomingTasks.length, icon: CalendarDays },
-    { id: "history", label: "History", count: completedTasks.length, icon: HistoryIcon },
+    { id: "completed", label: "Completed", count: completedTasks.length, icon: CheckCircle2 },
   ];
 
   useEffect(() => {
@@ -122,22 +124,22 @@ export default function Dashboard() {
   }, [missedTasks.length]);
 
   return (
-    <div className="min-h-screen bg-gray-50/50 pb-20 font-sans">
+    <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans selection:bg-indigo-100 selection:text-indigo-900">
       <Header />
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6">
+      <main className="max-w-3xl mx-auto px-4 sm:px-6">
         {/* Welcome Section */}
-        <div className="mt-8 mb-10">
-          <div className="inline-block px-3 py-1 mb-3 bg-blue-100/50 text-blue-700 rounded-full text-xs font-bold uppercase tracking-widest border border-blue-200/50">
+        <div className="mt-10 mb-8">
+          <span className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
             {new Date().toLocaleDateString("en-US", {
               weekday: "long",
               month: "short",
               day: "numeric",
             })}
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight">
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
             {getGreeting()},{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-500">
+            <span className="text-indigo-600">
               {userInfo?.username?.split(" ")[0] || "..."}
             </span>{" "}
             👋
@@ -146,45 +148,56 @@ export default function Dashboard() {
 
         {/* Missed Tasks Alert */}
         {missedTasks.length > 0 && (
-          <div className="mb-8 bg-white border border-red-200 rounded-2xl shadow-sm overflow-hidden">
+          <div className="mb-8 bg-white border border-rose-100 rounded-2xl shadow-sm overflow-hidden transition-all duration-300">
             <button
               onClick={() => setIsMissedOpen(!isMissedOpen)}
-              className="w-full flex items-center justify-between p-4 bg-red-50/50 hover:bg-red-50 transition-colors focus:outline-none group"
+              className="w-full flex items-center justify-between p-4 bg-rose-50/50 hover:bg-rose-50 transition-colors focus:outline-none group"
             >
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-red-100 rounded-lg group-hover:scale-105 transition-transform">
-                  <AlertCircle size={20} className="text-red-600 shrink-0" />
+                <div className="p-2 bg-rose-100/80 rounded-xl text-rose-600 group-hover:scale-105 transition-transform duration-300">
+                  <AlertCircle size={20} strokeWidth={2.5} />
                 </div>
-                <h3 className="text-sm font-bold text-red-900">
-                  Missed Reminders <span className="opacity-60 font-medium">({missedTasks.length})</span>
+                <h3 className="text-sm font-bold text-rose-900">
+                  Missed Reminders{" "}
+                  <span className="opacity-60 font-semibold ml-1">
+                    ({missedTasks.length})
+                  </span>
                 </h3>
               </div>
-              <div className="w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-sm border border-red-100">
-                {isMissedOpen ? (
-                  <ChevronUp size={18} className="text-red-500" />
-                ) : (
-                  <ChevronDown size={18} className="text-red-500" />
-                )}
+              <div className="w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-sm border border-rose-100/50 text-rose-500">
+                <ChevronDown
+                  size={18}
+                  className={`transition-transform duration-300 ${
+                    isMissedOpen ? "rotate-180" : "rotate-0"
+                  }`}
+                />
               </div>
             </button>
 
-            {isMissedOpen && (
-              <div className="px-4 pb-4 pt-2 grid gap-3 max-h-[50vh] overflow-y-auto bg-red-50/20">
-                {missedTasks.map((task) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    refreshTasks={refreshTasks}
-                    isPrevious={false}
-                  />
-                ))}
+            {/* Expandable Content Area */}
+            <div
+              className={`grid transition-all duration-300 ease-in-out bg-rose-50/30 ${
+                isMissedOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+              }`}
+            >
+              <div className="overflow-hidden">
+                <div className="px-4 pb-4 pt-1 grid gap-3 max-h-[40vh] overflow-y-auto">
+                  {missedTasks.map((task) => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      refreshTasks={refreshTasks}
+                      isPrevious={false}
+                    />
+                  ))}
+                </div>
               </div>
-            )}
+            </div>
           </div>
         )}
 
-        {/* Segmented Control Tabs */}
-        <div className="flex p-1 bg-gray-200/80 rounded-2xl mb-8 border border-gray-200/50 shadow-inner">
+        {/* Segmented Control Tabs (Back to 3 options) */}
+        <div className="flex p-1 bg-slate-200/60 rounded-2xl mb-8 shadow-inner overflow-x-auto hide-scrollbar">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             const Icon = tab.icon;
@@ -192,22 +205,26 @@ export default function Dashboard() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 py-2.5 px-2 text-sm font-bold rounded-xl transition-all duration-200 flex justify-center items-center gap-2 ${
+                className={`flex-1 py-2.5 px-3 text-sm font-semibold rounded-xl transition-all duration-300 flex justify-center items-center gap-2.5 whitespace-nowrap min-w-[110px] sm:min-w-0 ${
                   isActive
-                    ? "bg-white text-gray-900 shadow-sm ring-1 ring-black/5"
-                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
+                    ? "bg-white text-slate-900 shadow-sm ring-1 ring-black/5"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
                 }`}
               >
                 <Icon
                   size={18}
-                  className={isActive ? "text-blue-600" : "text-gray-400"}
+                  strokeWidth={isActive ? 2.5 : 2}
+                  className={`transition-colors shrink-0 ${
+                    isActive ? "text-indigo-600" : "text-slate-400"
+                  }`}
                 />
                 <span className="hidden sm:inline">{tab.label}</span>
+                <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
                 <span
-                  className={`px-2 py-0.5 rounded-full text-xs transition-colors ${
+                  className={`px-2 py-0.5 rounded-md text-xs font-bold transition-colors ${
                     isActive
-                      ? "bg-blue-50 text-blue-700"
-                      : "bg-gray-300/50 text-gray-600"
+                      ? "bg-indigo-50 text-indigo-700"
+                      : "bg-slate-200/80 text-slate-500"
                   }`}
                 >
                   {tab.count}
@@ -219,22 +236,28 @@ export default function Dashboard() {
 
         {/* Task List / Loading / Empty State */}
         {loading ? (
-          <div className="flex flex-col justify-center items-center min-h-[300px] text-blue-600 space-y-4">
-            <Loader2 className="animate-spin" size={36} />
-            <p className="text-sm font-semibold text-gray-500 animate-pulse">Loading reminders...</p>
+          <div className="flex flex-col justify-center items-center min-h-[40vh] text-indigo-600 space-y-4">
+            <Loader2 className="animate-spin" size={32} />
+            <p className="text-sm font-medium text-slate-500 animate-pulse">
+              Syncing reminders...
+            </p>
           </div>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid gap-3">
             {displayedTasks.length === 0 ? (
-              <div className="text-center py-20 bg-white rounded-3xl border border-gray-200 shadow-sm flex flex-col items-center justify-center transition-all">
-                <div className="w-20 h-20 bg-gradient-to-br from-green-50 to-emerald-100 text-green-600 rounded-2xl flex items-center justify-center mb-5 shadow-inner rotate-3">
-                  <Coffee size={36} strokeWidth={2.5} className="-rotate-3" />
+              <div className="text-center py-20 bg-white rounded-[2rem] border border-slate-100 shadow-sm flex flex-col items-center justify-center">
+                <div className="w-16 h-16 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mb-4 ring-1 ring-slate-100">
+                  <Coffee size={28} strokeWidth={2} />
                 </div>
-                <h3 className="text-gray-900 font-black text-xl mb-2">
-                  No reminders found here
+                <h3 className="text-slate-800 font-bold text-lg mb-1">
+                  Nothing to see here
                 </h3>
-                <p className="text-base text-gray-500 font-medium">
-                  You're all caught up! Time for a well-deserved break.
+                <p className="text-sm text-slate-500 font-medium">
+                  {activeTab === "completed"
+                    ? "You haven't completed any tasks yet."
+                    : activeTab === "upcoming" 
+                    ? "No future tasks scheduled."
+                    : "You're all caught up! Enjoy your day."}
                 </p>
               </div>
             ) : (
@@ -243,7 +266,7 @@ export default function Dashboard() {
                   key={task.id}
                   task={task}
                   refreshTasks={refreshTasks}
-                  isPrevious={activeTab === "history"}
+                  isPrevious={activeTab === "completed"}
                 />
               ))
             )}

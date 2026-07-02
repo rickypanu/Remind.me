@@ -2,12 +2,15 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from routes import auth, tasks, user, webpush, notification, squad, chatwebsocket
+from routes import auth, tasks, user, webpush, notification, squad, chatwebsocket, squad_analytics
+from fastapi.staticfiles import StaticFiles
 
 # Load environment variables from the .env file
 load_dotenv()
 
 app = FastAPI(title="RemindMe API")
+
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 origins = [
     "https://remindme-psi.vercel.app",
@@ -32,6 +35,7 @@ app.include_router(webpush.router, tags=["Notification"])
 app.include_router(notification.router, tags=["Notification"])
 
 app.include_router(squad.router, tags=["Squad"])
+app.include_router(squad_analytics.router, tags=["Squad"])
 app.include_router(chatwebsocket.router, tags=["Chat"])
 
 @app.get("/")

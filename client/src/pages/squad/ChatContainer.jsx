@@ -10,7 +10,6 @@ export default function ChatContainer({ currentUserId, currentUserName }) {
 
   useEffect(() => {
     // 1. Define the dynamic URL
-    // const wsUrl = import.meta.env.VITE_WS_URL || "ws://localhost:8000/chat";
     const wsUrl = import.meta.env.VITE_WS_URL;
     // 2. Create the socket using that dynamic URL
     const socket = new WebSocket(wsUrl);
