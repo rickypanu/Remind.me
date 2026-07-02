@@ -2,7 +2,9 @@ from fastapi import APIRouter
 from pywebpush import webpush, WebPushException
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
-from datetime import datetime, timedelta
+from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime, timedelta, timezone
 import json
 import pytz 
 import os
@@ -17,13 +19,11 @@ VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY")
 VAPID_PUBLIC_KEY = os.getenv("VAPID_PUBLIC_KEY")
 VAPID_CLAIMS = {"sub": os.getenv("VAPID_EMAIL")}
 
-if not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
-    raise ValueError("Missing VAPID keys in environment variables!")
-#  Allow custom titles so notifications look cleaner
+IST = pytz.timezone('Asia/Kolkata')
+
 def send_push(subscription_info: dict, title: str, message: str):
     if not subscription_info:
         return
-        
     try:
         webpush(
             subscription_info=subscription_info,
@@ -34,92 +34,121 @@ def send_push(subscription_info: dict, title: str, message: str):
     except WebPushException as e:
         print(f"WebPush Error: {e}")
 
-
-async def remind_todays_tasks():
-    print("Running Today's Task Check...")
-    ist = pytz.timezone('Asia/Kolkata')
-    now = datetime.now(ist)
+# ---------------------------------------------------------
+# NEW: 1-Hour Upcoming Reminder
+# ---------------------------------------------------------
+async def remind_upcoming_tasks():
+    # Get current time in UTC
+    now_utc = datetime.now(pytz.utc)
     
-    start_of_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    end_of_today = start_of_today + timedelta(days=1)
+    # Define a 1-minute window exactly 60 minutes from now
+    target_start = now_utc + timedelta(minutes=59)
+    target_end = now_utc + timedelta(minutes=60)
     
+    # Query MongoDB using UTC times
     query = {
-        "due_date": {"$gte": start_of_today, "$lt": end_of_today},
-        "status": {"$ne": "completed"} 
-    }
-    
-    tasks = await db["tasks"].find(query).to_list(length=None)
-    
-    user_tasks = {}
-    for task in tasks:
-        user_id = task.get("user_id")
-        if user_id not in user_tasks:
-            user_tasks[user_id] = []
-        user_tasks[user_id].append(task['title'])
-
-    for user_id, task_titles in user_tasks.items():
-        user = await db["users"].find_one({"_id": user_id})
-        
-        # UPDATED: Check for the array 'push_subscriptions'
-        if user and "push_subscriptions" in user:
-            if len(task_titles) == 1:
-                title = "Today's Task"
-                body = f"Don't forget to: {task_titles[0]}"
-            else:
-                title = f"{len(task_titles)} Tasks Today"
-                body = f"You have {len(task_titles)} things to do, starting with: {task_titles[0]}"
-                
-            # UPDATED: Loop through all devices (laptop, mobile, etc.) and send to each
-            for subscription in user["push_subscriptions"]:
-                send_push(subscription, title, body)
-
-
-async def remind_tomorrows_tasks():
-    print("Running Tomorrow's Task Check...")
-    ist = pytz.timezone('Asia/Kolkata')
-    now = datetime.now(ist)
-    
-    start_of_tomorrow = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
-    end_of_tomorrow = start_of_tomorrow + timedelta(days=1)
-    
-    query = {
-        "due_date": {"$gte": start_of_tomorrow, "$lt": end_of_tomorrow},
+        "due_date": {"$gte": target_start, "$lt": target_end},
         "status": {"$ne": "completed"}
     }
     
     tasks = await db["tasks"].find(query).to_list(length=None)
     
-    user_tasks = {}
     for task in tasks:
         user_id = task.get("user_id")
-        if user_id not in user_tasks:
-            user_tasks[user_id] = []
-        user_tasks[user_id].append(task['title'])
-
-    for user_id, task_titles in user_tasks.items():
         user = await db["users"].find_one({"_id": user_id})
         
-        # UPDATED: Check for the array 'push_subscriptions'
         if user and "push_subscriptions" in user:
-            if len(task_titles) == 1:
-                title = "Tomorrow's Agenda"
-                body = f"Heads up for tomorrow: {task_titles[0]}"
-            else:
-                title = f"{len(task_titles)} Tasks Tomorrow"
-                body = f"Get ready! You have {len(task_titles)} tasks scheduled for tomorrow."
-                
-            # UPDATED: Loop through all devices
+            title = "Task Due Soon!"
+            body = f"'{task['title']}' is due in 1 hour."
             for subscription in user["push_subscriptions"]:
                 send_push(subscription, title, body)
 
-IST = pytz.timezone('Asia/Kolkata')
+# ---------------------------------------------------------
+# UPDATED: Today's Tasks (Timezone Fixed)
+# ---------------------------------------------------------
+async def remind_todays_tasks():
+    print("Running Today's Task Check...")
+    now_ist = datetime.now(IST)
+    
+    # Get start and end of the day in IST
+    start_of_today_ist = now_ist.replace(hour=0, minute=0, second=0, microsecond=0)
+    end_of_today_ist = start_of_today_ist + timedelta(days=1)
+    
+    # Convert IST boundaries to UTC for the MongoDB query
+    start_utc = start_of_today_ist.astimezone(pytz.utc)
+    end_utc = end_of_today_ist.astimezone(pytz.utc)
+    
+    query = {
+        "due_date": {"$gte": start_utc, "$lt": end_utc},
+        "status": {"$ne": "completed"} 
+    }
+    
+    tasks = await db["tasks"].find(query).to_list(length=None)
+    
+    # ... (Keep your existing grouping and push logic here) ...
 
+# ---------------------------------------------------------
+# UPDATED: Tomorrow's Tasks (Timezone Fixed)
+# ---------------------------------------------------------
+async def remind_tomorrows_tasks():
+    print("Running Tomorrow's Task Check...")
+    now_ist = datetime.now(IST)
+    
+    # Get start and end of tomorrow in IST
+    start_of_tomorrow_ist = now_ist.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+    end_of_tomorrow_ist = start_of_tomorrow_ist + timedelta(days=1)
+    
+    # Convert IST boundaries to UTC for the MongoDB query
+    start_utc = start_of_tomorrow_ist.astimezone(pytz.utc)
+    end_utc = end_of_tomorrow_ist.astimezone(pytz.utc)
+    
+    query = {
+        "due_date": {"$gte": start_utc, "$lt": end_utc},
+        "status": {"$ne": "completed"}
+    }
+    
+    tasks = await db["tasks"].find(query).to_list(length=None)
+    
+    # ... (Keep your existing grouping and push logic here) ...
+
+# ---------------------------------------------------------
+# SCHEDULER
+# ---------------------------------------------------------
 @router.on_event("startup")
 async def start_scheduler():
     scheduler = AsyncIOScheduler(timezone=IST)
     
-    scheduler.add_job(remind_todays_tasks, CronTrigger(hour="8,13,18,10", minute="0,21,23,34,25,27,29,33,31"))
-    scheduler.add_job(remind_tomorrows_tasks, CronTrigger(hour="18,22", minute="0"))
+    # Add the new 1-hour check to run every single minute
+    scheduler.add_job(remind_upcoming_tasks, CronTrigger(minute="*"))
+    
+    scheduler.add_job(remind_todays_tasks, CronTrigger(hour="8,13,15,18, 20", minute="0"))
+    scheduler.add_job(remind_tomorrows_tasks, CronTrigger(hour="16,20", minute="0"))
     
     scheduler.start()
-    print("Background task scheduler started with production intervals!")
+    print("Background task scheduler started!") 
+
+# ---------------------------------------------------------
+# UPDATED: Task Creation Model & Handling
+# ---------------------------------------------------------
+class TaskCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    category: str
+    due_date: datetime
+    status: str = "pending"
+
+# When you save the task in your route, ensure it converts to UTC:
+@router.post("/tasks/")
+async def create_task(task: TaskCreate):
+    # Check if the datetime is naive (no timezone info). If so, assume it's IST and localize it.
+    if task.due_date.tzinfo is None:
+        task.due_date = IST.localize(task.due_date)
+    
+    # Convert to UTC before inserting into MongoDB
+    utc_due_date = task.due_date.astimezone(pytz.utc)
+    
+    task_dict = task.dict()
+    task_dict["due_date"] = utc_due_date # Save the UTC time
+    
+    await db["tasks"].insert_one(task_dict)
+    return {"message": "Task created successfully"}

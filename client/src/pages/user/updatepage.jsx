@@ -1,6 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Send, Clock, BellRing, AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
+import {
+  Send,
+  Clock,
+  BellRing,
+  AlertCircle,
+  ArrowLeft,
+  Loader2,
+} from "lucide-react";
 import api from "../../utils/api";
 
 export default function UpdatesPage() {
@@ -18,12 +25,24 @@ export default function UpdatesPage() {
       try {
         const [profileRes, updatesRes] = await Promise.allSettled([
           api.get("/user/me"),
-          api.get("/user/updates")
+          api.get("/user/updates"),
         ]);
 
-        if (profileRes.status === "fulfilled") setCurrentUser(profileRes.value.data);
-        if (updatesRes.status === "fulfilled") setUpdates(updatesRes.value.data);
-        
+        if (profileRes.status === "fulfilled") {
+          setCurrentUser(profileRes.value.data);
+        }
+
+        if (updatesRes.status === "fulfilled") {
+          const fetchedUpdates = updatesRes.value.data;
+          setUpdates(fetchedUpdates);
+
+          localStorage.setItem(
+            "seenUpdatesCount",
+            fetchedUpdates.length.toString(),
+          );
+
+          window.dispatchEvent(new Event("updatesRead"));
+        }
       } catch (error) {
         console.error("Failed to fetch page data:", error);
       } finally {
@@ -48,12 +67,22 @@ export default function UpdatesPage() {
     try {
       await api.post("/user/updates", newUpdate);
       const res = await api.get("/user/updates");
-      setUpdates(res.data);
+      const newUpdatesList = res.data;
+
+      setUpdates(newUpdatesList);
       setNewUpdate({ title: "", content: "" });
+
+      // --- THE FIX: Mark as read after posting ---
+      localStorage.setItem(
+        "seenUpdatesCount",
+        newUpdatesList.length.toString(),
+      );
+      window.dispatchEvent(new Event("updatesRead"));
     } catch (error) {
       console.error("Failed to post update:", error);
       setError(
-        error.response?.data?.detail || "There was an error posting your update. Make sure you are an Admin."
+        error.response?.data?.detail ||
+          "There was an error posting your update. Make sure you are an Admin.",
       );
     } finally {
       setIsPosting(false);
@@ -63,10 +92,9 @@ export default function UpdatesPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-3xl mx-auto space-y-8">
-        
         {/* Navigation & Header */}
         <div>
-          <button 
+          <button
             onClick={() => navigate(-1)}
             className="flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors mb-6 group"
           >
@@ -74,17 +102,29 @@ export default function UpdatesPage() {
             Go Back
           </button>
 
-          <div className="flex items-center space-x-4">
-            <div className="bg-blue-600 p-3 rounded-2xl shadow-sm">
-              <BellRing className="text-white" size={24} />
-            </div>
-            <div>
-              <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
-                Latest Updates
-              </h1>
-              <p className="text-sm text-gray-500 mt-1">
-                Stay in the loop with the newest features and announcements.
-              </p>
+          <div className="rounded-3xl border border-white/30 bg-white/70 backdrop-blur-xl p-8 shadow-xl">
+            <div className="flex justify-between items-start">
+              <div className="flex gap-5">
+                <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg">
+                  <BellRing className="text-white" size={28} />
+                </div>
+
+                <div>
+                  <h1 className="text-4xl font-bold tracking-tight text-zinc-900">
+                    Latest Updates
+                  </h1>
+
+                  <p className="text-zinc-500 mt-2 max-w-xl">
+                    Product improvements, announcements and release notes.
+                  </p>
+                </div>
+              </div>
+
+              <div className="hidden md:flex flex-col items-end">
+                <span className="text-3xl font-bold">{updates.length}</span>
+
+                <span className="text-sm text-zinc-500">Published</span>
+              </div>
             </div>
           </div>
         </div>
@@ -98,7 +138,7 @@ export default function UpdatesPage() {
                 Publish an Announcement
               </h2>
             </div>
-            
+
             <form onSubmit={handlePostUpdate} className="p-6 space-y-5">
               {error && (
                 <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm border border-red-100 flex items-start gap-2">
@@ -106,9 +146,12 @@ export default function UpdatesPage() {
                   {error}
                 </div>
               )}
-              
+
               <div>
-                <label htmlFor="title" className="block text-sm font-semibold text-gray-700 mb-2">
+                <label
+                  htmlFor="title"
+                  className="block text-sm font-semibold text-gray-700 mb-2"
+                >
                   Update Title
                 </label>
                 <input
@@ -116,13 +159,18 @@ export default function UpdatesPage() {
                   type="text"
                   placeholder="e.g., Version 2.0 is Live!"
                   value={newUpdate.title}
-                  onChange={(e) => setNewUpdate({ ...newUpdate, title: e.target.value })}
+                  onChange={(e) =>
+                    setNewUpdate({ ...newUpdate, title: e.target.value })
+                  }
                   disabled={isPosting}
                   className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:bg-white text-zinc-950 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none disabled:opacity-60"
                 />
               </div>
               <div>
-                <label htmlFor="content" className="block text-sm font-semibold text-gray-700 mb-2">
+                <label
+                  htmlFor="content"
+                  className="block text-sm font-semibold text-gray-700 mb-2"
+                >
                   Message Details
                 </label>
                 <textarea
@@ -130,7 +178,9 @@ export default function UpdatesPage() {
                   rows="3"
                   placeholder="What's new? Tell your users..."
                   value={newUpdate.content}
-                  onChange={(e) => setNewUpdate({ ...newUpdate, content: e.target.value })}
+                  onChange={(e) =>
+                    setNewUpdate({ ...newUpdate, content: e.target.value })
+                  }
                   disabled={isPosting}
                   className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:bg-white text-zinc-950 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none resize-none disabled:opacity-60"
                 />
@@ -181,11 +231,11 @@ export default function UpdatesPage() {
                   <Clock size={14} className="mr-2" />
                   {update.created_at
                     ? new Date(update.created_at).toLocaleDateString("en-US", {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
                       })
                     : "Just now"}
                 </div>
@@ -196,14 +246,16 @@ export default function UpdatesPage() {
               <div className="bg-gray-50 p-4 rounded-full mb-4">
                 <AlertCircle className="text-gray-400" size={32} />
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">No updates yet</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">
+                No updates yet
+              </h3>
               <p className="text-gray-500 text-sm max-w-sm leading-relaxed">
-                Check back later! We're always working on something new and exciting to share with you.
+                Check back later! We're always working on something new and
+                exciting to share with you.
               </p>
             </div>
           )}
         </div>
-        
       </div>
     </div>
   );
