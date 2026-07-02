@@ -25,7 +25,8 @@ async def get_user_profile(current_user: dict = Depends(get_current_user)):
         "username": current_user.get("username", "Student"),
         "email": current_user.get("email"),
         "created_at": current_user.get("created_at"),
-        "avatar_url": current_user.get("avatar_url") # Added this for the frontend
+        "avatar_url": current_user.get("avatar_url"), 
+        "is_admin": current_user.get("is_admin", False)
     }
 
 

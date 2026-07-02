@@ -13,6 +13,8 @@ import FAQ from "./pages/general/faqs";
 import TermsAndPrivacy from "./pages/general/terms";
 import Report from "./pages/user/report";
 
+import UpdatePage from "./pages/user/updatepage";
+
 // Import BOTH Squad components
 import SquadLobby from "./pages/squad/SquadLobby";
 import SquadDashboard from "./pages/squad/SquadDashboard";
@@ -105,7 +107,7 @@ function App() {
             <Route path="/squad/:squadId/analytics" element={<ProtectedRoute> <SquadAnalytics /> </ProtectedRoute>} />
             
             {/* ========================== */}
-
+            <Route path="/update" element={<ProtectedRoute><UpdatePage /></ProtectedRoute>} />
             <Route path="/about" element={<About />} />
             <Route path="/faqs" element={<FAQ />} />
             <Route path="/terms" element={<TermsAndPrivacy />} />

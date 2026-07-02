@@ -19,6 +19,7 @@ import {
   Check,
   X,
   UploadCloud,
+  Newspaper,
   Image as ImageIcon,
 } from "lucide-react";
 import api from "../../utils/api";
@@ -441,6 +442,7 @@ export default function Profile() {
             </h3>
             <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
               <MenuItem icon={Users2} label="Squad" to="/squad" />
+              <MenuItem icon={Newspaper} label="Updates" to="/update" />
               <MenuItem icon={HelpCircle} label="FAQ's" to="/faqs" />
               <MenuItem icon={Info} label="About App" to="/about" />
             </div>

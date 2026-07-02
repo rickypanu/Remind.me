@@ -100,7 +100,6 @@ const Header = () => {
                 title="Profile"
               >
                 {/* CONDITIONAL RENDER: Image if exists, Icon if null */}
-                {/* CONDITIONAL RENDER: Image if exists, Icon if null */}
                 {avatarUrl ? (
                   <img 
                     src={avatarUrl.startsWith("/uploads") 
