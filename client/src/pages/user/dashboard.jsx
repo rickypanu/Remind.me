@@ -205,23 +205,23 @@ export default function Dashboard() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 py-2.5 px-3 text-sm font-semibold rounded-xl transition-all duration-300 flex justify-center items-center gap-2.5 whitespace-nowrap min-w-[110px] sm:min-w-0 ${
+                className={`flex-1 py-2 px-1.5 sm:px-3 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-300 flex justify-center items-center gap-1.5 sm:gap-2.5 whitespace-nowrap min-w-[75px] sm:min-w-0 ${
                   isActive
                     ? "bg-white text-slate-900 shadow-sm ring-1 ring-black/5"
                     : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
                 }`}
               >
                 <Icon
-                  size={18}
+                  size={16} // Slightly smaller icon on mobile
                   strokeWidth={isActive ? 2.5 : 2}
-                  className={`transition-colors shrink-0 ${
+                  className={`transition-colors shrink-0 sm:w-[18px] sm:h-[18px] ${
                     isActive ? "text-indigo-600" : "text-slate-400"
                   }`}
                 />
                 <span className="hidden sm:inline">{tab.label}</span>
                 <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
                 <span
-                  className={`px-2 py-0.5 rounded-md text-xs font-bold transition-colors ${
+                  className={`px-1.5 py-0.5 rounded-md text-[10px] sm:text-xs font-bold transition-colors ${
                     isActive
                       ? "bg-indigo-50 text-indigo-700"
                       : "bg-slate-200/80 text-slate-500"
