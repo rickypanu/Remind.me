@@ -59,3 +59,19 @@ async def get_updates(db = Depends(get_db)):  # 3. Inject the database dependenc
     updates = await cursor.to_list(length=100)
     
     return updates
+
+
+@router.delete("/user/updates/{update_id}")
+async def delete_update(
+    update_id: str,
+    admin_user: dict = Depends(verify_admin),
+    db = Depends(get_db)
+):
+    # Attempt to delete the document matching the custom string 'id'
+    result = await db["updates"].delete_one({"id": update_id})
+    
+    # If no document was deleted, the ID didn't exist
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Update not found")
+        
+    return {"message": "Update deleted successfully", "id": update_id}
