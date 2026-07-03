@@ -10,6 +10,7 @@ import {
   Sparkles,
   Trash2,
   X,
+  Eye,
   SendIcon,
   CheckCircle2,
   Edit3
