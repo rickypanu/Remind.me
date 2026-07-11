@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import toast, { Toaster } from "react-hot-toast";
 import {
   ArrowLeft,
   Calendar,
@@ -10,12 +11,12 @@ import {
   Loader2,
   CheckCircle,
   AlertCircle,
+  PenTool
 } from "lucide-react";
 import api from "../../utils/api";
 
 export default function CreateTask() {
   const navigate = useNavigate();
-  // 1. Initialize the query client
   const queryClient = useQueryClient();
 
   const [loading, setLoading] = useState(false);
@@ -24,9 +25,21 @@ export default function CreateTask() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    category: "Assignment", // Default value
+    category: "Assignment",
     due_date: "",
   });
+
+  const [customCategory, setCustomCategory] = useState("");
+  const customInputRef = useRef(null);
+
+  // Prevent selecting past dates by setting the 'min' attribute to right now
+  const now = new Date().toISOString().slice(0, 16);
+
+  useEffect(() => {
+    if (formData.category === "Other" && customInputRef.current) {
+      customInputRef.current.focus();
+    }
+  }, [formData.category]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -38,36 +51,52 @@ export default function CreateTask() {
     setLoading(true);
     setError("");
 
+    if (formData.category === "Other" && !customCategory.trim()) {
+      setError("Please specify your custom category.");
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Convert the local datetime-local string to a standard ISO format for the backend
       const isoDate = new Date(formData.due_date).toISOString();
+      const finalCategory = formData.category === "Other" ? customCategory.trim() : formData.category;
 
       const payload = {
         title: formData.title,
         description: formData.description,
-        category: formData.category,
+        category: finalCategory,
         due_date: isoDate,
-        status: "pending", // Default status for new tasks
+        status: "pending",
       };
 
       await api.post("/tasks/", payload);
-
-      // 2. Clear the dashboard cache so it fetches the new task instantly
       queryClient.invalidateQueries({ queryKey: ["dashboardData"] });
+      
+      // Trigger Success Toast
+      toast.success("Reminder created successfully!", {
+        duration: 2000,
+        position: "top-center",
+      });
 
-      // Navigate back to the dashboard upon success
-      navigate("/dashboard");
+      // Delay navigation slightly so the user sees the success message
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 1000);
+
     } catch (err) {
       setError(
         err.response?.data?.detail ||
-          "Failed to create task. Make sure all required fields are filled.",
+          "Failed to create task. Make sure all required fields are filled."
       );
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-10">
+    <div className="min-h-screen bg-gray-50 pb-24 md:pb-10 relative">
+      {/* Toast Container */}
+      <Toaster />
+
       {/* Top Navigation */}
       <nav className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-200 px-4 py-4 shadow-sm">
         <div className="max-w-3xl mx-auto flex items-center">
@@ -92,7 +121,7 @@ export default function CreateTask() {
           </h2>
 
           {error && (
-            <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-100 text-red-600 flex items-center gap-2 text-sm font-medium">
+            <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-100 text-red-600 flex items-center gap-2 text-sm font-medium animate-in fade-in slide-in-from-top-2">
               <AlertCircle size={18} className="shrink-0" />
               <span>{error}</span>
             </div>
@@ -112,7 +141,8 @@ export default function CreateTask() {
                 <input
                   type="text"
                   name="title"
-                  placeholder="e.g., DBMS Assignment 3"
+                  maxLength="100"
+                  placeholder="e.g., Study for Finals, Tech Interview Prep..."
                   value={formData.title}
                   onChange={handleChange}
                   required
@@ -133,7 +163,8 @@ export default function CreateTask() {
                 />
                 <textarea
                   name="description"
-                  placeholder="Add any notes, links, or specific requirements here..."
+                  maxLength="500"
+                  placeholder="Add any syllabus notes, meeting links, or specific requirements here..."
                   value={formData.description}
                   onChange={handleChange}
                   rows="3"
@@ -144,31 +175,55 @@ export default function CreateTask() {
 
             {/* Grid for Category and Date */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Category Dropdown */}
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
-                  Category *
-                </label>
-                <div className="relative group">
-                  <Tag
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors"
-                    size={20}
-                  />
-                  <select
-                    name="category"
-                    value={formData.category}
-                    onChange={handleChange}
-                    className="w-full pl-12 pr-10 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 appearance-none focus:bg-white focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all cursor-pointer"
-                  >
-                    <option value="Assignment">Assignment</option>
-                    <option value="Project">Project</option>
-                    <option value="Exam">Exam</option>
-                    <option value="Reading">Reading</option>
-                    <option value="Extracurricular">Extracurricular</option>
-                    <option value="Personal">Personal</option>
-                    <option value="Other">Other</option>
-                  </select>
+              {/* Category Dropdown & Conditional Custom Input */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Category *
+                  </label>
+                  <div className="relative group">
+                    <Tag
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors"
+                      size={20}
+                    />
+                    <select
+                      name="category"
+                      value={formData.category}
+                      onChange={handleChange}
+                      className="w-full pl-12 pr-10 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 appearance-none focus:bg-white focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all cursor-pointer"
+                    >
+                      <option value="Assignment">Assignment</option>
+                      <option value="Project">Project</option>
+                      <option value="Exam / Quiz">Exam / Quiz</option>
+                      <option value="Placement / Internship">Placement / Internship</option>
+                      <option value="Extracurricular">Extracurricular</option>
+                      <option value="Personal">Personal</option>
+                      <option value="Other">Other (Specify)</option>
+                    </select>
+                  </div>
                 </div>
+
+                {formData.category === "Other" && (
+                  <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="relative group">
+                      <PenTool
+                        className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors"
+                        size={20}
+                      />
+                      <input
+                        type="text"
+                        ref={customInputRef}
+                        placeholder="Type your category here..."
+                        value={customCategory}
+                        onChange={(e) => {
+                          setCustomCategory(e.target.value);
+                          setError(""); 
+                        }}
+                        className="w-full pl-12 pr-4 py-3 bg-white border-2 border-blue-100 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Due Date Input */}
@@ -184,6 +239,7 @@ export default function CreateTask() {
                   <input
                     type="datetime-local"
                     name="due_date"
+                    min={now} // Validation: Prevents selecting past dates
                     value={formData.due_date}
                     onChange={handleChange}
                     required
@@ -193,12 +249,20 @@ export default function CreateTask() {
               </div>
             </div>
 
-            {/* Submit Button */}
-            <div className="pt-2">
+            {/* Action Buttons (Sticky on Mobile) */}
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] md:static md:p-0 md:bg-transparent md:border-none md:shadow-none z-50 flex gap-4 md:pt-4">
+              <button
+                type="button"
+                onClick={() => navigate("/dashboard")}
+                className="flex-1 md:flex-none px-6 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-all flex items-center justify-center"
+              >
+                Cancel
+              </button>
+              
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm hover:shadow-md transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
+                className="flex-[2] md:flex-auto py-3.5 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm hover:shadow-md transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 {loading ? (
                   <Loader2 className="animate-spin" size={22} />
