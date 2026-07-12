@@ -72,11 +72,25 @@ export default function Dashboard() {
   };
 
   const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 18) return "Good afternoon";
-    return "Good evening";
-  };
+  const hour = new Date().getHours();
+
+  const greetings = {
+  lateNight: ["Still at it?", "Night owl hours.", "Main character energy late night.", "Code never sleeps."],
+  morning: ["Morning, legend.", "New day, new dubs.", "Rise and thrive.", "Manifesting a great day."],
+  afternoon: ["What's the move?", "Keep that energy.", "Stay locked in.", "High key killing it today."],
+  evening: ["Time to disconnect.", "Big chill energy.", "Day's done. Reset.", "Evenin', time to recharge."]
+};
+  let timeCategory;
+  if (hour < 6) timeCategory = 'lateNight';
+  else if (hour < 12) timeCategory = 'morning';
+  else if (hour < 18) timeCategory = 'afternoon';
+  else timeCategory = 'evening';
+
+  // Randomly select one from the array for variety
+  const options = greetings[timeCategory];
+  return options[Math.floor(Math.random() * options.length)];
+};
+
 
   // --- Filtering Logic ---
   const now = new Date();
@@ -137,13 +151,11 @@ export default function Dashboard() {
               day: "numeric",
             })}
           </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-            {getGreeting()},{" "}
-            <span className="text-indigo-600">
-              {userInfo?.username?.split(" ")[0] || "..."}
-            </span>{" "}
-            👋
-          </h2>
+         
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+  {getGreeting()}, <span className="text-indigo-600">{userInfo?.username?.split(" ")[0]}</span> 👋
+</h2>
+           
         </div>
 
         {/* Missed Tasks Alert */}
