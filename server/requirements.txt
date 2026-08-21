@@ -12,3 +12,4 @@ pywebpush
 apscheduler
 cryptography<42.0.0
 websockets
+httpx
