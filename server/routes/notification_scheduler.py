@@ -6,8 +6,8 @@ from datetime import datetime, timedelta
 import pytz
 
 from database import db
-from webpush_service import send_web_push
-from telegram_service import send_telegram_notification
+from routes.webpush_service import send_web_push
+from routes.telegram_service import send_telegram_notification
 
 router = APIRouter()
 IST = pytz.timezone('Asia/Kolkata')

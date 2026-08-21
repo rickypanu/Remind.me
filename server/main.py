@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 # Added 'telegram' to your imported routes
-from routes import auth, tasks, user, webpush, notification, squad, chatwebsocket, squad_analytics, update, telegram ,telegram_routes, notification_scheduler
+from routes import auth, tasks, user, webpush, notification, squad, chatwebsocket, squad_analytics, update,telegram_routes, notification_scheduler
 from fastapi.staticfiles import StaticFiles
 
 # Load environment variables from the .env file
@@ -34,7 +34,6 @@ app.include_router(tasks.router, prefix="/tasks", tags=["Tasks"])
 app.include_router(user.router, prefix="/user", tags=["User"])
 app.include_router(webpush.router, tags=["Notification"])
 app.include_router(notification.router, tags=["Notification"])
-app.include_router(telegram.router, tags=["Telegram Notification"])
 app.include_router(update.router, tags=["Updates"])
 app.include_router(telegram_routes.router)
 app.include_router(notification_scheduler.router)
