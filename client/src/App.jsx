@@ -12,10 +12,10 @@ import About from "./pages/general/about";
 import FAQ from "./pages/general/faqs";
 import TermsAndPrivacy from "./pages/general/terms";
 import Report from "./pages/user/report";
-
+import TelegramSettings from "./pages/general/TelegramSettings";
 import UpdatePage from "./pages/user/updatepage";
 
-// Import BOTH Squad components
+// Import Squad components
 import SquadLobby from "./pages/squad/SquadLobby";
 import SquadDashboard from "./pages/squad/SquadDashboard";
 import SquadAnalytics from "./pages/squad/SquadAnalytics";
@@ -23,33 +23,64 @@ import SquadAnalytics from "./pages/squad/SquadAnalytics";
 // Create a client for React Query
 const queryClient = new QueryClient();
 
-// A wrapper component to protect private routes
+// Helper to safely get user info from localStorage or JWT Token
+const getCurrentUser = () => {
+  const token = localStorage.getItem("token");
+  const storedUser = localStorage.getItem("user");
+
+  if (storedUser) {
+    try {
+      return JSON.parse(storedUser);
+    } catch (e) {
+      console.error("Error parsing stored user", e);
+    }
+  }
+
+  if (token) {
+    try {
+      // Decode JWT payload token fallback
+      const base64Url = token.split(".")[1];
+      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split("")
+          .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+          .join("")
+      );
+      return JSON.parse(jsonPayload);
+    } catch (e) {
+      console.error("Error decoding token", e);
+    }
+  }
+
+  return null;
+};
+
+// Protected route wrapper
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
 
-  // If there is no token, kick them back to the Auth page
   if (!token) {
     return <Navigate to="/" replace />;
   }
 
-  // Otherwise, render the requested page
   return children;
 };
 
 function App() {
+  const currentUser = getCurrentUser();
+
   return (
-    // Wrap the entire app so React Query can manage data globally
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        {/* Background color applied to the whole app */}
         <div className="min-h-screen bg-background text-gray-100 font-sans">
           <Routes>
-            {/* Public Route (Login/Signup combined) */}
+            {/* Public Routes */}
             <Route path="/" element={<Homepage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
 
-            {/* Protected Routes */}
+            {/* Protected User Routes */}
             <Route
               path="/dashboard"
               element={
@@ -82,10 +113,8 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            
-            {/* === NEW SQUAD ROUTES === */}
-            
-            {/* 1. The Lobby: View all squads, join, or create */}
+
+            {/* Squad Routes */}
             <Route
               path="/squad"
               element={
@@ -94,8 +123,6 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            
-            {/* 2. The Dashboard: Dynamic route for a specific squad */}
             <Route
               path="/squad/:squadId"
               element={
@@ -104,10 +131,27 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route path="/squad/:squadId/analytics" element={<ProtectedRoute> <SquadAnalytics /> </ProtectedRoute>} />
+            <Route
+              path="/squad/:squadId/analytics"
+              element={
+                <ProtectedRoute>
+                  <SquadAnalytics />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Telegram Settings Page */}
+            <Route path="/telegram" element={<ProtectedRoute><TelegramSettings /></ProtectedRoute>} />
             
-            {/* ========================== */}
-            <Route path="/update" element={<ProtectedRoute><UpdatePage /></ProtectedRoute>} />
+            {/* Other Pages */}
+            <Route
+              path="/update"
+              element={
+                <ProtectedRoute>
+                  <UpdatePage />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/about" element={<About />} />
             <Route path="/faqs" element={<FAQ />} />
             <Route path="/terms" element={<TermsAndPrivacy />} />

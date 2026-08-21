@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom"; // Added useNavigate
+import React, { useLayoutEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   CheckCircle2,
@@ -13,15 +13,56 @@ import {
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 
+// Reusable Feature Card Component
+const FeatureCard = ({ icon: Icon, iconBg, iconColor, title, description }) => (
+  <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+    <div className={`${iconBg} w-14 h-14 rounded-2xl flex items-center justify-center mb-6`}>
+      <Icon className={iconColor} size={28} />
+    </div>
+    <h3 className="text-xl font-bold mb-3 text-gray-900">{title}</h3>
+    <p className="text-gray-500 leading-relaxed">{description}</p>
+  </div>
+);
+
+const FEATURES_DATA = [
+  {
+    icon: Zap,
+    iconBg: "bg-blue-50",
+    iconColor: "text-blue-600",
+    title: "Frictionless Capture",
+    description: "Add tasks in seconds. Our minimal interface gets out of your way so you can log your thoughts and get back to work immediately."
+  },
+  {
+    icon: Target,
+    iconBg: "bg-emerald-50",
+    iconColor: "text-emerald-600",
+    title: "Smart Prioritization",
+    description: "Not all tasks are equal. We help you separate the urgent from the important, ensuring you always tackle the right thing at the right time."
+  },
+  {
+    icon: BrainCircuit,
+    iconBg: "bg-indigo-50",
+    iconColor: "text-indigo-600",
+    title: "Reliable Automation",
+    description: "Set recurring routines, location-based pings, and deadline warnings. Once it's in the system, you can trust we will remind you."
+  },
+  {
+    icon: Users,
+    iconBg: "bg-purple-50",
+    iconColor: "text-purple-600",
+    title: "Squad Collaboration",
+    description: "Team up with your squad. Share tasks, sync schedules, and keep everyone accountable without the extra noise."
+  }
+];
+
 const Homepage = () => {
   const navigate = useNavigate();
 
-  // Add a useEffect to check for the token on component mount
-  useEffect(() => {
-    // Replace 'token' with the actual key you use to store your auth token
-    const token = localStorage.getItem("token"); 
+  // Redirect before initial paint if token exists
+  useLayoutEffect(() => {
+    const token = localStorage.getItem("token");
     if (token) {
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
     }
   }, [navigate]);
 
@@ -30,7 +71,7 @@ const Homepage = () => {
       <Header />
 
       {/* Hero Section */}
-      <header className="max-w-4xl mx-auto text-center px-6 pt-24 pb-20">
+      <section className="max-w-4xl mx-auto text-center px-6 pt-24 pb-20">
         <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-tight text-gray-900">
           Your mind is for thinking, <br className="hidden md:block" />
           <span className="text-blue-600">not memorizing.</span>
@@ -44,12 +85,15 @@ const Homepage = () => {
 
         <div className="flex justify-center">
           <Link to="/login">
-            <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-full font-bold text-lg flex items-center gap-2 shadow-lg shadow-blue-600/20 transition-all transform hover:-translate-y-1">
+            <button 
+              type="button" 
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-full font-bold text-lg flex items-center gap-2 shadow-lg shadow-blue-600/20 transition-all transform hover:-translate-y-1"
+            >
               Start for Free Today <ArrowRight size={20} />
             </button>
           </Link>
         </div>
-      </header>
+      </section>
 
       {/* What We Deliver Section */}
       <section
@@ -67,70 +111,13 @@ const Homepage = () => {
             </p>
           </div>
 
-          {/* Updated grid to handle 4 cards nicely: md:grid-cols-2 lg:grid-cols-4 */}
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            
-            {/* Card 1: Frictionless Capture */}
-            <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-              <div className="bg-blue-50 w-14 h-14 rounded-2xl flex items-center justify-center mb-6">
-                <Zap className="text-blue-600" size={28} />
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-900">
-                Frictionless Capture
-              </h3>
-              <p className="text-gray-500 leading-relaxed">
-                Add tasks in seconds. Our minimal interface gets out of your way
-                so you can log your thoughts and get back to work immediately.
-              </p>
-            </div>
-
-            {/* Card 2: Smart Prioritization */}
-            <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-              <div className="bg-emerald-50 w-14 h-14 rounded-2xl flex items-center justify-center mb-6">
-                <Target className="text-emerald-600" size={28} />
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-900">
-                Smart Prioritization
-              </h3>
-              <p className="text-gray-500 leading-relaxed">
-                Not all tasks are equal. We help you separate the urgent from
-                the important, ensuring you always tackle the right thing at the
-                right time.
-              </p>
-            </div>
-
-            {/* Card 3: Reliable Automation */}
-            <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-              <div className="bg-indigo-50 w-14 h-14 rounded-2xl flex items-center justify-center mb-6">
-                <BrainCircuit className="text-indigo-600" size={28} />
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-900">
-                Reliable Automation
-              </h3>
-              <p className="text-gray-500 leading-relaxed">
-                Set recurring routines, location-based pings, and deadline
-                warnings. Once it's in the system, you can trust we will remind
-                you.
-              </p>
-            </div>
-
-            {/* NEW Card 4: Squad Collaboration */}
-            <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-              <div className="bg-purple-50 w-14 h-14 rounded-2xl flex items-center justify-center mb-6">
-                <Users className="text-purple-600" size={28} />
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-900">
-                Squad Collaboration
-              </h3>
-              <p className="text-gray-500 leading-relaxed">
-                Team up with your squad. Share tasks, sync schedules, and keep everyone accountable without the extra noise.
-              </p>
-            </div>
-
+            {FEATURES_DATA.map((feature) => (
+              <FeatureCard key={feature.title} {...feature} />
+            ))}
           </div>
         </div>
       </section>
-
 
       {/* Who it's for Section */}
       <section id="how-it-works" className="py-24 bg-white">
@@ -158,31 +145,16 @@ const Homepage = () => {
               </div>
               <ul className="space-y-4">
                 <li className="flex items-start gap-3 text-gray-600">
-                  <CheckCircle2
-                    size={20}
-                    className="text-blue-500 shrink-0 mt-0.5"
-                  />
-                  <span>
-                    Never miss an assignment deadline or discussion post.
-                  </span>
+                  <CheckCircle2 size={20} className="text-blue-500 shrink-0 mt-0.5" />
+                  <span>Never miss an assignment deadline or discussion post.</span>
                 </li>
                 <li className="flex items-start gap-3 text-gray-600">
-                  <CheckCircle2
-                    size={20}
-                    className="text-blue-500 shrink-0 mt-0.5"
-                  />
-                  <span>
-                    Break down massive term papers into daily, manageable steps.
-                  </span>
+                  <CheckCircle2 size={20} className="text-blue-500 shrink-0 mt-0.5" />
+                  <span>Break down massive term papers into daily, manageable steps.</span>
                 </li>
                 <li className="flex items-start gap-3 text-gray-600">
-                  <CheckCircle2
-                    size={20}
-                    className="text-blue-500 shrink-0 mt-0.5"
-                  />
-                  <span>
-                    Set recurring reminders for study groups and classes.
-                  </span>
+                  <CheckCircle2 size={20} className="text-blue-500 shrink-0 mt-0.5" />
+                  <span>Set recurring reminders for study groups and classes.</span>
                 </li>
               </ul>
             </div>
@@ -197,34 +169,16 @@ const Homepage = () => {
               </div>
               <ul className="space-y-4">
                 <li className="flex items-start gap-3 text-blue-50">
-                  <CheckCircle2
-                    size={20}
-                    className="text-blue-300 shrink-0 mt-0.5"
-                  />
-                  <span>
-                    Track deliverables across multiple clients or projects
-                    seamlessly.
-                  </span>
+                  <CheckCircle2 size={20} className="text-blue-300 shrink-0 mt-0.5" />
+                  <span>Track deliverables across multiple clients or projects seamlessly.</span>
                 </li>
                 <li className="flex items-start gap-3 text-blue-50">
-                  <CheckCircle2
-                    size={20}
-                    className="text-blue-300 shrink-0 mt-0.5"
-                  />
-                  <span>
-                    Prepare for meetings with timely, automated pre-meeting
-                    alerts.
-                  </span>
+                  <CheckCircle2 size={20} className="text-blue-300 shrink-0 mt-0.5" />
+                  <span>Prepare for meetings with timely, automated pre-meeting alerts.</span>
                 </li>
                 <li className="flex items-start gap-3 text-blue-50">
-                  <CheckCircle2
-                    size={20}
-                    className="text-blue-300 shrink-0 mt-0.5"
-                  />
-                  <span>
-                    Leave work at work—capture thoughts instantly and enjoy your
-                    evening.
-                  </span>
+                  <CheckCircle2 size={20} className="text-blue-300 shrink-0 mt-0.5" />
+                  <span>Leave work at work—capture thoughts instantly and enjoy your evening.</span>
                 </li>
               </ul>
             </div>
@@ -243,7 +197,10 @@ const Homepage = () => {
             increase your creative focus. Let us do the remembering for you.
           </p>
           <Link to="/login">
-            <button className="bg-gray-900 text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-800 transition-colors shadow-lg">
+            <button 
+              type="button" 
+              className="bg-gray-900 text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-800 transition-colors shadow-lg"
+            >
               Create Your Free Account
             </button>
           </Link>

@@ -4,13 +4,12 @@ import { Link } from 'react-router-dom';
 import api from '../utils/api'; 
 
 const Header = () => {
-  // Simple check to see if the user is logged in
+  // Check auth state
   const isLoggedIn = !!localStorage.getItem("token");
   
-  // State to hold the user's avatar URL
+  // Avatar URL state
   const [avatarUrl, setAvatarUrl] = useState(null);
 
-  // Fetch the user's profile data if they are logged in
   useEffect(() => {
     if (isLoggedIn) {
       api.get("/user/me")
@@ -26,80 +25,82 @@ const Header = () => {
   }, [isLoggedIn]);
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
-      <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 max-w-7xl mx-auto">
+    <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-black/[0.06] antialiased font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Text','SF_Pro_Display','Helvetica_Neue',sans-serif]">
+      <div className="flex items-center justify-between px-4 sm:px-6 h-14 max-w-5xl mx-auto">
         
-        {/* Logo Section */}
-        <Link to={isLoggedIn ? "/dashboard" : "/"} className="flex items-center gap-2 sm:gap-3 group">
-          <div className="bg-blue-600 p-1.5 sm:p-2 rounded-xl group-hover:bg-blue-700 transition-colors">
-            <LayoutDashboard className="text-white" size={22} />
+        {/* Apple-Style Branding */}
+        <Link 
+          to={isLoggedIn ? "/dashboard" : "/"} 
+          className="flex items-center gap-2 group select-none active:scale-[0.98] transition-transform"
+        >
+          <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-[0_2px_8px_rgba(37,99,235,0.25)] transition-all group-hover:bg-blue-700">
+            <LayoutDashboard size={18} strokeWidth={2.2} />
           </div>
-          <span className="text-lg sm:text-xl font-black tracking-tight text-gray-900">
-            Remind<span className="text-blue-600">Me</span>
+          <span className="text-base font-semibold tracking-tight text-slate-900">
+            Remind<span className="text-blue-600 font-bold">Me</span>
           </span>
         </Link>
       
-        {/* Dynamic Actions based on Auth State */}
-        <div className="flex items-center gap-2 sm:gap-4">
+        {/* Navigation & Actions */}
+        <div className="flex items-center gap-1 sm:gap-2">
           {!isLoggedIn ? (
             <>
-              {/* Logged Out State */}
+              {/* Logged Out Actions */}
               <Link 
                 to="/login" 
-                className="text-gray-600 hover:text-gray-900 px-3 sm:px-4 py-2 sm:py-2.5 text-sm font-semibold transition-colors"
+                className="text-slate-600 hover:text-slate-900 px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg hover:bg-slate-100/60 transition-colors"
               >
                 Log in
               </Link>
               <Link 
                 to="/register" 
-                className="bg-gray-900 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-sm font-semibold hover:bg-gray-800 transition-all shadow-sm"
+                className="bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all active:scale-[0.97] shadow-sm"
               >
                 Get Started
               </Link>
             </>
           ) : (
             <>
-              {/* Logged In State */}
-              
-              {/* 1. Standard Navigation Group */}
-              <Link
-                to="/squad"
-                className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-2 rounded-xl text-gray-600 hover:text-blue-600 hover:bg-blue-50 font-bold transition-all"
-                title="Squad"
-              >
-                <Users size={20} strokeWidth={2.5} />
-                <span className="hidden md:inline text-sm">Squad</span>
-              </Link>
+              {/* Logged In Features */}
+              <div className="flex items-center gap-0.5 sm:gap-1">
+                <Link
+                  to="/squad"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 text-xs sm:text-sm font-medium transition-all active:scale-[0.97]"
+                  title="Squad"
+                >
+                  <Users size={17} strokeWidth={2} className="text-slate-500" />
+                  <span className="hidden md:inline">Squad</span>
+                </Link>
 
-              <Link
-                to="/reminder/report"
-                className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-2 rounded-xl text-gray-600 hover:text-blue-600 hover:bg-blue-50 font-bold transition-all"
-                title="Weekly Reminder Report"
-              >
-                <BarChart3 size={20} strokeWidth={2.5} />
-                <span className="hidden md:inline text-sm">Report</span>
-              </Link>
+                <Link
+                  to="/reminder/report"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 text-xs sm:text-sm font-medium transition-all active:scale-[0.97]"
+                  title="Weekly Report"
+                >
+                  <BarChart3 size={17} strokeWidth={2} className="text-slate-500" />
+                  <span className="hidden md:inline">Report</span>
+                </Link>
+              </div>
 
-              {/* 2. Primary Call To Action */}
+              {/* iOS Primary Action */}
               <Link
                 to="/create-task"
-                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white p-2 sm:px-4 sm:py-2 rounded-xl font-bold shadow-md shadow-blue-500/20 active:scale-95 transition-all ml-1"
+                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium shadow-[0_1px_3px_rgba(37,99,235,0.3)] active:scale-[0.97] transition-all ml-1"
                 title="New Reminder"
               >
-                <Plus size={20} strokeWidth={3} />
-                <span className="hidden md:inline text-sm">New Reminder</span>
+                <Plus size={16} strokeWidth={2.5} />
+                <span className="hidden md:inline">New Reminder</span>
               </Link>
 
-              {/* 3. Divider connecting app features from account features */}
-              <div className="h-6 w-px bg-gray-200 mx-1 sm:mx-2"></div>
+              {/* Subtle Native Separator */}
+              <div className="h-4 w-px bg-slate-200/80 mx-1 sm:mx-1.5"></div>
 
-              {/* 4. Profile / Account Settings */}
+              {/* Profile Avatar */}
               <Link
                 to="/profile"
-                className="flex items-center justify-center p-1 rounded-full text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-all overflow-hidden"
-                title="Profile"
+                className="flex items-center justify-center p-0.5 rounded-full text-slate-400 hover:text-slate-700 active:scale-[0.95] transition-all"
+                title="Profile Settings"
               >
-                {/* CONDITIONAL RENDER: Image if exists, Icon if null */}
                 {avatarUrl ? (
                   <img 
                     src={avatarUrl.startsWith("/uploads") 
@@ -107,10 +108,12 @@ const Header = () => {
                       : avatarUrl
                     } 
                     alt="User Profile" 
-                    className="h-7 w-7 sm:h-8 sm:w-8 rounded-full object-cover border border-gray-200"
+                    className="h-7 w-7 rounded-full object-cover ring-1 ring-black/10 shadow-sm"
                   />
                 ) : (
-                  <CircleUser size={26} strokeWidth={2} />
+                  <div className="h-7 w-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 ring-1 ring-black/5">
+                    <CircleUser size={20} strokeWidth={1.8} />
+                  </div>
                 )}
               </Link>
             </>

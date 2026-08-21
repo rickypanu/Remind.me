@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CheckCircle, Circle, Trash2, Clock, AlertTriangle, Loader2 } from 'lucide-react';
 import api from '../utils/api';
 
@@ -8,10 +8,19 @@ export default function TaskCard({ task, refreshTasks, isPrevious }) {
   
   const [localStatus, setLocalStatus] = useState(task.status);
   const [isUpdating, setIsUpdating] = useState(false);
+  
+  const timeoutRef = useRef(null);
 
   useEffect(() => {
     setLocalStatus(task.status);
   }, [task.status]);
+
+  // Clean up any pending refresh timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
   // Modal UX: Close on Escape key
   useEffect(() => {
@@ -36,7 +45,7 @@ export default function TaskCard({ task, refreshTasks, isPrevious }) {
       await api.put(`/tasks/${task.id}?status=${newStatus}`);
       
       // 3. Wait slightly before refreshing the dashboard so the user enjoys the animation
-      setTimeout(() => {
+      timeoutRef.current = setTimeout(() => {
         refreshTasks();
         setIsUpdating(false);
       }, 700); 
@@ -62,6 +71,7 @@ export default function TaskCard({ task, refreshTasks, isPrevious }) {
 
   // Logic for Dynamic Colors on Custom Categories
   const getDynamicColor = (text) => {
+    if (!text) return 'text-gray-600 bg-gray-100 border-gray-200';
     const colors = [
       'text-teal-700 bg-teal-50 border-teal-200',
       'text-amber-700 bg-amber-50 border-amber-200',
@@ -69,7 +79,6 @@ export default function TaskCard({ task, refreshTasks, isPrevious }) {
       'text-emerald-700 bg-emerald-50 border-emerald-200',
       'text-rose-700 bg-rose-50 border-rose-200'
     ];
-    // Create a simple hash from the string to pick a consistent color
     let hash = 0;
     for (let i = 0; i < text.length; i++) {
       hash = text.charCodeAt(i) + ((hash << 5) - hash);
@@ -87,14 +96,19 @@ export default function TaskCard({ task, refreshTasks, isPrevious }) {
       case 'placement / internship': return 'text-purple-700 bg-purple-50 border-purple-200';
       case 'extracurricular': return 'text-orange-700 bg-orange-50 border-orange-200';
       case 'personal': return 'text-cyan-700 bg-cyan-50 border-cyan-200';
-      default: return getDynamicColor(category); // Assigns a random but consistent color for "Other" inputs
+      default: return getDynamicColor(category);
     }
   };
 
   // Logic for Relative Time (e.g., "Due in 2 days", "Overdue by 3 hours")
   const getRelativeTime = (dateString) => {
     if (!dateString) return "";
-    const taskDate = new Date(dateString.endsWith('Z') ? dateString : `${dateString}Z`);
+    
+    const str = String(dateString);
+    const taskDate = new Date(str.endsWith('Z') ? str : `${str}Z`);
+    
+    if (isNaN(taskDate.getTime())) return "";
+
     const now = new Date();
     const diffInMs = taskDate - now;
     
@@ -151,7 +165,7 @@ export default function TaskCard({ task, refreshTasks, isPrevious }) {
                 </span>
               )}
               
-              {task.due_date && (
+              {task.due_date && relativeTimeString && (
                 <span className={`flex items-center text-xs font-semibold transition-colors duration-500 ${
                   isCompleted ? 'text-gray-400' : isOverdue ? 'text-red-500 font-bold' : 'text-gray-500'
                 }`}>
@@ -195,11 +209,11 @@ export default function TaskCard({ task, refreshTasks, isPrevious }) {
       {showConfirm && (
         <div 
           className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-gray-900/40 backdrop-blur-sm transition-opacity"
-          onClick={() => setShowConfirm(false)} // Close on backdrop click
+          onClick={() => setShowConfirm(false)}
         >
           <div 
             className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 transform transition-all animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()} // Prevent clicks inside modal from closing it
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start gap-4 mb-5">
               <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center shrink-0">

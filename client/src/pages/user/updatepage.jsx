@@ -37,7 +37,7 @@ export default function UpdatesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // New states for the requested features
+  // States for preview mode and deletion modals
   const [isPosting, setIsPosting] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [deleteModalTarget, setDeleteModalTarget] = useState(null);
@@ -142,8 +142,6 @@ export default function UpdatesPage() {
 
   // Reusable Update Card Component for both the feed and the preview
   const UpdateCard = ({ update, isPreview = false }) => {
-    const currentId = update.id || update._id;
-    
     return (
       <div className={`bg-white rounded-3xl p-6 sm:p-8 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.03)] border transition-all duration-300 group relative ${
         isPreview ? 'border-indigo-200 shadow-[0_0_15px_-3px_rgba(99,102,241,0.15)] ring-1 ring-indigo-50' : 'border-zinc-200/80 hover:border-zinc-300'
@@ -307,7 +305,7 @@ export default function UpdatesPage() {
                       disabled={!newUpdate.title.trim() || !newUpdate.content.trim()}
                       className="flex items-center gap-2 px-6 py-3 bg-zinc-900 text-white font-semibold rounded-xl transition-all hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-md"
                     >
-                      Publish
+                      Review & Preview
                       <SendIcon size={16} />
                     </button>
                   </div>
@@ -329,12 +327,12 @@ export default function UpdatesPage() {
                     </button>
                   </div>
 
-                  {/* Render the actual card as it will look */}
+                  {/* Render the card preview */}
                   <UpdateCard update={newUpdate} isPreview={true} />
 
                   <div className="flex gap-3 pt-2">
                     <button
-                      onClick={() => { setNewUpdate({title:'', content:''}); setIsPreviewMode(false); }}
+                      onClick={() => { setNewUpdate({ title: '', content: '' }); setIsPreviewMode(false); }}
                       disabled={isPosting}
                       className="px-6 py-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-semibold rounded-xl transition-colors disabled:opacity-50"
                     >
@@ -388,12 +386,12 @@ export default function UpdatesPage() {
                 </div>
               )}
 
-              {/* OLDER UPDATES */}
+              {/* EARLIER / OLDER UPDATES */}
               {olderUpdates.length > 0 && (
                 <div className="space-y-4">
                   <div className="flex items-center gap-3 px-2">
                     <div className="h-px bg-zinc-200 flex-1"></div>
-                    <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Previous Updates</h2>
+                    <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Earlier</h2>
                     <div className="h-px bg-zinc-200 flex-1"></div>
                   </div>
                   <div className="space-y-6">
@@ -406,21 +404,19 @@ export default function UpdatesPage() {
 
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-20 px-4 text-center bg-white rounded-3xl border border-zinc-200/80 border-dashed">
-              <div className="bg-zinc-50 p-4 rounded-full mb-4">
-                <Megaphone className="text-zinc-300 w-8 h-8" />
+            /* EMPTY STATE */
+            <div className="bg-white rounded-3xl p-12 text-center border border-zinc-200/80 shadow-sm">
+              <div className="w-12 h-12 rounded-2xl bg-zinc-100 text-zinc-400 flex items-center justify-center mx-auto mb-4">
+                <Megaphone size={24} />
               </div>
-              <h3 className="text-lg font-bold text-zinc-900 mb-2">
-                No updates yet
-              </h3>
-              <p className="text-zinc-500 text-sm max-w-sm leading-relaxed">
-                Check back later! We're always working on something new and
-                exciting to share with you.
+              <h3 className="text-lg font-bold text-zinc-900 mb-1">No updates yet</h3>
+              <p className="text-zinc-500 text-sm max-w-sm mx-auto">
+                Check back later for news, product announcements, and release notes.
               </p>
             </div>
           )}
         </div>
-        
+
       </div>
     </div>
   );
