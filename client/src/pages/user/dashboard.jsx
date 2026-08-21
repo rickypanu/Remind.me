@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -16,22 +16,24 @@ import Header from "../../components/Header";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
   const [activeTab, setActiveTab] = useState("today");
   const [isMissedOpen, setIsMissedOpen] = useState(false);
 
-  const queryClient = useQueryClient();
-
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     localStorage.removeItem("token");
     navigate("/");
-  };
+  }, [navigate]);
 
-  const {
-    data,
-    isLoading: loading,
-    isError,
-    error,
-  } = useQuery({
+  // Auth Guard
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) navigate("/");
+  }, [navigate]);
+
+  // Data Fetching
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ["dashboardData"],
     queryFn: async () => {
       const [userResponse, tasksResponse] = await Promise.all([
@@ -40,23 +42,18 @@ export default function Dashboard() {
       ]);
       return {
         userInfo: userResponse.data,
-        tasks: tasksResponse.data,
+        tasks: tasksResponse.data || [],
       };
     },
     staleTime: 5 * 60 * 1000,
-    retry: (failureCount, error) => error.response?.status !== 401,
+    retry: (_, err) => err?.response?.status !== 401,
   });
 
   useEffect(() => {
-    if (isError && error.response?.status === 401) {
+    if (isError && error?.response?.status === 401) {
       handleLogout();
     }
-  }, [isError, error]);
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) navigate("/");
-  }, [navigate]);
+  }, [isError, error, handleLogout]);
 
   const userInfo = data?.userInfo || null;
   const tasks = data?.tasks || [];
@@ -65,80 +62,71 @@ export default function Dashboard() {
     queryClient.invalidateQueries({ queryKey: ["dashboardData"] });
   };
 
-  // --- Time & Date Helpers ---
-  const getSafeDate = (dateString) => {
-    if (!dateString) return null;
-    return new Date(dateString.endsWith("Z") ? dateString : `${dateString}Z`);
-  };
-
-  const getGreeting = () => {
+  // --- Dynamic Greeting (Stable across renders) ---
+  const greeting = useMemo(() => {
     const hour = new Date().getHours();
+    if (hour < 6) return "Late night grind";
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  }, []);
 
-    const greetings = {
-      lateNight: ["Working late", "Quiet hours", "Night owl focus", "Late night grind"],
-      morning: ["Good morning", "Rise and shine", "Fresh start", "Ready for today"],
-      afternoon: ["Good afternoon", "Keep moving", "Focus mode", "Midday momentum"],
-      evening: ["Good evening", "Winding down", "Day's wrap", "Time to recharge"],
-    };
-    let timeCategory;
-    if (hour < 6) timeCategory = "lateNight";
-    else if (hour < 12) timeCategory = "morning";
-    else if (hour < 18) timeCategory = "afternoon";
-    else timeCategory = "evening";
+  // --- Task Categorization Engine ---
+  const { missedTasks, todayTasks, upcomingTasks, completedTasks } =
+    useMemo(() => {
+      const now = new Date();
+      const startOfToday = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+      ).getTime();
+      const endOfToday = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        23,
+        59,
+        59,
+        999,
+      ).getTime();
 
-    const options = greetings[timeCategory];
-    return options[Math.floor(Math.random() * options.length)];
-  };
+      const missed = [];
+      const today = [];
+      const upcoming = [];
+      const completed = [];
 
-  // --- Filtering Logic ---
-  const now = new Date();
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const endOfToday = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-    23,
-    59,
-    59
-  );
+      tasks.forEach((task) => {
+        if (task.status === "completed") {
+          completed.push(task);
+          return;
+        }
 
-  const missedTasks = tasks.filter((task) => {
-    const dueDate = getSafeDate(task.due_date);
-    return dueDate && dueDate < startOfToday && task.status === "pending";
-  });
+        if (!task.due_date) {
+          upcoming.push(task);
+          return;
+        }
 
-  const todayTasks = tasks.filter((task) => {
-    const dueDate = getSafeDate(task.due_date);
-    return (
-      dueDate &&
-      dueDate >= startOfToday &&
-      dueDate <= endOfToday &&
-      task.status === "pending"
-    );
-  });
+        // Safe Local Date Parsing
+        const dateVal = new Date(task.due_date).getTime();
 
-  const upcomingTasks = tasks.filter((task) => {
-    if (task.status !== "pending") return false;
-    const dueDate = getSafeDate(task.due_date);
-    if (!dueDate) return true;
-    return dueDate > endOfToday;
-  });
+        if (isNaN(dateVal)) {
+          upcoming.push(task);
+        } else if (dateVal < startOfToday) {
+          missed.push(task);
+        } else if (dateVal >= startOfToday && dateVal <= endOfToday) {
+          today.push(task);
+        } else {
+          upcoming.push(task);
+        }
+      });
 
-  const completedTasks = tasks.filter((task) => task.status === "completed");
-
-  const getDisplayedTasks = () => {
-    if (activeTab === "upcoming") return upcomingTasks;
-    if (activeTab === "completed") return completedTasks;
-    return todayTasks;
-  };
-
-  const displayedTasks = getDisplayedTasks();
-
-  const tabs = [
-    { id: "today", label: "Today", count: todayTasks.length, icon: Sun },
-    { id: "upcoming", label: "Upcoming", count: upcomingTasks.length, icon: CalendarDays },
-    { id: "completed", label: "Done", count: completedTasks.length, icon: CheckCircle2 },
-  ];
+      return {
+        missedTasks: missed,
+        todayTasks: today,
+        upcomingTasks: upcoming,
+        completedTasks: completed,
+      };
+    }, [tasks]);
 
   useEffect(() => {
     if (missedTasks.length === 0) {
@@ -146,13 +134,34 @@ export default function Dashboard() {
     }
   }, [missedTasks.length]);
 
+  const displayedTasks = useMemo(() => {
+    if (activeTab === "upcoming") return upcomingTasks;
+    if (activeTab === "completed") return completedTasks;
+    return todayTasks;
+  }, [activeTab, upcomingTasks, completedTasks, todayTasks]);
+
+  const tabs = [
+    { id: "today", label: "Today", count: todayTasks.length, icon: Sun },
+    {
+      id: "upcoming",
+      label: "Upcoming",
+      count: upcomingTasks.length,
+      icon: CalendarDays,
+    },
+    {
+      id: "completed",
+      label: "Done",
+      count: completedTasks.length,
+      icon: CheckCircle2,
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-[#F5F5F7] pb-24 text-slate-900 antialiased selection:bg-blue-500/20 selection:text-blue-600 font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Text','SF_Pro_Display','Helvetica_Neue',sans-serif]">
+    <div className="min-h-screen bg-[#F5F5F7] pb-24 text-slate-900 antialiased font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Text','Helvetica_Neue',sans-serif]">
       <Header />
 
       <main className="max-w-2xl mx-auto px-5 sm:px-6">
-        {/* Apple-style Hero Header */}
-        <div className="pt-12 pb-6">
+        <div className="pt-10 pb-6">
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
             {new Date().toLocaleDateString("en-US", {
               weekday: "long",
@@ -160,18 +169,20 @@ export default function Dashboard() {
               day: "numeric",
             })}
           </p>
-          
-          <h1 className="text-3xl sm:text-4xl font-semibold text-slate-900 tracking-tight leading-tight">
-            {getGreeting()}, <span className="text-slate-500 font-normal">{userInfo?.username?.split(" ")[0]}</span>
+          <h1 className="text-3xl sm:text-4xl font-semibold text-slate-900 tracking-tight">
+            {greeting},{" "}
+            <span className="text-slate-500 font-normal">
+              {userInfo?.username ? userInfo.username.split(" ")[0] : "there"}
+            </span>
           </h1>
         </div>
 
-        {/* Missed Tasks / Notification Banner (iOS Card Style) */}
+        {/* Overdue Banner */}
         {missedTasks.length > 0 && (
-          <div className="mb-6 bg-white/80 backdrop-blur-md rounded-2xl border border-rose-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden transition-all duration-300">
+          <div className="mb-6 bg-white/90 backdrop-blur-md rounded-2xl border border-rose-100 shadow-sm overflow-hidden transition-all duration-200">
             <button
-              onClick={() => setIsMissedOpen(!isMissedOpen)}
-              className="w-full flex items-center justify-between p-3.5 px-4 bg-rose-50/40 hover:bg-rose-50/70 transition-colors focus:outline-none group active:scale-[0.99]"
+              onClick={() => setIsMissedOpen((prev) => !prev)}
+              className="w-full flex items-center justify-between p-3.5 px-4 bg-rose-50/50 hover:bg-rose-50/80 transition-colors focus:outline-none"
             >
               <div className="flex items-center gap-3">
                 <div className="w-7 h-7 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-sm">
@@ -181,46 +192,39 @@ export default function Dashboard() {
                   <span className="text-xs font-semibold text-rose-900 block leading-tight">
                     Overdue Tasks
                   </span>
-                  <span className="text-[11px] text-rose-600/90 font-normal">
-                    {missedTasks.length} {missedTasks.length === 1 ? "item needs" : "items need"} attention
+                  <span className="text-[11px] text-rose-600 font-normal">
+                    {missedTasks.length}{" "}
+                    {missedTasks.length === 1 ? "item needs" : "items need"}{" "}
+                    attention
                   </span>
                 </div>
               </div>
-              <div className="w-6 h-6 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 group-hover:bg-slate-200 transition-colors">
+              <div className="w-6 h-6 flex items-center justify-center rounded-full bg-slate-100 text-slate-500">
                 <ChevronDown
                   size={14}
                   strokeWidth={2.5}
-                  className={`transition-transform duration-300 ease-out ${
-                    isMissedOpen ? "rotate-180" : "rotate-0"
-                  }`}
+                  className={`transition-transform duration-200 ${isMissedOpen ? "rotate-180" : "rotate-0"}`}
                 />
               </div>
             </button>
 
-            {/* Expandable Container */}
-            <div
-              className={`grid transition-all duration-300 ease-in-out ${
-                isMissedOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-              }`}
-            >
-              <div className="overflow-hidden">
-                <div className="p-3 pt-0 grid gap-2 max-h-[40vh] overflow-y-auto">
-                  {missedTasks.map((task) => (
-                    <TaskCard
-                      key={task.id}
-                      task={task}
-                      refreshTasks={refreshTasks}
-                      isPrevious={false}
-                    />
-                  ))}
-                </div>
+            {isMissedOpen && (
+              <div className="p-3 pt-1 grid gap-2 max-h-[40vh] overflow-y-auto border-t border-rose-100/60">
+                {missedTasks.map((task) => (
+                  <TaskCard
+                    key={task.id || task._id}
+                    task={task}
+                    refreshTasks={refreshTasks}
+                    isPrevious={false}
+                  />
+                ))}
               </div>
-            </div>
+            )}
           </div>
         )}
 
-        {/* Native Segmented Control */}
-        <div className="p-1 bg-[#E5E5EA]/70 backdrop-blur-md rounded-xl mb-6 shadow-inner flex items-center gap-1">
+        {/* Navigation Tabs */}
+        <div className="p-1 bg-[#E5E5EA]/80 backdrop-blur-md rounded-xl mb-6 grid grid-cols-3 gap-1">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             const Icon = tab.icon;
@@ -228,20 +232,24 @@ export default function Dashboard() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 py-1.5 px-3 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 ease-out flex items-center justify-center gap-2 select-none active:scale-[0.98] ${
+                className={`w-full py-1.5 px-1 sm:px-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-150 flex items-center justify-center gap-1 select-none overflow-hidden ${
                   isActive
-                    ? "bg-white text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.1),0_1px_2px_rgba(0,0,0,0.06)] font-semibold"
+                    ? "bg-white text-slate-900 shadow-sm font-semibold"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 <Icon
-                  size={15}
+                  size={14}
                   strokeWidth={isActive ? 2.2 : 1.8}
-                  className={isActive ? "text-blue-600" : "text-slate-400"}
+                  className={
+                    isActive
+                      ? "text-blue-600 shrink-0"
+                      : "text-slate-400 shrink-0"
+                  }
                 />
-                <span>{tab.label}</span>
+                <span className="truncate">{tab.label}</span>
                 <span
-                  className={`px-1.5 py-0.2 text-[10px] rounded-full font-medium transition-colors ${
+                  className={`px-1 py-0.5 text-[10px] rounded-full font-medium shrink-0 ${
                     isActive
                       ? "bg-slate-100 text-slate-700"
                       : "bg-slate-300/40 text-slate-500"
@@ -254,20 +262,20 @@ export default function Dashboard() {
           })}
         </div>
 
-        {/* Task Section */}
-        {loading ? (
-          <div className="flex flex-col justify-center items-center py-24 text-slate-400 space-y-3">
-            <Loader2 className="animate-spin text-slate-500" size={24} strokeWidth={2} />
-            <p className="text-xs font-medium text-slate-400 tracking-wide">
-              Syncing...
+        {/* Task List */}
+        {isLoading ? (
+          <div className="flex flex-col justify-center items-center py-20 text-slate-400 space-y-3">
+            <Loader2 className="animate-spin text-slate-500" size={22} />
+            <p className="text-xs font-medium text-slate-400">
+              Loading tasks...
             </p>
           </div>
         ) : (
           <div className="grid gap-2.5">
             {displayedTasks.length === 0 ? (
-              <div className="text-center py-16 px-6 bg-white/60 backdrop-blur-md rounded-2xl border border-slate-200/50 shadow-[0_1px_2px_rgba(0,0,0,0.02)] flex flex-col items-center justify-center">
-                <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-3">
-                  <Coffee size={22} strokeWidth={1.8} />
+              <div className="text-center py-16 px-6 bg-white/70 backdrop-blur-md rounded-2xl border border-slate-200/60 flex flex-col items-center justify-center">
+                <div className="w-10 h-10 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-3">
+                  <Coffee size={20} strokeWidth={1.8} />
                 </div>
                 <h3 className="text-slate-900 font-medium text-sm mb-0.5">
                   All Clear
@@ -276,14 +284,14 @@ export default function Dashboard() {
                   {activeTab === "completed"
                     ? "Completed tasks will show up here."
                     : activeTab === "upcoming"
-                    ? "No scheduled tasks on your radar."
-                    : "You're all caught up for today."}
+                      ? "No upcoming tasks found."
+                      : "You're all caught up for today."}
                 </p>
               </div>
             ) : (
               displayedTasks.map((task) => (
                 <TaskCard
-                  key={task.id}
+                  key={task.id || task._id}
                   task={task}
                   refreshTasks={refreshTasks}
                   isPrevious={activeTab === "completed"}

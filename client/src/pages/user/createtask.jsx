@@ -11,7 +11,7 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
-  PenTool
+  PenTool,
 } from "lucide-react";
 import api from "../../utils/api";
 
@@ -58,7 +58,10 @@ export default function CreateTask() {
 
     try {
       const isoDate = new Date(formData.due_date).toISOString();
-      const finalCategory = formData.category === "Other" ? customCategory.trim() : formData.category;
+      const finalCategory =
+        formData.category === "Other"
+          ? customCategory.trim()
+          : formData.category;
 
       const payload = {
         title: formData.title,
@@ -86,21 +89,20 @@ export default function CreateTask() {
       setTimeout(() => {
         navigate("/dashboard");
       }, 800);
-
     } catch (err) {
       setError(
         err.response?.data?.detail ||
-          "Failed to create task. Make sure all required fields are filled."
+          "Failed to create task. Make sure all required fields are filled.",
       );
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7] pb-28 md:pb-12 text-slate-900 antialiased font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Text','SF_Pro_Display','Helvetica_Neue',sans-serif]">
+    <div className="min-h-screen bg-[#F5F5F7] pb-36 md:pb-12 text-slate-900 antialiased font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Text','SF_Pro_Display','Helvetica_Neue',sans-serif]">
       <Toaster />
 
-      {/* iOS-Style Navigation Bar */}
+      {/* Navigation Bar */}
       <nav className="sticky top-0 z-40 bg-white/70 backdrop-blur-xl border-b border-black/[0.06] px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <Link
@@ -111,15 +113,17 @@ export default function CreateTask() {
               size={18}
               className="mr-0.5 -ml-1 transition-transform group-hover:-translate-x-0.5"
             />
-            <span>Dashboard</span>
+            <span>Back</span>
           </Link>
-          <span className="text-xs font-semibold text-slate-900">New Reminder</span>
+          <span className="text-xs font-semibold text-slate-900">
+            New Reminder
+          </span>
           <div className="w-12"></div>
         </div>
       </nav>
 
-      {/* Main Content Container */}
-      <main className="max-w-xl mx-auto px-5 mt-8">
+      {/* Main Container */}
+      <main className="max-w-xl mx-auto px-5 mt-6">
         <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200/60 p-6 sm:p-8 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
           <h1 className="text-2xl font-semibold text-slate-900 mb-6 tracking-tight">
             Create Reminder
@@ -133,7 +137,7 @@ export default function CreateTask() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Title Input */}
+            {/* Title */}
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-1.5 ml-0.5">
                 Title
@@ -151,15 +155,16 @@ export default function CreateTask() {
                   value={formData.title}
                   onChange={handleChange}
                   required
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-100/70 border border-transparent rounded-xl text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all font-normal"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-100/70 border border-transparent rounded-xl text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all font-normal min-h-[44px]"
                 />
               </div>
             </div>
 
-            {/* Description Input */}
+            {/* Description */}
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-1.5 ml-0.5">
-                Notes <span className="text-slate-400 font-normal">(Optional)</span>
+                Notes{" "}
+                <span className="text-slate-400 font-normal">(Optional)</span>
               </label>
               <div className="relative group">
                 <AlignLeft
@@ -178,9 +183,9 @@ export default function CreateTask() {
               </div>
             </div>
 
-            {/* Category and Date Layout */}
+            {/* Category & Due Date Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Category Dropdown */}
+              {/* Category */}
               <div className="space-y-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-500 mb-1.5 ml-0.5">
@@ -188,19 +193,21 @@ export default function CreateTask() {
                   </label>
                   <div className="relative group">
                     <Tag
-                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors"
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors pointer-events-none"
                       size={17}
                     />
                     <select
                       name="category"
                       value={formData.category}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-8 py-2.5 bg-slate-100/70 border border-transparent rounded-xl text-xs sm:text-sm text-slate-900 appearance-none focus:bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all cursor-pointer font-normal"
+                      className="w-full pl-10 pr-8 py-2.5 bg-slate-100/70 border border-transparent rounded-xl text-xs sm:text-sm text-slate-900 focus:bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all cursor-pointer font-normal min-h-[44px]"
                     >
                       <option value="Assignment">Assignment</option>
                       <option value="Project">Project</option>
                       <option value="Exam / Quiz">Exam / Quiz</option>
-                      <option value="Placement / Internship">Placement / Internship</option>
+                      <option value="Placement / Internship">
+                        Placement / Internship
+                      </option>
                       <option value="Extracurricular">Extracurricular</option>
                       <option value="Personal">Personal</option>
                       <option value="Other">Other (Specify)</option>
@@ -222,23 +229,23 @@ export default function CreateTask() {
                         value={customCategory}
                         onChange={(e) => {
                           setCustomCategory(e.target.value);
-                          setError(""); 
+                          setError("");
                         }}
-                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-blue-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all"
+                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-blue-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all min-h-[44px]"
                       />
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Due Date Input */}
+              {/* Fixed Due Date Input */}
               <div>
                 <label className="block text-xs font-medium text-slate-500 mb-1.5 ml-0.5">
                   Due Date
                 </label>
-                <div className="relative group">
+                <div className="relative group w-full">
                   <Calendar
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors"
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors pointer-events-none z-10"
                     size={17}
                   />
                   <input
@@ -248,26 +255,27 @@ export default function CreateTask() {
                     value={formData.due_date}
                     onChange={handleChange}
                     required
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-100/70 border border-transparent rounded-xl text-xs sm:text-sm text-slate-900 focus:bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all font-normal"
+                    className="w-full block pl-10 pr-3 py-2.5 bg-slate-100/70 border border-transparent rounded-xl text-xs sm:text-sm text-slate-900 focus:bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all font-normal min-h-[44px] cursor-pointer appearance-none text-left"
                   />
                 </div>
               </div>
             </div>
 
             {/* Action Bar */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-xl border-t border-slate-200/60 md:static md:p-0 md:bg-transparent md:border-none md:shadow-none z-40 flex items-center gap-3 md:pt-4">
+            {/* Fixed Bottom-0 hata kar simple padding-top aur margin do */}
+            <div className="pt-6 flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => navigate("/dashboard")}
-                className="flex-1 md:flex-none px-5 py-2.5 bg-slate-100 hover:bg-slate-200/80 text-slate-700 font-medium rounded-xl text-xs sm:text-sm transition-all active:scale-[0.98] flex items-center justify-center"
+                className="flex-1 md:flex-none px-5 py-2.5 bg-slate-100 hover:bg-slate-200/80 text-slate-700 font-medium rounded-xl text-xs sm:text-sm transition-all active:scale-[0.98] flex items-center justify-center min-h-[44px]"
               >
                 Cancel
               </button>
-              
+
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-[2] md:flex-auto py-2.5 px-5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl text-xs sm:text-sm shadow-[0_1px_3px_rgba(37,99,235,0.3)] transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                className="flex-[2] md:flex-auto py-2.5 px-5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl text-xs sm:text-sm shadow-[0_1px_3px_rgba(37,99,235,0.3)] transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 min-h-[44px]"
               >
                 {loading ? (
                   <Loader2 className="animate-spin" size={18} />

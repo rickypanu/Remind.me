@@ -4,6 +4,7 @@ from apscheduler.triggers.cron import CronTrigger
 from collections import defaultdict
 from datetime import datetime, timedelta
 import pytz
+import random
 
 from database import db
 from routes.webpush_service import send_web_push
@@ -17,16 +18,73 @@ async def dispatch_user_notifications(user: dict, title: str, body: str):
     # 1. Web Push Dispatch
     if "push_subscriptions" in user and user["push_subscriptions"]:
         for subscription in user["push_subscriptions"]:
-            send_web_push(subscription, title, body)
+            try:
+                send_web_push(subscription, title, body)
+            except Exception as e:
+                print(f"Web Push Dispatch Error: {e}")
             
     # 2. Telegram Dispatch
     telegram_chat_id = user.get("telegram_chat_id")
     if telegram_chat_id:
-        await send_telegram_notification(telegram_chat_id, title, body)
+        try:
+            await send_telegram_notification(telegram_chat_id, title, body)
+        except Exception as e:
+            print(f"Telegram Dispatch Error: {e}")
+
+# ---------------------------------------------------------
+# PSYCHOLOGICAL DYNAMIC COPY GENERATORS
+# ---------------------------------------------------------
+
+def get_due_soon_copy(task_title: str) -> tuple[str, str]:
+    """Urgency & Action-Oriented (T-60 Minutes)"""
+    templates = [
+        ("🚨 Action Required | 1 Hour Left", f"'{task_title}' is due shortly!"),
+        ("⌛ Final Stretch!", f"Just 60 minutes remaining for '{task_title}'. Time to focus and finish strong."),
+        ("⏰ Clock is Ticking", f"'{task_title}' deadline is approaching. Take action now to check it off your list!"),
+    ]
+    return random.choice(templates)
+
+def get_today_digest_copy(task_titles: list[str], hour: int) -> tuple[str, str]:
+    """Time-Contextual Copy for Today's Digest"""
+    count = len(task_titles)
+    task_list_str = "\n• " + "\n• ".join(task_titles)
+
+    # Morning Focus (8 AM)
+    if hour < 12:
+        title = "🌅 Good Morning! Today's Action Plan"
+        body = f"You have {count} critical task(s) lined up today:\n{task_list_str}\n\nStart strong and set the momentum!"
+    # Midday Check-in (1 PM - 3 PM)
+    elif hour < 17:
+        title = "⚡ Midday Momentum Check"
+        body = f"Halfway through the day! You still have {count} task(s) pending:\n{task_list_str}\n\nKeep driving forward."
+    # Evening Wrap-up (6 PM - 8 PM)
+    else:
+        title = "🌙 Evening Review | Pending Tasks"
+        body = f"Clear your mind before calling it a day. {count} task(s) remaining:\n{task_list_str}\n\nFinish up or reschedule!"
+
+    return title, body
+
+def get_tomorrow_digest_copy(task_titles: list[str]) -> tuple[str, str]:
+    """Preparation & Peace of Mind Copy (Night Before)"""
+    count = len(task_titles)
+    task_list_str = "\n• " + "\n• ".join(task_titles)
+
+    templates = [
+        (
+            "📅 Tomorrow's Head Start",
+            f"Planning ahead reduces stress. You have {count} task(s) queued for tomorrow:\n{task_list_str}"
+        ),
+        (
+            "🧠 Prepare Your Mind for Tomorrow",
+            f"Here is your agenda for tomorrow ({count} task(s)):\n{task_list_str}\n\nGet rest knowing you're fully prepared."
+        )
+    ]
+    return random.choice(templates)
 
 # ---------------------------------------------------------
 # SCHEDULER TASKS
 # ---------------------------------------------------------
+
 async def remind_upcoming_tasks():
     now_utc = datetime.now(pytz.utc)
     target_start = now_utc + timedelta(minutes=59)
@@ -42,8 +100,7 @@ async def remind_upcoming_tasks():
         user_id = task.get("user_id")
         user = await db["users"].find_one({"_id": user_id})
         if user:
-            title = "⏰ Task Due Soon!"
-            body = f"'{task['title']}' is due in 1 hour."
+            title, body = get_due_soon_copy(task.get("title", "Untitled Task"))
             await dispatch_user_notifications(user, title, body)
 
 async def remind_todays_tasks():
@@ -62,13 +119,12 @@ async def remind_todays_tasks():
     tasks = await db["tasks"].find(query).to_list(length=None)
     user_tasks = defaultdict(list)
     for task in tasks:
-        user_tasks[task.get("user_id")].append(task['title'])
+        user_tasks[task.get("user_id")].append(task.get('title', 'Untitled Task'))
         
     for user_id, task_titles in user_tasks.items():
         user = await db["users"].find_one({"_id": user_id})
         if user:
-            title = "📌 Today's Tasks Summary"
-            body = f"You have {len(task_titles)} pending task(s) for today:\n• " + "\n• ".join(task_titles)
+            title, body = get_today_digest_copy(task_titles, now_ist.hour)
             await dispatch_user_notifications(user, title, body)
 
 async def remind_tomorrows_tasks():
@@ -87,25 +143,29 @@ async def remind_tomorrows_tasks():
     tasks = await db["tasks"].find(query).to_list(length=None)
     user_tasks = defaultdict(list)
     for task in tasks:
-        user_tasks[task.get("user_id")].append(task['title'])
+        user_tasks[task.get("user_id")].append(task.get('title', 'Untitled Task'))
         
     for user_id, task_titles in user_tasks.items():
         user = await db["users"].find_one({"_id": user_id})
         if user:
-            title = "📅 Tomorrow's Planned Tasks"
-            body = f"You have {len(task_titles)} task(s) scheduled for tomorrow:\n• " + "\n• ".join(task_titles)
+            title, body = get_tomorrow_digest_copy(task_titles)
             await dispatch_user_notifications(user, title, body)
 
 # ---------------------------------------------------------
 # SCHEDULER INITIALIZATION
 # ---------------------------------------------------------
+
 @router.on_event("startup")
 async def start_scheduler():
     scheduler = AsyncIOScheduler(timezone=IST)
     
     scheduler.add_job(remind_upcoming_tasks, CronTrigger(minute="*"))
-    scheduler.add_job(remind_todays_tasks, CronTrigger(hour="8,13,15,18,20", minute="0"))
-    scheduler.add_job(remind_tomorrows_tasks, CronTrigger(hour="16,20", minute="0"))
+    
+    # Reduced frequencies to avoid notification fatigue: 8 AM (Morning), 2 PM (Midday), 8 PM (Evening)
+    scheduler.add_job(remind_todays_tasks, CronTrigger(hour="8,14,20", minute="0"))
+    
+    # 9 PM for tomorrow's planning
+    scheduler.add_job(remind_tomorrows_tasks, CronTrigger(hour="21", minute="0"))
     
     scheduler.start()
     print("Notification background scheduler running.")

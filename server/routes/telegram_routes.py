@@ -58,10 +58,15 @@ async def telegram_webhook(request: Request):
 
                 payload = {
                     "chat_id": chat_id,
-                    "text": "✅ Connected! Share your phone number below to receive SMS & phone alerts (optional):",
+                    "text": (
+                        "*Account Linked Successfully!*\n\n"
+                        "To ensure you receive SMS notifications, *sharing your phone number is strongly recommended*.\n\n"
+                        "Please tap the button below to complete your profile verification."
+                    ),
+                    "parse_mode": "Markdown",
                     "reply_markup": {
                         "keyboard": [[{
-                            "text": "📱 Share Phone Number",
+                            "text": "📱 Share Phone Number (Recommended)",
                             "request_contact": True
                         }]],
                         "resize_keyboard": True,
@@ -86,7 +91,12 @@ async def telegram_webhook(request: Request):
 
             payload = {
                 "chat_id": chat_id,
-                "text": f"👍 Phone number saved: {phone_number}",
+                "text": (
+                    "🎉 *Verification Complete!*\n\n"
+                    f"Your phone number (`{phone_number}`) has been securely verified and saved.\n"
+                    "You will now receive notifications directly."
+                ),
+                "parse_mode": "Markdown",
                 "reply_markup": {"remove_keyboard": True}
             }
             if TELEGRAM_BOT_TOKEN:
@@ -105,4 +115,4 @@ async def disconnect_telegram(payload: TelegramPayload):
         {"_id": payload.userId},
         {"$unset": {"telegram_chat_id": "", "phone_number": ""}}
     )
-    return {"message": "Telegram disconnected successfully"}
+    return {"message": "Telegram account disconnected successfully."}

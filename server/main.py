@@ -2,7 +2,6 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-# Added 'telegram' to your imported routes
 from routes import auth, tasks, user, webpush, notification, squad, chatwebsocket, squad_analytics, update,telegram_routes, notification_scheduler
 from fastapi.staticfiles import StaticFiles
 
