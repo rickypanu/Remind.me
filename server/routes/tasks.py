@@ -5,8 +5,12 @@ from datetime import datetime
 from bson import ObjectId
 from database import get_db
 from routes.auth import get_current_user
+import pytz 
+from database import db 
 
 router = APIRouter()
+
+IST = pytz.timezone('Asia/Kolkata')
 
 # --- Pydantic Schemas ---
 class TaskCreate(BaseModel):
@@ -73,4 +77,24 @@ async def delete_task(task_id: str, current_user: dict = Depends(get_current_use
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Task not found or you are not authorized to delete it")
         
-    return {"message": "Task deleted successfully"}
+    return {"message": "Task deleted successfully"}\
+
+class TaskCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    category: str
+    due_date: datetime
+    status: str = "pending"
+
+@router.post("/tasks/")
+async def create_task(task: TaskCreate):
+    if task.due_date.tzinfo is None:
+        task.due_date = IST.localize(task.due_date)
+    
+    utc_due_date = task.due_date.astimezone(pytz.utc)
+    
+    task_dict = task.dict()
+    task_dict["due_date"] = utc_due_date
+    
+    await db["tasks"].insert_one(task_dict)
+    return {"message": "Task created successfully"}
