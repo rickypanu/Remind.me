@@ -10,7 +10,7 @@ from apscheduler.triggers.cron import CronTrigger
 from database import db
 from routes.webpush_service import send_web_push
 from routes.telegram_service import send_telegram_notification
-from notification_messages import (
+from routes.notification_messages import (
     get_due_soon_copy,
     get_today_digest_copy,
     get_tomorrow_digest_copy,
