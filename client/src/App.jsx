@@ -5,8 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Home from "./pages/public/Home";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
-import Dashboard from "./pages/dashboard/dashboard";
-import CreateTask from "./pages/user/CreateTask";
+import Dashboard from "./pages/dashboard/Dashboard";
+import CreateTask from "./pages/user/CreateTask"
 import Profile from "./pages/user/Profile";
 import UpdatesPage from "./pages/user/UpdatePage";
 import About from "./pages/public/About";
