@@ -11,12 +11,24 @@ export default defineConfig({
     babel({ presets: [reactCompilerPreset()] }),
     VitePWA({
       registerType: 'autoUpdate',
-      manifest: false, // Reads your public/manifest.json directly
+      manifest: false,
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon-*.png'],
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,json}'],
-        globStrict: false,
         navigateFallback: '/index.html',
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) =>
+              request.destination === 'document' ||
+              request.destination === 'script' ||
+              request.destination === 'style' ||
+              request.destination === 'image',
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'app-cache',
+            },
+          },
+        ],
       },
     }),
   ],
