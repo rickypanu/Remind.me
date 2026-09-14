@@ -6,9 +6,9 @@ import Home from "./pages/public/Home";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import Dashboard from "./pages/dashboard/Dashboard";
-import CreateTask from "./pages/user/CreateTask"
-import Profile from "./pages/user/Profile";
-import UpdatesPage from "./pages/user/UpdatePage";
+import CreateTask from "./pages/user/createtask";
+import Profile from "./pages/user/profile";
+import UpdatesPage from "./pages/user/updatepage";
 import About from "./pages/public/About";
 import TelegramSetup from "./pages/user/TelegramSetup";
 import Terms from "./pages/public/Terms";
