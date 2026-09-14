@@ -14,6 +14,7 @@ export default defineConfig({
       manifest: false,
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon-*.png'],
       workbox: {
+        globStrict: undefined, // Prevents passing globStrict to older workbox-build validators
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,json}'],
         navigateFallback: '/index.html',
         runtimeCaching: [
