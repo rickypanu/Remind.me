@@ -10,6 +10,8 @@ import {
   LayoutDashboard,
   Eye,
   EyeOff,
+  ArrowLeft,
+  XCircle,
 } from "lucide-react";
 import api from "../../utils/api";
 
@@ -40,59 +42,34 @@ export default function Register() {
     setError("");
   };
 
-  // --- Password Strength Logic ---
-  const calculateStrength = (pass) => {
-    let score = 0;
-    if (!pass) return 0;
-    if (pass.length >= 8) score += 1;
-    if (/[a-z]/.test(pass) && /[A-Z]/.test(pass)) score += 1;
-    if (/\d/.test(pass)) score += 1;
-    if (/[^A-Za-z0-9]/.test(pass)) score += 1;
-    return score;
+  // --- Real-time Password Validation Logic ---
+  const passwordCriteria = {
+    length: formData.password.length >= 8,
+    uppercase: /[A-Z]/.test(formData.password),
+    lowercase: /[a-z]/.test(formData.password),
+    number: /\d/.test(formData.password),
+    special: /[^A-Za-z0-9]/.test(formData.password),
   };
 
-  const passwordStrength = calculateStrength(formData.password);
+  const isPasswordValid = Object.values(passwordCriteria).every(Boolean);
+  
+  const passwordsMatch = formData.password === formData.confirmPassword;
+  const showMatchError = formData.confirmPassword.length > 0 && !passwordsMatch;
+  const showMatchSuccess = formData.confirmPassword.length > 0 && passwordsMatch;
 
-  const getStrengthLabel = (score) => {
-    switch (score) {
-      case 1:
-        return "Weak";
-      case 2:
-        return "Fair";
-      case 3:
-        return "Good";
-      case 4:
-        return "Strong";
-      default:
-        return "";
-    }
-  };
+  // Form is only valid if fields are filled, password meets criteria, and passwords match
+  const isFormValid =
+    formData.username.trim() !== "" &&
+    formData.email.trim() !== "" &&
+    isPasswordValid &&
+    passwordsMatch;
 
-  const getStrengthColor = (score, index) => {
-    if (score < index) return "bg-gray-200";
-    switch (score) {
-      case 1:
-        return "bg-red-500";
-      case 2:
-        return "bg-yellow-400";
-      case 3:
-        return "bg-blue-500";
-      case 4:
-        return "bg-green-500";
-      default:
-        return "bg-gray-200";
-    }
-  };
   // -------------------------------
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Client-side validation for matching passwords
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
+    if (!isFormValid) return;
 
     setLoading(true);
     setError("");
@@ -116,7 +93,7 @@ export default function Register() {
     } catch (err) {
       setError(
         err.response?.data?.detail ||
-          "Something went wrong. Please check your connection.",
+          "Something went wrong. Please check your connection."
       );
     } finally {
       setLoading(false);
@@ -124,8 +101,20 @@ export default function Register() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen px-4 bg-gray-50">
-      <div className="w-full max-w-md p-8 bg-white shadow-xl rounded-2xl border border-gray-100">
+    <div className="flex items-center justify-center min-h-screen px-4 py-8 bg-gray-50">
+      <div className="w-full max-w-md p-6 sm:p-8 bg-white shadow-xl rounded-2xl border border-gray-100">
+        
+        {/* Back Button */}
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors mb-6 w-fit group"
+        >
+          <div className="p-1.5 rounded-lg bg-gray-50 border border-gray-100 group-hover:bg-gray-200 transition-colors">
+            <ArrowLeft size={16} />
+          </div>
+          Back
+        </button>
+
         {/* Header */}
         <div className="text-center mb-8">
           <LayoutDashboard
@@ -218,7 +207,9 @@ export default function Register() {
             </label>
             <div className="relative group">
               <Lock
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors"
+                className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${
+                  isPasswordValid ? "text-green-500" : "text-gray-400 group-focus-within:text-blue-500"
+                }`}
                 size={20}
               />
               <input
@@ -229,12 +220,16 @@ export default function Register() {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                className="w-full pl-12 pr-12 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                className={`w-full pl-12 pr-12 py-3.5 bg-gray-50 border rounded-xl text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-4 transition-all ${
+                  isPasswordValid 
+                    ? "border-green-500 focus:border-green-500 focus:ring-green-500/10" 
+                    : "border-gray-200 focus:border-blue-500 focus:ring-blue-500/10"
+                }`}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 focus:outline-none transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
                 title={showPassword ? "Hide password" : "Show password"}
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
@@ -242,26 +237,33 @@ export default function Register() {
               </button>
             </div>
 
-            {/* Password Strength Indicator */}
-            {formData.password.length > 0 && (
-              <div className="pt-1">
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4].map((index) => (
-                    <div
-                      key={index}
-                      className={`h-1.5 w-full rounded-full transition-colors duration-300 ${getStrengthColor(passwordStrength, index)}`}
-                    />
-                  ))}
-                </div>
-                <p className="text-xs font-medium text-gray-500 mt-1.5 text-right">
-                  {getStrengthLabel(passwordStrength)}
-                </p>
+            {/* Live Password Checklist */}
+            <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-y-1.5 gap-x-2">
+              <div className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${passwordCriteria.length ? "text-green-600" : "text-gray-400"}`}>
+                <CheckCircle size={14} className={passwordCriteria.length ? "text-green-500" : "text-gray-300"} />
+                8+ characters
               </div>
-            )}
+              <div className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${passwordCriteria.uppercase ? "text-green-600" : "text-gray-400"}`}>
+                <CheckCircle size={14} className={passwordCriteria.uppercase ? "text-green-500" : "text-gray-300"} />
+                Uppercase letter
+              </div>
+              <div className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${passwordCriteria.lowercase ? "text-green-600" : "text-gray-400"}`}>
+                <CheckCircle size={14} className={passwordCriteria.lowercase ? "text-green-500" : "text-gray-300"} />
+                Lowercase letter
+              </div>
+              <div className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${passwordCriteria.number ? "text-green-600" : "text-gray-400"}`}>
+                <CheckCircle size={14} className={passwordCriteria.number ? "text-green-500" : "text-gray-300"} />
+                Number
+              </div>
+              <div className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${passwordCriteria.special ? "text-green-600" : "text-gray-400"} sm:col-span-2`}>
+                <CheckCircle size={14} className={passwordCriteria.special ? "text-green-500" : "text-gray-300"} />
+                Special character (!@#$%^&*)
+              </div>
+            </div>
           </div>
 
           {/* Confirm Password Field */}
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 pt-2">
             <label
               htmlFor="confirmPassword"
               className="block text-sm font-semibold text-gray-700"
@@ -270,7 +272,9 @@ export default function Register() {
             </label>
             <div className="relative group">
               <Lock
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors"
+                className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${
+                  showMatchSuccess ? "text-green-500" : showMatchError ? "text-red-500" : "text-gray-400 group-focus-within:text-blue-500"
+                }`}
                 size={20}
               />
               <input
@@ -281,16 +285,34 @@ export default function Register() {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 required
-                className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                className={`w-full pl-12 pr-4 py-3.5 bg-gray-50 border rounded-xl text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-4 transition-all ${
+                  showMatchSuccess
+                    ? "border-green-500 focus:border-green-500 focus:ring-green-500/10"
+                    : showMatchError
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/10"
+                    : "border-gray-200 focus:border-blue-500 focus:ring-blue-500/10"
+                }`}
               />
             </div>
+            
+            {/* Real-time Match Feedback */}
+            {showMatchError && (
+              <p className="text-red-500 text-xs font-medium flex items-center gap-1.5 mt-1.5">
+                <XCircle size={14} /> Passwords do not match
+              </p>
+            )}
+            {showMatchSuccess && (
+              <p className="text-green-600 text-xs font-medium flex items-center gap-1.5 mt-1.5">
+                <CheckCircle size={14} /> Passwords match
+              </p>
+            )}
           </div>
 
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={loading}
-            className="w-full py-3.5 px-4 mt-8 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm hover:shadow-md transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
+            disabled={loading || !isFormValid}
+            className="w-full py-3.5 px-4 mt-8 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
           >
             {loading ? (
               <Loader2 className="animate-spin" size={22} />
@@ -299,6 +321,7 @@ export default function Register() {
             )}
           </button>
         </form>
+        
         <div className="mt-4 text-center text-xs text-gray-500">
           By clicking Create Account, you agree to our{" "}
           <Link to="/terms" className="text-blue-600 hover:underline">

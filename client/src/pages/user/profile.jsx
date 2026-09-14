@@ -8,11 +8,8 @@ import {
   AlertTriangle,
   Loader2,
   CalendarDays,
-  Bell,
   Info,
   HelpCircle,
-  Users2,
-  BellOff,
   Camera,
   Edit2,
   Check,
@@ -21,16 +18,8 @@ import {
   Send,
 } from "lucide-react";
 import api from "../../utils/api";
-import MenuItem from "../../components/profile/MenuItem";
-import AvatarPickerModal from "../../components/profile/AvatarPickerModal";
-
-// Utility: Convert VAPID key for Push Manager
-const urlBase64ToUint8Array = (base64String) => {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = window.atob(base64);
-  return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
-};
+import MenuItem from "../components/MenuItems";
+import AvatarPickerModal from "../components/AvatarPickerModal";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -55,16 +44,8 @@ export default function Profile() {
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
-  // --- Push Notifications & Updates States ---
+  // --- Updates State ---
   const [unreadUpdatesCount, setUnreadUpdatesCount] = useState(0);
-  const [notificationStatus, setNotificationStatus] = useState(
-    "Notification" in window ? Notification.permission : "unsupported"
-  );
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [togglingPush, setTogglingPush] = useState(false);
-
-  // Derived User ID
-  const currentUserId = userInfo?._id || userInfo?.id;
 
   // --- Data Fetching Effects ---
 
@@ -123,23 +104,6 @@ export default function Profile() {
     return () => {
       window.removeEventListener("updatesRead", handleUpdatesRead);
     };
-  }, []);
-
-  // Check Push Notification Subscription Status
-  useEffect(() => {
-    const checkSubscription = async () => {
-      if ("serviceWorker" in navigator) {
-        try {
-          const registration = await navigator.serviceWorker.ready;
-          const subscription = await registration.pushManager.getSubscription();
-          setIsSubscribed(!!subscription);
-        } catch (error) {
-          console.error("Error checking push subscription:", error);
-        }
-      }
-    };
-
-    checkSubscription();
   }, []);
 
   // --- Action Handlers ---
@@ -232,54 +196,6 @@ export default function Profile() {
     }
   };
 
-  const toggleNotifications = async () => {
-    if (notificationStatus === "unsupported") {
-      return alert("Browser does not support notifications.");
-    }
-
-    setTogglingPush(true);
-    try {
-      if (isSubscribed) {
-        const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.getSubscription();
-
-        if (subscription) {
-          await subscription.unsubscribe();
-          await api.post("/unsubscribe", { subscription, userId: currentUserId });
-          setIsSubscribed(false);
-        }
-      } else {
-        let permission = notificationStatus;
-        if (permission !== "granted") {
-          permission = await Notification.requestPermission();
-          setNotificationStatus(permission);
-        }
-
-        if (permission === "granted") {
-          const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
-          if (!vapidKey) {
-            console.error("VAPID public key is missing from environment.");
-            return;
-          }
-
-          const registration = await navigator.serviceWorker.ready;
-          const subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(vapidKey),
-          });
-
-          await api.post("/subscribe", { subscription, userId: currentUserId });
-          setIsSubscribed(true);
-        }
-      }
-    } catch (error) {
-      console.error("Notification toggle failed:", error);
-    } finally {
-      setTogglingPush(false);
-    }
-  };
-
-  // Format local storage asset vs CDN URL
   const getFormattedAvatarSrc = (url) => {
     if (!url) return null;
     if (url.startsWith("/uploads")) {
@@ -292,41 +208,45 @@ export default function Profile() {
   // --- Render Loading Skeleton ---
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-20 px-4 flex flex-col items-center">
-        <div className="h-24 w-24 rounded-full bg-gray-200 animate-pulse mb-4" />
-        <div className="h-6 w-32 bg-gray-200 animate-pulse rounded mb-2" />
-        <div className="h-4 w-48 bg-gray-200 animate-pulse rounded mb-8" />
-        <div className="w-full max-w-2xl bg-white rounded-2xl h-48 animate-pulse border border-gray-100" />
+      <div className="min-h-screen bg-[#FAFAFC] pt-20 px-4 flex flex-col items-center">
+        <div className="h-24 w-24 rounded-full bg-gray-100 animate-pulse mb-4" />
+        <div className="h-6 w-32 bg-gray-100 animate-pulse rounded-lg mb-2" />
+        <div className="h-4 w-48 bg-gray-100 animate-pulse rounded-lg mb-8" />
+        <div className="w-full max-w-xl bg-white rounded-[2rem] h-48 animate-pulse border border-gray-100 shadow-sm" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 relative">
-      {/* Top Navigation */}
-      <nav className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-200 px-4 py-3 shadow-sm">
-        <div className="max-w-2xl mx-auto flex items-center gap-3">
+    <div className="min-h-screen bg-[#FAFAFC] pb-20 relative antialiased font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Text','SF_Pro_Display','Helvetica_Neue',sans-serif]">
+      
+      {/* iOS-Style Sticky Header */}
+      <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-gray-200/50 px-4 py-3">
+        <div className="max-w-xl mx-auto flex items-center gap-3 relative">
           <Link
             to="/dashboard"
             aria-label="Back to Dashboard"
-            className="p-2 -ml-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-all"
+            className="absolute left-0 p-2 -ml-2 text-blue-500 hover:opacity-70 transition-opacity flex items-center gap-1"
           >
-            <ArrowLeft size={22} />
+            <ArrowLeft size={22} strokeWidth={2.5} />
           </Link>
-          <h1 className="text-lg font-bold text-gray-900 tracking-tight">Profile</h1>
+          <h1 className="w-full text-center text-[17px] font-semibold text-gray-900 tracking-tight">
+            Profile
+          </h1>
         </div>
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-2xl mx-auto px-4 mt-6">
+      <main className="max-w-xl mx-auto px-4 mt-8">
+        
         {/* User Avatar & Info Header */}
-        <div className="flex flex-col items-center text-center mb-10 mt-4">
+        <div className="flex flex-col items-center text-center mb-10">
           <button
             type="button"
             onClick={() => !isUploadingImage && setShowAvatarModal(true)}
             disabled={isUploadingImage}
             aria-label="Change profile picture"
-            className="relative h-24 w-24 rounded-full bg-gradient-to-tr from-indigo-100 to-purple-100 flex items-center justify-center text-indigo-600 mb-4 shadow-inner border-4 border-white cursor-pointer group overflow-hidden focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="relative h-24 w-24 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 mb-4 shadow-sm border-2 border-white cursor-pointer group overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {avatarUrl ? (
               <img
@@ -335,17 +255,17 @@ export default function Profile() {
                 className="h-full w-full object-cover"
               />
             ) : (
-              <UserIcon size={40} />
+              <UserIcon size={36} strokeWidth={2} />
             )}
 
             <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              <Camera className="text-white mb-1" size={20} />
+              <Camera className="text-white mb-0.5" size={18} strokeWidth={2} />
               <span className="text-white text-[10px] font-semibold uppercase tracking-wider">Edit</span>
             </div>
 
             {isUploadingImage && (
               <div className="absolute inset-0 bg-white/70 flex items-center justify-center backdrop-blur-sm">
-                <Loader2 className="animate-spin text-indigo-600" size={24} />
+                <Loader2 className="animate-spin text-blue-500" size={24} />
               </div>
             )}
           </button>
@@ -368,16 +288,16 @@ export default function Profile() {
                   value={editNameValue}
                   onChange={(e) => setEditNameValue(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleUpdateName()}
-                  className="px-3 py-1.5 border border-indigo-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900 font-semibold text-lg max-w-[200px]"
+                  className="px-3 py-1.5 bg-gray-50 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-gray-900 font-semibold text-lg max-w-[200px]"
                   autoFocus
                 />
                 <button
                   type="button"
                   onClick={handleUpdateName}
                   disabled={isUpdatingName}
-                  className="p-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                  className="p-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors shadow-sm"
                 >
-                  {isUpdatingName ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                  {isUpdatingName ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} strokeWidth={2.5} />}
                 </button>
                 <button
                   type="button"
@@ -385,30 +305,30 @@ export default function Profile() {
                     setIsEditingName(false);
                     setEditNameValue(userInfo?.username || "Student");
                   }}
-                  className="p-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                  className="p-2 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-colors"
                 >
-                  <X size={16} />
+                  <X size={16} strokeWidth={2.5} />
                 </button>
               </div>
             ) : (
               <button
                 type="button"
-                className="flex items-center gap-2 group cursor-pointer focus:outline-none focus:underline"
+                className="flex items-center gap-2 group cursor-pointer focus:outline-none"
                 onClick={() => setIsEditingName(true)}
               >
-                <h2 className="text-2xl font-bold text-gray-900 capitalize tracking-tight">
+                <h2 className="text-2xl font-bold text-gray-900 tracking-tight">
                   {userInfo?.username || "User"}
                 </h2>
-                <Edit2 size={16} className="text-gray-400 group-hover:text-indigo-600 transition-colors" />
+                <Edit2 size={15} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
               </button>
             )}
           </div>
 
-          <p className="text-gray-500">{userInfo?.email}</p>
+          <p className="text-gray-500 font-medium text-sm">{userInfo?.email}</p>
 
           {userInfo?.created_at && (
-            <div className="flex items-center gap-1.5 mt-4 px-4 py-1.5 bg-white border border-gray-200 text-gray-500 rounded-full text-xs font-medium shadow-sm">
-              <CalendarDays size={14} />
+            <div className="flex items-center gap-1.5 mt-3 px-3.5 py-1 bg-white border border-gray-100 text-gray-400 rounded-full text-xs font-semibold shadow-sm">
+              <CalendarDays size={13} strokeWidth={2} />
               <span>
                 Joined{" "}
                 {new Date(userInfo.created_at).toLocaleDateString("en-US", {
@@ -424,71 +344,38 @@ export default function Profile() {
         <div className="space-y-6">
           {/* General Section */}
           <div>
-            <h3 className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">General</h3>
-            <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-              <MenuItem icon={Users2} label="Squad" to="/squad" />
-              <MenuItem icon={Newspaper} label="Updates" to="/update" badge={unreadUpdatesCount} />
+            <h3 className="px-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">General</h3>
+            <div className="bg-white border border-gray-100 rounded-[24px] overflow-hidden shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
+              <MenuItem icon={Newspaper} label="Updates" to="/updates" badge={unreadUpdatesCount} />
               <MenuItem icon={HelpCircle} label="FAQ's" to="/faqs" />
-              <MenuItem icon={Send} label="Telegram" to="/telegram" />
+              <MenuItem icon={Send} label="Telegram" to="/telegram-setup" />
               <MenuItem icon={Info} label="About App" to="/about" />
-            </div>
-          </div>
-
-          {/* Preferences Section */}
-          <div>
-            <h3 className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Preferences</h3>
-            <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-              <MenuItem
-                icon={notificationStatus === "denied" ? BellOff : Bell}
-                label="Push Notifications"
-                subLabel={
-                  notificationStatus === "denied"
-                    ? "Blocked in browser settings"
-                    : "Receive updates on this device"
-                }
-                onClick={toggleNotifications}
-                disabled={notificationStatus === "denied" || togglingPush}
-                rightElement={
-                  <div
-                    role="switch"
-                    aria-checked={isSubscribed}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      isSubscribed ? "bg-indigo-600" : "bg-gray-200"
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        isSubscribed ? "translate-x-6" : "translate-x-1"
-                      }`}
-                    />
-                  </div>
-                }
-              />
             </div>
           </div>
 
           {/* Account Section */}
           <div>
-            <h3 className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Account</h3>
-            <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+            <h3 className="px-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Account</h3>
+            <div className="bg-white border border-gray-100 rounded-[24px] overflow-hidden shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
+              
               {/* Logout Toggle */}
               {!showLogoutConfirm ? (
                 <MenuItem icon={LogOut} label="Log Out" onClick={() => setShowLogoutConfirm(true)} />
               ) : (
-                <div className="p-5 bg-gray-50 border-b border-gray-100">
-                  <h3 className="font-bold text-gray-900 text-sm mb-4">Log out of your account?</h3>
+                <div className="p-6 bg-gray-50/50 border-b border-gray-100">
+                  <h3 className="font-bold text-gray-900 text-sm mb-3">Log out of your account?</h3>
                   <div className="flex gap-3">
                     <button
                       type="button"
                       onClick={() => setShowLogoutConfirm(false)}
-                      className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50"
+                      className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm"
                     >
                       Cancel
                     </button>
                     <button
                       type="button"
                       onClick={handleLogout}
-                      className="flex-1 py-2 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-black"
+                      className="flex-1 py-3 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-black transition-colors shadow-sm"
                     >
                       Yes, Log Out
                     </button>
@@ -504,25 +391,25 @@ export default function Profile() {
                   danger
                   onClick={() => setShowDeleteConfirm(true)}
                   rightElement={
-                    <span className="text-xs font-semibold text-red-500 bg-red-50 px-2 py-1 rounded">
+                    <span className="text-[11px] font-bold text-red-500 bg-red-50 px-2.5 py-0.5 rounded-md">
                       Danger
                     </span>
                   }
                 />
               ) : (
-                <div className="p-5 bg-red-50 border-t border-red-100">
+                <div className="p-6 bg-red-50/50 border-t border-red-100">
                   <div className="flex items-start gap-3 mb-5">
                     <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={20} />
                     <div>
                       <h3 className="font-bold text-red-700 text-sm">Are you absolutely sure?</h3>
-                      <p className="text-xs text-red-600 mt-1">This action cannot be undone.</p>
+                      <p className="text-xs text-red-600 font-medium mt-0.5">This action cannot be undone.</p>
                     </div>
                   </div>
                   <div className="flex gap-3">
                     <button
                       type="button"
                       onClick={() => setShowDeleteConfirm(false)}
-                      className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50"
+                      className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm"
                     >
                       Cancel
                     </button>
@@ -530,13 +417,14 @@ export default function Profile() {
                       type="button"
                       onClick={handleDeleteAccount}
                       disabled={deleteLoading}
-                      className="flex-1 py-2 bg-red-600 text-white rounded-xl text-sm font-semibold flex justify-center items-center hover:bg-red-700"
+                      className="flex-1 py-3 bg-red-600 text-white rounded-xl text-sm font-semibold flex justify-center items-center hover:bg-red-700 transition-colors shadow-sm disabled:opacity-70"
                     >
                       {deleteLoading ? <Loader2 size={16} className="animate-spin" /> : "Delete My Data"}
                     </button>
                   </div>
                 </div>
               )}
+
             </div>
           </div>
         </div>

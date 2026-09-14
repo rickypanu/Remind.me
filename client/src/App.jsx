@@ -2,23 +2,17 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-import Homepage from "./pages/general/HomePage";
+import Home from "./pages/public/Home";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
-import Dashboard from "./pages/user/dashboard";
-import CreateTask from "./pages/user/createtask";
-import Profile from "./pages/user/profile";
-import About from "./pages/general/about";
-import FAQ from "./pages/general/faqs";
-import TermsAndPrivacy from "./pages/general/terms";
-import Report from "./pages/user/report";
-import TelegramSettings from "./pages/general/TelegramSettings";
-import UpdatePage from "./pages/user/updatepage";
-
-// Import Squad components
-import SquadLobby from "./pages/squad/SquadLobby";
-import SquadDashboard from "./pages/squad/SquadDashboard";
-import SquadAnalytics from "./pages/squad/SquadAnalytics";
+import Dashboard from "./pages/dashboard/dashboard";
+import CreateTask from "./pages/user/CreateTask";
+import Profile from "./pages/user/Profile";
+import UpdatesPage from "./pages/user/UpdatePage";
+import About from "./pages/public/About";
+import TelegramSetup from "./pages/user/TelegramSetup";
+import Terms from "./pages/public/Terms";
+import FAQ from "./pages/public/Faqs";
 
 // Create a client for React Query
 const queryClient = new QueryClient();
@@ -45,7 +39,7 @@ const getCurrentUser = () => {
         atob(base64)
           .split("")
           .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-          .join("")
+          .join(""),
       );
       return JSON.parse(jsonPayload);
     } catch (e) {
@@ -69,16 +63,20 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   const currentUser = getCurrentUser();
+  const token = localStorage.getItem("token"); // Added token check here
 
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <div className="min-h-screen bg-background text-gray-100 font-sans">
           <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<Homepage />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+            {/* UPDATED LOGIC: Redirect to dashboard instantly if token exists */}
+            <Route path="/" element={token ? <Navigate to="/dashboard" replace /> : <Home />} />
+            <Route path="/login" element={token ? <Navigate to="/dashboard" replace /> : <Login />} />
+            <Route path="/register" element={token ? <Navigate to="/dashboard" replace /> : <Register />} />
+
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/faqs" element={<FAQ />} />
 
             {/* Protected User Routes */}
             <Route
@@ -89,6 +87,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/create-task"
               element={
@@ -106,58 +105,25 @@ function App() {
               }
             />
             <Route
-              path="/reminder/report"
+              path="/telegram-setup"
               element={
                 <ProtectedRoute>
-                  <Report />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Squad Routes */}
-            <Route
-              path="/squad"
-              element={
-                <ProtectedRoute>
-                  <SquadLobby />
+                  <TelegramSetup />
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/squad/:squadId"
+              path="/updates"
               element={
                 <ProtectedRoute>
-                  <SquadDashboard />
+                  <UpdatesPage />
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/squad/:squadId/analytics"
-              element={
-                <ProtectedRoute>
-                  <SquadAnalytics />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Telegram Settings Page */}
-            <Route path="/telegram" element={<ProtectedRoute><TelegramSettings /></ProtectedRoute>} />
-            
-            {/* Other Pages */}
-            <Route
-              path="/update"
-              element={
-                <ProtectedRoute>
-                  <UpdatePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/about" element={<About />} />
-            <Route path="/faqs" element={<FAQ />} />
-            <Route path="/terms" element={<TermsAndPrivacy />} />
-
-            {/* Catch-all Route */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="/about" element={<About />}  />
+             
+            {/* Catch-all Route UPDATED */}
+            <Route path="*" element={<Navigate to={token ? "/dashboard" : "/"} replace />} />
           </Routes>
         </div>
       </BrowserRouter>
