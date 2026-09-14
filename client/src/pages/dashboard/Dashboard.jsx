@@ -265,7 +265,7 @@ export default function Dashboard() {
             value={magicText}
             onChange={(e) => setMagicText(e.target.value)}
             disabled={isMagicAdding || isListening}
-            placeholder={isListening ? "Listening... bolna shuru karein" : "Type or speak 'kal sham 5 baje OS project'..."}
+            placeholder={isListening ? "Listening... " : "Type or speak ..."}
             className={`w-full bg-white text-sm sm:text-[15px] text-slate-900 font-medium placeholder:text-slate-400 rounded-[20px] border shadow-[0_4px_20px_rgb(0,0,0,0.03)] pl-12 pr-24 py-4 outline-none transition-all duration-200 ${
               isListening ? "border-red-300 ring-4 ring-red-500/10" : "border-slate-100 focus:border-blue-200 focus:ring-4 focus:ring-blue-500/10"
             } disabled:opacity-60`}
