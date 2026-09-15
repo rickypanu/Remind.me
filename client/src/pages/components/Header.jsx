@@ -23,7 +23,16 @@ const Header = () => {
 
   return (
     <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-gray-200/50 antialiased font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Text','SF_Pro_Display','Helvetica_Neue',sans-serif]">
-      <div className="flex items-center justify-between px-4 sm:px-6 h-14 max-w-5xl mx-auto">
+      {/* 
+        Width and padding dynamic based on login state:
+        - Logged Out: max-w-7xl with matching margins for the Home page
+        - Logged In: max-w-5xl for compact dashboard view 
+      */}
+      <div className={`flex items-center justify-between h-14 mx-auto w-full transition-all duration-300 ${
+        isLoggedIn 
+          ? "max-w-5xl px-4 sm:px-6" 
+          : "max-w-7xl px-8 md:px-12 lg:px-20"
+      }`}>
         
         {/* Brand Logo */}
         <Link 

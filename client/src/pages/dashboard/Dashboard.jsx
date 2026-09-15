@@ -13,7 +13,8 @@ import {
   Check,
   ArrowUp,
   Mic,
-  MicOff
+  MicOff,
+  ArrowUpDown
 } from "lucide-react";
 import api from "../../utils/api";
 import TaskCard from "../tasks/TaskCard";
@@ -32,6 +33,9 @@ export default function Dashboard() {
   const [magicText, setMagicText] = useState("");
   const [isMagicAdding, setIsMagicAdding] = useState(false);
   const [isListening, setIsListening] = useState(false);
+
+  // --- Sort State for Completed Tasks ---
+  const [completedSort, setCompletedSort] = useState("date-desc");
 
   const handleLogout = useCallback(() => {
     localStorage.removeItem("token");
@@ -70,9 +74,13 @@ export default function Dashboard() {
   const userInfo = data?.userInfo || null;
   const tasks = data?.tasks || [];
 
-  const refreshTasks = () => {
+  const refreshTasks = (message) => {
     queryClient.invalidateQueries({ queryKey: ["dashboardData"] });
-    setToastMessage("Task marked complete!");
+    
+    // Check if message is a string (prevents issues if an event object is accidentally passed)
+    const toastText = typeof message === "string" ? message : "Task marked complete!";
+    
+    setToastMessage(toastText);
     setTimeout(() => setToastMessage(null), 3500);
   };
 
@@ -125,7 +133,7 @@ export default function Dashboard() {
       setTimeout(() => setToastMessage(null), 3500);
     } catch (error) {
       console.error("Magic Add failed:", error);
-      setToastMessage("❌ Failed to parse task. Try again.");
+      setToastMessage("Failed to parse task. Try again.");
       setTimeout(() => setToastMessage(null), 3500);
     } finally {
       setIsMagicAdding(false);
@@ -196,6 +204,31 @@ export default function Dashboard() {
         completedTasks: completed,
       };
     }, [tasks]);
+
+  // --- Sorting Logic for Completed Tasks ---
+  const sortedCompletedTasks = useMemo(() => {
+    return [...completedTasks].sort((a, b) => {
+      // Helper to safely get dates (fallback to 0 if no date exists)
+      const dateA = new Date(a.due_date || 0).getTime();
+      const dateB = new Date(b.due_date || 0).getTime();
+      
+      // Helper to safely get titles (lowercase for accurate A-Z sorting)
+      const titleA = (a.title || "").toLowerCase();
+      const titleB = (b.title || "").toLowerCase();
+
+      switch (completedSort) {
+        case "title-asc":
+          return titleA.localeCompare(titleB);
+        case "title-desc":
+          return titleB.localeCompare(titleA);
+        case "date-asc":
+          return dateA - dateB;
+        case "date-desc":
+        default:
+          return dateB - dateA;
+      }
+    });
+  }, [completedTasks, completedSort]);
 
   useEffect(() => {
     if (missedTasks.length === 0) {
@@ -457,8 +490,31 @@ export default function Dashboard() {
             </button>
 
             {isDoneOpen && (
-              <div className="p-3.5 pt-1.5 grid gap-2.5 max-h-[45vh] overflow-y-auto border-t border-slate-100 animate-in fade-in duration-200">
-                {completedTasks.map((task) => (
+              <div className="p-3.5 pt-2 grid gap-2.5 max-h-[45vh] overflow-y-auto border-t border-slate-100 animate-in fade-in duration-200">
+                
+                {/* --- Sort Dropdown --- */}
+                <div className="flex justify-end px-1 pb-1">
+                  <div className="relative group">
+                    <select
+                      value={completedSort}
+                      onChange={(e) => setCompletedSort(e.target.value)}
+                      className="appearance-none bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold py-1.5 pl-3 pr-8 rounded-lg outline-none cursor-pointer border border-transparent hover:border-slate-300 transition-all duration-200"
+                    >
+                      <option value="date-desc">Date (Newest)</option>
+                      <option value="date-asc">Date (Oldest)</option>
+                      <option value="title-asc">Name (A-Z)</option>
+                      <option value="title-desc">Name (Z-A)</option>
+                    </select>
+                    <ArrowUpDown 
+                      size={12} 
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 group-hover:text-slate-600 pointer-events-none transition-colors" 
+                      strokeWidth={2.5} 
+                    />
+                  </div>
+                </div>
+
+                {/* --- Mapped Sorted Tasks --- */}
+                {sortedCompletedTasks.map((task) => (
                   <TaskCard
                     key={task.id || task._id}
                     task={task}
@@ -466,6 +522,7 @@ export default function Dashboard() {
                     isPrevious={true}
                   />
                 ))}
+                
               </div>
             )}
           </div>

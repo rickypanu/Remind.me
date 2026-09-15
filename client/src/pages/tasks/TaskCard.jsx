@@ -41,12 +41,13 @@ export default function TaskCard({ task, refreshTasks, isPrevious }) {
       // 1. Immediately update UI for a snappy, smooth visual transition
       setLocalStatus(newStatus);
       
-      // 2. Fire API call in the background (UPDATED TO PATCH)
+      // 2. Fire API call in the background
       await api.patch(`/tasks/${task.id}`, { status: newStatus });
       
       // 3. Wait 500ms so the user enjoys the checkmark animation before it moves
       timeoutRef.current = setTimeout(() => {
-        refreshTasks();
+        // ADDED CUSTOM MESSAGE HERE
+        refreshTasks(newStatus === 'completed' ? "Task marked complete!" : "↩️ Task moved to pending");
         setIsUpdating(false);
       }, 500); 
       
@@ -61,7 +62,10 @@ export default function TaskCard({ task, refreshTasks, isPrevious }) {
     setIsDeleting(true);
     try {
       await api.delete(`/tasks/${task.id}`);
-      refreshTasks();
+      
+      // ADDED CUSTOM MESSAGE HERE
+      refreshTasks("🗑️ Task deleted successfully!"); 
+      
     } catch (error) {
       console.error("Failed to delete task", error);
       setIsDeleting(false);
