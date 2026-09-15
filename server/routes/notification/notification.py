@@ -82,9 +82,9 @@ async def remind_upcoming_tasks():
         if result.modified_count > 0:
             user = await db["users"].find_one({"_id": task.get("user_id")})
             if user:
-                title, body = get_due_soon_copy(
-                    task_title=task.get("title", "Untitled Task"),
-                    category=task.get("category", "Other")
+                title, body = await get_due_soon_copy(
+                task_title=task.get("title", "Untitled Task"),
+                category=task.get("category", "Other")
                 )
                 await dispatch_notifications(user, title, body)
 
@@ -134,7 +134,7 @@ async def remind_todays_tasks():
     for user_id, task_list in user_tasks.items():
         user = await db["users"].find_one({"_id": user_id})
         if user:
-            title, body = get_today_digest_copy(task_list, now_ist.hour)
+            title, body = await get_today_digest_copy(task_list, now_ist.hour)
             await dispatch_notifications(user, title, body)
 
 
@@ -174,7 +174,7 @@ async def remind_tomorrows_tasks():
     for user_id, task_list in user_tasks.items():
         user = await db["users"].find_one({"_id": user_id})
         if user:
-            title, body = get_tomorrow_digest_copy(task_list)
+            title, body = await get_tomorrow_digest_copy(task_list)
             await dispatch_notifications(user, title, body)
 
 
@@ -187,7 +187,7 @@ async def start_scheduler():
     scheduler = AsyncIOScheduler(timezone=IST)
 
     scheduler.add_job(remind_upcoming_tasks, CronTrigger(minute="*"))
-    scheduler.add_job(remind_todays_tasks, CronTrigger(hour="8,14,18,20", minute="0,8,10,11,12,13,14,15,16,17,18"))
+    scheduler.add_job(remind_todays_tasks, CronTrigger(hour="8,14,18,20", minute="0"))
     scheduler.add_job(remind_tomorrows_tasks, CronTrigger(hour="21", minute="0"))
 
     scheduler.start()
