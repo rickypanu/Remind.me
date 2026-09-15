@@ -48,9 +48,8 @@ async def get_due_soon_copy(task_title: str, category: str = "Other") -> tuple[s
     """
 
     try:
-        # Use the asynchronous client (client.aio)
         response = await client.aio.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.6-flash",
             contents=prompt,
             config={
                 "response_mime_type": "application/json",
@@ -63,7 +62,6 @@ async def get_due_soon_copy(task_title: str, category: str = "Other") -> tuple[s
 
     except Exception as e:
         print(f"Gemini API fallback triggered for Due Soon: {e}")
-        # Static Fallback
         return (f"{emoji} 1 Hour Left", f"'{task_title}' is due in 60 minutes. Time to lock in!")
 
 # ---------------------------------------------------------
@@ -80,7 +78,6 @@ async def get_today_digest_copy(tasks: list[dict], hour: int) -> tuple[str, str]
     
     task_list_str = "\n".join(formatted_tasks)
 
-    # Adjust tone based on the time of day
     if hour < 12:
         context = "Morning kickoff. Tone should be energizing and strategic. Highlight the most high-stakes task (like an exam or placement prep) as the main priority."
     elif hour < 17:
@@ -105,7 +102,7 @@ async def get_today_digest_copy(tasks: list[dict], hour: int) -> tuple[str, str]
 
     try:
         response = await client.aio.models.generate_content(
-            model="gemini-3.6-flash",
+            model="gemini-2.5-flash", # FIXED: Changed from 3.6 to 2.5
             contents=prompt,
             config={
                 "response_mime_type": "application/json",
@@ -118,7 +115,6 @@ async def get_today_digest_copy(tasks: list[dict], hour: int) -> tuple[str, str]
 
     except Exception as e:
         print(f"Gemini API fallback triggered for Today Digest: {e}")
-        # Static Fallback
         return ("📋 Today's Check-in", f"You have {count} pending tasks left to crush today.")
 
 # ---------------------------------------------------------
@@ -160,5 +156,4 @@ async def get_tomorrow_digest_copy(tasks: list[dict]) -> tuple[str, str]:
 
     except Exception as e:
         print(f"Gemini API fallback triggered for Tomorrow Digest: {e}")
-        # Static Fallback
         return ("🌙 Tomorrow's Head Start", f"You have {count} tasks lined up for tomorrow. Rest up!")

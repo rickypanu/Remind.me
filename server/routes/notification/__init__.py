@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from routes.notification.telegramsetup import router as telegram_router 
-from routes.notification.notification import router as notification_sub_router
+from .telegramsetup import router as telegram_router 
+from .notification import router as notification_sub_router
 
 # Create a distinct master router
 notification_router = APIRouter() 

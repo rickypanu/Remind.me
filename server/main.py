@@ -3,13 +3,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
+load_dotenv()
+
 from routes.auth import auth_router
 from routes.user import user_router
 from routes.tasks import task_router
 from routes.notification import notification_router
 
-
-load_dotenv()
 
 app = FastAPI(title="RemindMe API")
 
