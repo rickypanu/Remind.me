@@ -200,14 +200,17 @@ async def remind_tomorrows_tasks():
 # SINGLE SCHEDULER INITIALIZATION
 # ---------------------------------------------------------
 
-@router.on_event("startup")
-async def start_scheduler():
+# Change the function to be a standard setup function
+
+def start_scheduler():
     print("--> [DEBUG] App Startup triggered. Initializing Scheduler...")
     scheduler = AsyncIOScheduler(timezone=IST)
 
     scheduler.add_job(remind_upcoming_tasks, CronTrigger(minute="*"))
-    scheduler.add_job(remind_todays_tasks, CronTrigger(hour="8,14,18,20", minute="0"))
+    scheduler.add_job(remind_todays_tasks, CronTrigger(hour="8,12,14,18,20", minute="0,53,54,56,54,55,57,52"))
     scheduler.add_job(remind_tomorrows_tasks, CronTrigger(hour="21", minute="0"))
 
     scheduler.start()
     print("--> [DEBUG] Telegram notification background scheduler active.")
+    
+    return scheduler # Return it so it can be shut down gracefully later

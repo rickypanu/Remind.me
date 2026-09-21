@@ -76,12 +76,13 @@ async def magic_add_task(
     Extract task details from the user's text. They might use English, Hindi, or Hinglish.
     The current date and time is: {current_time}. Resolve relative words like "kal", "tomorrow", "sham", "parso" based on this exact current time.
 
-    Categories strictly allowed: "Assignment", "Project", "Exam / Quiz", "Placement / Internship", "Extracurricular", "Personal", "Other".
+    Suggested categories: "Assignment", "Project", "Exam / Quiz", "Placement / Internship", "Extracurricular", "Personal". If the task doesn't fit any of these, generate a short, relevant custom category name.
 
     Return ONLY a raw JSON object with these exact keys:
     - "title": A clean, concise task title translated to English (e.g., "Submit OS Assignment").
+    - "description": A brief summary of any extra details, instructions, or context mentioned (max 1-2 short sentences).
     - "due_date": The deadline formatted as an ISO 8601 string with UTC timezone offset (e.g., "2026-09-15T18:30:00+00:00"). If no time is specified, default to 23:59:59 UTC of the target day.
-    - "category": The most relevant category from the strict list above.
+    - "category": The most relevant category from the suggested list, or a custom one if needed.
 
     User's text: "{payload.text}"
     """
@@ -93,7 +94,7 @@ async def magic_add_task(
         
         new_task = {
             "title": task_data["title"],
-            "description": None,
+            "description": task_data.get("description"),  # Now pulls dynamically from Gemini
             "category": task_data["category"],
             "due_date": utc_due_date,
             "status": "pending",

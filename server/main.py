@@ -1,4 +1,5 @@
 import os
+from contextlib import asynccontextmanager # Add this import
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -8,10 +9,19 @@ load_dotenv()
 from routes.auth import auth_router
 from routes.user import user_router
 from routes.tasks import task_router
-from routes.notification import notification_router
+from routes.notification import notification_router, start_scheduler # Import the setup function
 
+# Define the lifespan manager
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # --- Startup ---
+    scheduler = start_scheduler()
+    yield
+    # --- Shutdown ---
+    scheduler.shutdown()
 
-app = FastAPI(title="RemindMe API")
+# Pass the lifespan to the FastAPI instance
+app = FastAPI(title="RemindMe API", lifespan=lifespan)
 
 origin = os.getenv("FRONTEND_ORIGINS", "http://localhost:3000")
 origins_list = [o.strip() for o in origin.split(",")]
@@ -29,7 +39,6 @@ app.include_router(auth_router, prefix="/auth")
 app.include_router(user_router, prefix="/user")
 app.include_router(task_router, prefix ="/tasks")
 app.include_router(notification_router)
-
 
 @app.get("/")
 async def root():
