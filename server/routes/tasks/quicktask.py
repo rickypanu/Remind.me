@@ -23,6 +23,9 @@ FALLBACK_MODELS = [
     "gemini-3.6-flash",
     "gemini-3.6-flash-lite",
     "gemini-3.6-pro",
+    "gemini-2.5-flash",  
+    "gemini-1.5-flash",
+    "gemini-1.5-pro",
 ]
 
 class MagicAddRequest(BaseModel):
@@ -57,6 +60,10 @@ async def generate_task_json_with_fallback(prompt: str) -> str:
                         continue
                     else:
                         break  # Fallback to the next model in the list
+
+                if e.code == 404:
+                    break
+
                 raise e  # Bad request / auth errors fail immediately
             except Exception as e:
                 last_exception = e
