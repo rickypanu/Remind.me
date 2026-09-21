@@ -25,6 +25,7 @@ const Footer = () => {
         {/* Links & Copyright */}
         <div className="flex flex-col items-center sm:items-end gap-3">
           <div className="flex gap-6 text-gray-500 font-medium">
+            <Link to="/about" className="hover:text-blue-600 transition-colors">About</Link>
             <Link to="/faqs" className="hover:text-blue-600 transition-colors">FAQs</Link>
             <Link to="/terms" className="hover:text-blue-600 transition-colors">Terms</Link>
           </div>
