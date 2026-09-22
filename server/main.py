@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager # Add this import
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from fastapi.staticfiles import StaticFiles
 
 load_dotenv()
 
@@ -14,14 +15,16 @@ from routes.notification import notification_router, start_scheduler # Import th
 # Define the lifespan manager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # --- Startup ---
     scheduler = start_scheduler()
     yield
-    # --- Shutdown ---
     scheduler.shutdown()
 
-# Pass the lifespan to the FastAPI instance
+
 app = FastAPI(title="RemindMe API", lifespan=lifespan)
+
+os.makedirs("uploads/avatars", exist_ok=True)
+
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 origin = os.getenv("FRONTEND_ORIGINS", "http://localhost:3000")
 origins_list = [o.strip() for o in origin.split(",")]
