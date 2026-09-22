@@ -13,8 +13,9 @@ from database import get_db
 
 router = APIRouter()
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-AVATARS_DIR = os.path.join(BASE_DIR, "uploads", "avatars")
+ROOT_DIR = os.getcwd() 
+AVATARS_DIR = os.path.join(ROOT_DIR, "uploads", "avatars")
+
 os.makedirs(AVATARS_DIR, exist_ok=True)
 
 # --- 1. Route to Get User Profile ---
@@ -59,34 +60,32 @@ async def update_user_details(
             detail="An error occurred while updating the profile."
         )
 
-# --- 3. Route to Upload and Save Avatar ---
-UPLOAD_DIR = "uploads/avatars"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-
 @router.post("/avatar")
 async def upload_avatar(
     avatar: UploadFile = File(...),
     current_user: dict = Depends(get_current_user),
     db = Depends(get_db)
 ):
-    # Validate that the uploaded file is an image
     if not avatar.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File must be an image.")
 
     try:
         user_id_obj = ObjectId(current_user["_id"])
-        
         file_extension = avatar.filename.split(".")[-1]
         file_name = f"{user_id_obj}.{file_extension}"
         
-        # --- UPDATE THIS: Use the absolute path variable ---
+        # Create absolute path
         file_path = os.path.join(AVATARS_DIR, file_name)
 
-        # Save the file to the server's local disk
+        # 🛑 DEBUG PRINT: Check your terminal console for these exact lines when you upload!
+        print(f"\n--- DEBUG INFO ---")
+        print(f"SAVING TO: {file_path}")
+        print(f"FILE EXISTS AFTER SAVE? {os.path.exists(file_path)}")
+        print(f"------------------\n")
+
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(avatar.file, buffer)
 
-        # Generate the public URL (This stays the same! It maps to your app.mount)
         avatar_url = f"/uploads/avatars/{file_name}"
 
         # Save this URL to the database

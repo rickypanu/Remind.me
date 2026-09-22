@@ -12,9 +12,6 @@ from routes.user import user_router
 from routes.tasks import task_router
 from routes.notification import notification_router, start_scheduler 
 
-# --- ADD THIS: Get the absolute path to the project root ---
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -24,7 +21,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="RemindMe API", lifespan=lifespan)
 
-# --- UPDATE THIS: Use the absolute path ---
+# --- FOOLPROOF PATH STRATEGY ---
+# os.getcwd() gets the directory where you run your uvicorn command
+ROOT_DIR = os.getcwd() 
+UPLOAD_DIR = os.path.join(ROOT_DIR, "uploads")
+
 os.makedirs(os.path.join(UPLOAD_DIR, "avatars"), exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
