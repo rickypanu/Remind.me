@@ -1,5 +1,5 @@
 import os
-from contextlib import asynccontextmanager # Add this import
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -10,21 +10,23 @@ load_dotenv()
 from routes.auth import auth_router
 from routes.user import user_router
 from routes.tasks import task_router
-from routes.notification import notification_router, start_scheduler # Import the setup function
+from routes.notification import notification_router, start_scheduler 
 
-# Define the lifespan manager
+# --- ADD THIS: Get the absolute path to the project root ---
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     scheduler = start_scheduler()
     yield
     scheduler.shutdown()
 
-
 app = FastAPI(title="RemindMe API", lifespan=lifespan)
 
-os.makedirs("uploads/avatars", exist_ok=True)
-
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+# --- UPDATE THIS: Use the absolute path ---
+os.makedirs(os.path.join(UPLOAD_DIR, "avatars"), exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 origin = os.getenv("FRONTEND_ORIGINS", "http://localhost:3000")
 origins_list = [o.strip() for o in origin.split(",")]

@@ -13,6 +13,10 @@ from database import get_db
 
 router = APIRouter()
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+AVATARS_DIR = os.path.join(BASE_DIR, "uploads", "avatars")
+os.makedirs(AVATARS_DIR, exist_ok=True)
+
 # --- 1. Route to Get User Profile ---
 @router.get("/me")
 async def get_user_profile(current_user: dict = Depends(get_current_user)):
@@ -72,16 +76,17 @@ async def upload_avatar(
     try:
         user_id_obj = ObjectId(current_user["_id"])
         
-        # Create a secure, unique filename using the user's DB ID
         file_extension = avatar.filename.split(".")[-1]
         file_name = f"{user_id_obj}.{file_extension}"
-        file_path = os.path.join(UPLOAD_DIR, file_name)
+        
+        # --- UPDATE THIS: Use the absolute path variable ---
+        file_path = os.path.join(AVATARS_DIR, file_name)
 
         # Save the file to the server's local disk
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(avatar.file, buffer)
 
-        # Generate the public URL where the frontend can access this image
+        # Generate the public URL (This stays the same! It maps to your app.mount)
         avatar_url = f"/uploads/avatars/{file_name}"
 
         # Save this URL to the database
