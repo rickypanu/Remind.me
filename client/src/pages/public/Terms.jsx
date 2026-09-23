@@ -30,7 +30,7 @@ export default function Terms() {
             Legal & Privacy
           </h1>
           <p className="text-blue-100 font-medium">
-            Last updated: June 27, 2026
+            Last updated: September 24, 2026
           </p>
         </div>
 
@@ -53,16 +53,51 @@ export default function Terms() {
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">2. User Account</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">2. Age Restrictions</h3>
                 <p>
-                  To use certain features of our application, you must register for an account. You agree to provide accurate, current, and complete information during the registration process and to update such information to keep it accurate, current, and complete. You are responsible for safeguarding your password.
+                  You must be at least 13 years old to use RemindMe. By using the service, you represent and warrant that you meet this age requirement.
                 </p>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">3. Acceptable Use</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">3. User Account</h3>
                 <p>
-                  You agree not to use the service for any unlawful purpose or any purpose prohibited under this clause. You agree not to use the service in any way that could damage the site, the services, or the general business of RemindMe.
+                  To use our application, you must register for an account. You agree to provide accurate, current, and complete information during the registration process. You are responsible for safeguarding your password and account credentials.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">4. Acceptable Use</h3>
+                <p>
+                  You agree not to use the service for any unlawful purpose. You agree not to use the service in any way that could damage the site, the services, or the general business of RemindMe, including sending spam or malicious content.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">5. Limitation of Liability</h3>
+                <p>
+                  RemindMe is provided on an "as is" and "as available" basis. We do not guarantee that notifications will be delivered on time or that the service will be uninterrupted. We are not liable for any missed events, financial losses, or other damages resulting from failed reminders or service downtime.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">6. Account Termination</h3>
+                <p>
+                  We reserve the right to suspend or terminate your account at our sole discretion, without prior notice, for conduct that we believe violates these Terms or is harmful to other users, us, or third parties.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">7. Notifications and Communications</h3>
+                <p>
+                  By connecting your account to our Telegram bot, you consent to receiving automated task alerts and reminders. You can opt out of these communications at any time by stopping or blocking the Telegram bot, or by disconnecting it from the website via your Profile settings.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">8. Governing Law</h3>
+                <p>
+                  These Terms shall be governed and construed in accordance with the laws of India, including the Information Technology Act, 2000, without regard to its conflict of law provisions. 
                 </p>
               </div>
             </div>
@@ -79,26 +114,54 @@ export default function Terms() {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">1. Information We Collect</h3>
                 <p>
-                  We collect information you provide directly to us when you create an account, such as your email address and password. We also automatically collect certain information about your device and how you interact with our services.
+                  We collect information you provide directly to us when you create an account, such as your name, email address and password. We also securely store the reminder data and content you input into the application.
                 </p>
               </div>
 
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">2. How We Use Your Information</h3>
                 <p>
-                  We use the information we collect to provide, maintain, and improve our services, to develop new ones, and to protect RemindMe and our users. We may also use this information to communicate with you, such as sending you email notifications regarding your reminders.
+                  We use the information we collect to provide, maintain, and improve our services, and to protect RemindMe and our users. We use your data to trigger and send you the scheduled reminders you create.
                 </p>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">3. Data Security</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">3. Third-Party Services</h3>
                 <p>
-                  We implement reasonable security measures designed to protect your information from unauthorized access, alteration, disclosure, or destruction. However, no internet or email transmission is ever fully secure or error-free.
+                  We use trusted third-party infrastructure providers to host and operate RemindMe. This includes Vercel (for frontend hosting), Render (for backend hosting), and MongoDB Atlas (for secure database storage). Your data is processed by these services strictly for the purpose of operating this application.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">4. Data Security</h3>
+                <p>
+                  We implement reasonable security practices and procedures to protect your information from unauthorized access, alteration, disclosure, or destruction, in compliance with applicable Indian laws. However, no internet or email transmission is ever fully secure or error-free.
                 </p>
               </div>
               
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">4. Contact Us</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">5. Your Data Rights & Deletion</h3>
+                <p>
+                  You have full control over your data. You can delete your account and all associated personal data and reminders at any time by going to your Profile and clicking the "Delete Account" button. Once deleted, this action cannot be undone and your data is permanently removed from our active databases.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">6. Cookies and Local Storage</h3>
+                <p>
+                  We use local browser storage and strictly necessary cookies to keep you logged into your account and securely manage your session. We do not use tracking cookies for advertising purposes.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">7. Grievance Officer & Indian Data Protection</h3>
+                <p>
+                  In compliance with the Digital Personal Data Protection Act, 2023 (DPDPA) and the Information Technology Act, 2000, you have the right to access, correct, and erase your personal data. If you have any grievances regarding your data or privacy, you may contact our Grievance Officer at rickypanu2005@gmail.com.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">8. Contact Us</h3>
                 <p>
                   If you have any questions about these Terms or our Privacy Policy, please contact us at rickypanu2005@gmail.com.
                 </p>
