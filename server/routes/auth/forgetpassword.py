@@ -88,7 +88,7 @@ async def forgot_password(request: ForgotPasswordRequest, db = Depends(get_db)):
         )
         
         # Pull frontend URL from environment, fallback to localhost for local testing
-        frontend_url = os.getenv("FRONTEND_ORIGINS", "http://localhost:5173")
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
         reset_link = f"{frontend_url}/reset-password?token={reset_token}"
         
         await send_reset_email(request.email, reset_link)
