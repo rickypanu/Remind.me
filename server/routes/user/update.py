@@ -8,7 +8,7 @@ from utils.security import get_current_user
 from database import get_db 
 from schemas.updates import UpdateCreate, UpdateResponse
 
-router = APIRouter()
+router = APIRouter(tags=["User"])
 
 # --- Security Dependency ---
 async def verify_admin(current_user: dict = Depends(get_current_user)):

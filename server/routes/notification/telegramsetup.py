@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Request
 from database import db
 from schemas.notification import TelegramPayload
 
-router = APIRouter()
+router = APIRouter(tags=["Telegram"])
 
 BOT_USERNAME = os.getenv("TELEGRAM_BOT_USERNAME")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")

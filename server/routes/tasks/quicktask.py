@@ -12,7 +12,7 @@ from google.genai import types, errors
 from database import get_db
 from utils.security import get_current_user
 
-router = APIRouter()
+router = APIRouter(tags=["Task"])
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 

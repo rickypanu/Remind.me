@@ -8,7 +8,7 @@ from database import get_db
 from utils.security import get_current_user
 from schemas.task import TaskCreate, TaskResponse, TaskStatusUpdate
 
-router = APIRouter()
+router = APIRouter(tags=["Task"])
 IST = pytz.timezone('Asia/Kolkata')
 
 # --- API Routes ---

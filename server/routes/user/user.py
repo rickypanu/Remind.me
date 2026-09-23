@@ -11,7 +11,7 @@ from schemas.user import UserUpdate
 from utils.security import get_current_user
 from database import get_db
 
-router = APIRouter()
+router = APIRouter(tags=["User"])
 
 ROOT_DIR = os.getcwd() 
 AVATARS_DIR = os.path.join(ROOT_DIR, "uploads", "avatars")
