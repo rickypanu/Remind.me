@@ -25,8 +25,18 @@ export default function ResetPassword() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // --- NEW: Password Strength Validation ---
+    // Regex checks for: >=8 chars, 1 uppercase, 1 lowercase, 1 number
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+    
+    if (!passwordRegex.test(formData.password)) {
+      return setError("Password must be at least 8 characters and contain an uppercase letter, a lowercase letter, and a number.");
+    }
+
+    // --- Check if passwords match ---
     if (formData.password !== formData.confirmPassword) {
-      return setError("Passwords do not match");
+      return setError("Passwords do not match.");
     }
 
     setLoading(true);
@@ -107,6 +117,10 @@ export default function ResetPassword() {
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
+              {/* Optional: Helpful hint text below the input */}
+              <p className="text-xs text-gray-500 mt-1">
+                Must be at least 8 characters with 1 uppercase, 1 lowercase, and 1 number.
+              </p>
             </div>
 
             <div className="space-y-1.5">
