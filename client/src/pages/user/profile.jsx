@@ -16,6 +16,7 @@ import {
   X,
   Newspaper,
   Send,
+  Shield,
 } from "lucide-react";
 import api from "../../utils/api";
 import MenuItem from "../components/MenuItems";
@@ -348,7 +349,8 @@ export default function Profile() {
             <div className="bg-white border border-gray-100 rounded-[24px] overflow-hidden shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
               <MenuItem icon={Newspaper} label="Updates" to="/updates" badge={unreadUpdatesCount} />
               <MenuItem icon={HelpCircle} label="FAQ's" to="/faqs" />
-              <MenuItem icon={Send} label="Telegram" to="/telegram-setup" />
+              <MenuItem icon={Send} label="Connect Telegram" to="/telegram-setup" />
+              <MenuItem icon={Shield} label="Legal & Privacy" to="/terms" />
               <MenuItem icon={Info} label="About App" to="/about" />
             </div>
           </div>
