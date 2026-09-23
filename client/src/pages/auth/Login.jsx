@@ -1,53 +1,62 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, Loader2, AlertCircle, LayoutDashboard, Eye, EyeOff, ArrowLeft } from 'lucide-react';
-import api from '../../utils/api';
+import React, { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import {
+  Mail,
+  Lock,
+  Loader2,
+  AlertCircle,
+  LayoutDashboard,
+  Eye,
+  EyeOff,
+  ArrowLeft,
+} from "lucide-react";
+import api from "../../utils/api";
 
 export default function Login() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  
+
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+    email: "",
+    password: "",
   });
 
   // Check for existing token on mount
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (token) {
-      navigate('/dashboard', { replace: true });
+      navigate("/dashboard", { replace: true });
     }
   }, [navigate]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    setError(''); 
+    setError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       const params = new URLSearchParams();
       // Backend expects 'username' for the login email/username field
-      params.append('username', formData.email); 
-      params.append('password', formData.password);
+      params.append("username", formData.email);
+      params.append("password", formData.password);
 
-      const response = await api.post('/auth/login', params, {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      const response = await api.post("/auth/login", params, {
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
       });
 
-      localStorage.setItem('token', response.data.access_token);
-      navigate('/dashboard');
+      localStorage.setItem("token", response.data.access_token);
+      navigate("/dashboard");
     } catch (err) {
       setError(
-        err.response?.data?.detail || 
-        'Something went wrong. Please check your connection.'
+        err.response?.data?.detail ||
+          "Something went wrong. Please check your connection.",
       );
     } finally {
       setLoading(false);
@@ -57,7 +66,6 @@ export default function Login() {
   return (
     <div className="flex items-center justify-center min-h-screen px-4 py-8 bg-gray-50">
       <div className="w-full max-w-md p-6 sm:p-8 bg-white shadow-xl rounded-2xl border border-gray-100">
-        
         {/* Consistent Back Button */}
         <button
           onClick={() => navigate(-1)}
@@ -71,7 +79,10 @@ export default function Login() {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <LayoutDashboard className="text-blue-600 inline-block mb-2" size={32} />
+          <LayoutDashboard
+            className="text-blue-600 inline-block mb-2"
+            size={32}
+          />
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight mb-2">
             Remind<span className="text-blue-600">Me</span>
           </h1>
@@ -90,14 +101,19 @@ export default function Login() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
-          
           {/* Email Field */}
           <div className="space-y-1.5">
-            <label htmlFor="email" className="block text-sm font-semibold text-gray-700">
+            <label
+              htmlFor="email"
+              className="block text-sm font-semibold text-gray-700"
+            >
               Email Address
             </label>
             <div className="relative group">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" size={20} />
+              <Mail
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors"
+                size={20}
+              />
               <input
                 id="email"
                 type="email"
@@ -113,11 +129,17 @@ export default function Login() {
 
           {/* Password Field */}
           <div className="space-y-1.5">
-            <label htmlFor="password" className="block text-sm font-semibold text-gray-700">
+            <label
+              htmlFor="password"
+              className="block text-sm font-semibold text-gray-700"
+            >
               Password
             </label>
             <div className="relative group">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" size={20} />
+              <Lock
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors"
+                size={20}
+              />
               <input
                 id="password"
                 type={showPassword ? "text" : "password"}
@@ -146,13 +168,27 @@ export default function Login() {
             disabled={loading}
             className="w-full py-3.5 px-4 mt-8 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm hover:shadow-md transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
           >
-            {loading ? <Loader2 className="animate-spin" size={22} /> : 'Sign In'}
+            {loading ? (
+              <Loader2 className="animate-spin" size={22} />
+            ) : (
+              "Sign In"
+            )}
           </button>
         </form>
 
+        {/* froget pass */}
+        <div className="flex justify-end mt-3 mb-2">
+          <Link
+            to="/forgot-password"
+            className="text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+          >
+            Forgot password?
+          </Link>
+        </div>
+
         {/* Redirect to Register */}
         <div className="mt-8 text-center text-sm text-gray-500">
-          Don't have an account?{' '}
+          Don't have an account?{" "}
           <Link
             to="/register"
             className="text-blue-600 font-bold hover:text-blue-700 hover:underline transition-colors"
