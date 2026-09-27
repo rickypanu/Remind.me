@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from pywebpush import webpush, WebPushException
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 from bson import ObjectId
 
 from database import db
@@ -63,6 +64,33 @@ async def send_push_async(user_id, subscription_info: dict, title: str, message:
                 {"_id": to_mongo_id(str(user_id))},
                 {"$unset": {"push_subscription": ""}}
             )
+
+async def remind_upcoming_tasks():
+    """Checks every minute for tasks due exactly one hour from now."""
+    now = datetime.now(IST)
+    
+    # Define a 1-minute window exactly 1 hour in the future
+    target_start = now + timedelta(minutes=59)
+    target_end = now + timedelta(minutes=60)
+
+    query = {
+        "due_date": {"$gte": target_start, "$lt": target_end},
+        "status": {"$ne": "completed"}
+    }
+
+    tasks = await db["tasks"].find(query).to_list(length=None)
+
+    for task in tasks:
+        user_id_str = str(task.get("user_id"))
+        task_title = task.get("title", "Untitled Task")
+        
+        user = await db["users"].find_one({"_id": to_mongo_id(user_id_str)})
+        
+        if user and user.get("push_subscription"):
+            title = "Task Due Soon!"
+            body = f"'{task_title}' is due in 1 hour."
+            
+            await send_push_async(user["_id"], user["push_subscription"], title, body)
 
 async def remind_todays_tasks():
     """Fetches incomplete tasks due today and sends a summary notification."""
@@ -136,6 +164,9 @@ def start_scheduler():
     """Initializes and starts the background task scheduler."""
     scheduler = AsyncIOScheduler(timezone=IST)
     
+    # Run exact 1-hour prior check every 1 minute
+    scheduler.add_job(remind_upcoming_tasks, IntervalTrigger(minutes=1, timezone=IST))
+    
     # Run today's task check at 8:00 AM, 1:00 PM, and 6:00 PM IST
     scheduler.add_job(remind_todays_tasks, CronTrigger(hour="8,13,18", minute="0", timezone=IST))
     
@@ -143,4 +174,4 @@ def start_scheduler():
     scheduler.add_job(remind_tomorrows_tasks, CronTrigger(hour="20", minute="0", timezone=IST))
     
     scheduler.start()
-    print("WebPush background task scheduler started (IST).")
+    print("WebPush background task scheduler started (IST). Polling active.")
