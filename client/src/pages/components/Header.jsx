@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, BellOff, LayoutDashboard, Plus, CircleUser, Check, Loader2 } from 'lucide-react';
+import { Bell, BellOff,BellCheckIcon, LayoutDashboard, Plus, CircleUser, Check, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../../utils/api';
 
@@ -188,7 +188,7 @@ const Header = () => {
                 
                 {pushStatus === 'subscribed' && (
                   <>
-                    <Check size={18} strokeWidth={2.5} className="block group-hover:hidden text-emerald-600" />
+                    <BellCheckIcon size={18} strokeWidth={2.5} className="block group-hover:hidden text-emerald-600" />
                     <BellOff size={18} strokeWidth={2.5} className="hidden group-hover:block text-rose-500" />
                   </>
                 )}
