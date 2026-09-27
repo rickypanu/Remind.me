@@ -14,23 +14,37 @@ def to_mongo_id(val: str):
 
 @router.post("/subscribe")
 async def subscribe(payload: SubscriptionPayload):
-    # Upsert the subscription info into the user's document
+    # Use $addToSet to add unique subscriptions to an array. 
+    # 'push_subscriptions' is now an array instead of a single object.
     result = await db["users"].update_one(
         {"_id": to_mongo_id(payload.userId)},
-        {"$set": {"push_subscription": payload.subscription}},
+        {"$addToSet": {"push_subscriptions": payload.subscription}},
         upsert=True
     )
     if result.modified_count == 0 and result.upserted_id is None:
-        return {"status": "info", "message": "Subscription already up to date."}
+        return {"status": "info", "message": "Subscription already exists."}
     return {"status": "success", "message": "Subscription registered."}
 
 @router.delete("/unsubscribe/{user_id}")
-async def unsubscribe(user_id: str):
-    # Remove the push_subscription field entirely from the user document
-    result = await db["users"].update_one(
-        {"_id": to_mongo_id(user_id)},
-        {"$unset": {"push_subscription": ""}}
-    )
+async def unsubscribe(user_id: str, payload: SubscriptionPayload = None):
+    # DHYAN DEIN: Agar array use kar rahe hain, toh sirf 'push_subscriptions' 
+    # field ko delete karne se sabhi devices ke notification band ho jayenge.
+    # Agar sirf current device ko hatana hai, toh frontend se 
+    # current device ki subscription bhejni hogi aur $pull use karna hoga.
+    
+    # Ye block current device ko remove karne ke liye hai (agar payload bheja jaye)
+    if payload and payload.subscription:
+        result = await db["users"].update_one(
+            {"_id": to_mongo_id(user_id)},
+            {"$pull": {"push_subscriptions": payload.subscription}}
+        )
+    else:
+        # Ye block saare devices ki subscriptions delete kar dega
+        result = await db["users"].update_one(
+            {"_id": to_mongo_id(user_id)},
+            {"$unset": {"push_subscriptions": ""}} 
+        )
+
     if result.modified_count == 0:
         raise HTTPException(status_code=404, detail="User or subscription not found.")
     return {"status": "success", "message": "Subscription removed successfully."}

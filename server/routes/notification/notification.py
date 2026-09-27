@@ -202,7 +202,7 @@ async def remind_tomorrows_tasks():
 
 # Change the function to be a standard setup function
 
-def start_scheduler():
+def start_scheduler_tele():
     print("--> [DEBUG] App Startup triggered. Initializing Scheduler...")
     scheduler = AsyncIOScheduler(timezone=IST)
 

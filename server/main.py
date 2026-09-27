@@ -10,14 +10,20 @@ load_dotenv()
 from routes.auth import auth_router
 from routes.user import user_router
 from routes.tasks import task_router
-from routes.notification import notification_router, start_scheduler 
 
+from routes.notification import notification_router, start_scheduler_tele, start_scheduler_web 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    scheduler = start_scheduler()
+    scheduler_tele = start_scheduler_tele()
+    scheduler_web = start_scheduler_web()
+    
     yield
-    scheduler.shutdown()
+    
+    if scheduler_tele:
+        scheduler_tele.shutdown()
+    if scheduler_web:
+        scheduler_web.shutdown()
 
 app = FastAPI(title="RemindMe API", lifespan=lifespan)
 
