@@ -17,12 +17,15 @@ IST = pytz.timezone('Asia/Kolkata')
 
 # 1. API Key Pool for Rate Limit Resilience
 # Add multiple keys to your .env like: GEMINI_API_KEYS="key1,key2,key3"
+# Strip spaces and quotes (both single and double) from the .env string
 raw_keys = os.getenv("GEMINI_API_KEYS", os.getenv("GEMINI_API_KEY", ""))
-API_KEYS = [key.strip() for key in raw_keys.split(",") if key.strip()]
+API_KEYS = [key.strip(" '\"") for key in raw_keys.split(",") if key.strip(" '\"")]
+
 if not API_KEYS:
     raise ValueError("No Gemini API keys found in environment.")
 
 key_pool = cycle(API_KEYS)
+
 
 # 2. Modern 2026 Fast Models (Ordered by speed)
 FALLBACK_MODELS = [
@@ -54,7 +57,7 @@ async def generate_task_data(prompt: str) -> dict:
         
         # Instantiate a temporary client with the current round-robin key
         client = genai.Client(api_key=current_key)
-        
+
         try:
             response = await client.aio.models.generate_content(
                 model=model_name,
@@ -62,7 +65,7 @@ async def generate_task_data(prompt: str) -> dict:
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
                     response_schema=TaskExtractionSchema,
-                    temperature=0.0, # Zero creativity ensures maximum speed
+                    temperature=0.0,
                 )
             )
             
@@ -72,21 +75,22 @@ async def generate_task_data(prompt: str) -> dict:
         except errors.APIError as e:
             last_exception = e
             
-            # 404 (Model Not Found) or 401/403 (Auth Error): Skip to next iteration instantly
-            if e.code in (404, 401, 403):
-                continue 
+            # Print which key failed to your console so you can find the bad one
+            print(f"Skipping key ending in ...{current_key[-4:]} or model {model_name}. Reason: {e.code}")
             
-            # 429 (Quota) or 503 (Overloaded): Instantly loop to the next key/model
-            if e.code in (429, 503):
-                continue
+            # 400 (Invalid Key/Bad Request), 401/403 (Auth Error), 404 (Not Found)
+            # 429 (Quota), 503 (Overloaded) -> Instantly skip to next key/model
+            if getattr(e, 'code', None) in (400, 401, 403, 404, 429, 503):
+                continue 
                 
             raise e # Unhandled API errors
             
         except Exception as e:
             last_exception = e
             continue
-
-    raise RuntimeError(f"All API keys and models exhausted. Last error: {last_exception}")
+       
+       
+        raise RuntimeError(f"All API keys and models exhausted. Last error: {last_exception}")
 
 @router.post("/magic-add", status_code=status.HTTP_201_CREATED)
 async def magic_add_task(
