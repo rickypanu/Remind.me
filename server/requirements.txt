@@ -12,3 +12,4 @@ apscheduler
 cryptography<42.0.0
 httpx
 google-genai
+pywebpush
