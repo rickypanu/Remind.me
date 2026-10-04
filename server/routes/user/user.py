@@ -1,10 +1,8 @@
-import os
-import shutil
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
-from bson import ObjectId
+from bson import ObjectId, Binary
 from bson.errors import InvalidId
 
-# Import your schema
 from schemas.user import UserUpdate 
 
 # Assuming these are imported from your project structure
@@ -13,10 +11,7 @@ from database import get_db
 
 router = APIRouter(tags=["User"])
 
-ROOT_DIR = os.getcwd() 
-AVATARS_DIR = os.path.join(ROOT_DIR, "uploads", "avatars")
-
-os.makedirs(AVATARS_DIR, exist_ok=True)
+MAX_AVATAR_BYTES = 2 * 1024 * 1024  # 2 MB
 
 # --- 1. Route to Get User Profile ---
 @router.get("/me")
@@ -60,48 +55,37 @@ async def update_user_details(
             detail="An error occurred while updating the profile."
         )
 
+
+
 @router.post("/avatar")
 async def upload_avatar(
     avatar: UploadFile = File(...),
     current_user: dict = Depends(get_current_user),
     db = Depends(get_db)
 ):
-    if not avatar.content_type.startswith("image/"):
+    if not avatar.content_type or not avatar.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File must be an image.")
 
-    try:
-        user_id_obj = ObjectId(current_user["_id"])
-        file_extension = avatar.filename.split(".")[-1]
-        file_name = f"{user_id_obj}.{file_extension}"
-        
-        # Create absolute path
-        file_path = os.path.join(AVATARS_DIR, file_name)
+    data = await avatar.read()
+    if len(data) > MAX_AVATAR_BYTES:
+        raise HTTPException(status_code=413, detail="Image must be under 2 MB.")
 
-        # 🛑 DEBUG PRINT: Check your terminal console for these exact lines when you upload!
-        print(f"\n--- DEBUG INFO ---")
-        print(f"SAVING TO: {file_path}")
-        print(f"FILE EXISTS AFTER SAVE? {os.path.exists(file_path)}")
-        print(f"------------------\n")
+    user_id_str = str(current_user["_id"])
 
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(avatar.file, buffer)
+    # Store the image bytes in MongoDB instead of the server's disk
+    await db["avatars"].update_one(
+        {"_id": user_id_str},
+        {"$set": {"data": Binary(data), "content_type": avatar.content_type}},
+        upsert=True,
+    )
 
-        avatar_url = f"/uploads/avatars/{file_name}"
-
-        # Save this URL to the database
-        await db["users"].update_one(
-            {"_id": user_id_obj},
-            {"$set": {"avatar_url": avatar_url}}
-        )
-
-        return {"avatar_url": avatar_url, "message": "Avatar uploaded successfully."}
-
-    except Exception as e:
-        print(f"Error uploading avatar: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to upload profile picture."
-        )
+    # ?v=... busts the browser cache when the user uploads a new picture
+    avatar_url = f"/uploads/avatars/{user_id_str}?v={int(datetime.now(timezone.utc).timestamp())}"
+    await db["users"].update_one(
+        {"_id": ObjectId(user_id_str)},
+        {"$set": {"avatar_url": avatar_url}},
+    )
+    return {"avatar_url": avatar_url, "message": "Avatar uploaded successfully."}
 
 # --- 4. Route to Delete Account ---
 @router.delete("/me", status_code=status.HTTP_200_OK)
@@ -117,12 +101,15 @@ async def delete_user_account(
         except InvalidId:
             raise HTTPException(status_code=400, detail="Invalid User ID format")
             
-        # Delete user's tasks first
-        await db["tasks"].delete_many({"user_id": user_id_obj})
+         # Delete user's tasks (tasks store user_id as a string)
+        await db["tasks"].delete_many({"user_id": str(user_id_obj)})
+
+        # Delete the user's uploaded avatar
+        await db["avatars"].delete_one({"_id": str(user_id_obj)})
 
         # Delete the user
         delete_result = await db["users"].delete_one({"_id": user_id_obj})
-
+        
         if delete_result.deleted_count == 0:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

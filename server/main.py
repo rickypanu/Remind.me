@@ -1,9 +1,10 @@
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI, HTTPException, Response
+from database import db
 
 load_dotenv()
 
@@ -27,14 +28,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="RemindMe API", lifespan=lifespan)
 
-# --- FOOLPROOF PATH STRATEGY ---
-# os.getcwd() gets the directory where you run your uvicorn command
-ROOT_DIR = os.getcwd() 
-UPLOAD_DIR = os.path.join(ROOT_DIR, "uploads")
-
-os.makedirs(os.path.join(UPLOAD_DIR, "avatars"), exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
-
 
 app.add_middleware(
     CORSMiddleware,
@@ -54,6 +47,17 @@ app.include_router(notification_router)
 async def root():
     return {"message": "Welcome to the RemindMe API"}
 
+@app.get("/uploads/avatars/{user_id}")
+async def get_avatar(user_id: str):
+    doc = await db["avatars"].find_one({"_id": user_id.split(".")[0]})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Avatar not found")
+    return Response(
+        content=bytes(doc["data"]),
+        media_type=doc["content_type"],
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+    
 @app.api_route("/health", methods=["GET", "HEAD"], status_code=200, tags=["Health"])
 def health_check():
     """
