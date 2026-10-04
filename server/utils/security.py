@@ -45,27 +45,3 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db = Depends(get
     
     user["_id"] = str(user["_id"])
     return user
-
-
-# --- Short-lived token embedded in a push notification so the service worker
-# --- can call the API (Done / Snooze) without access to the user's login JWT.
-# --- It has no "sub" claim, so it can NOT be used as a normal access token.
-PUSH_ACTION_EXPIRE_HOURS = 48
-
-def create_push_action_token(task_id: str, user_id: str):
-    payload = {
-        "purpose": "push_action",
-        "task_id": task_id,
-        "uid": user_id,
-        "exp": datetime.utcnow() + timedelta(hours=PUSH_ACTION_EXPIRE_HOURS),
-    }
-    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
-
-def decode_push_action_token(token: str) -> dict:
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid or expired action token")
-    if payload.get("purpose") != "push_action":
-        raise HTTPException(status_code=401, detail="Invalid action token")
-    return payload
