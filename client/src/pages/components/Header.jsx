@@ -5,7 +5,7 @@ import api from '../../utils/api';
 
 const PUBLIC_VAPID_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
 
-// Required helper to convert the VAPID key string into a format the browser accepts
+// Converts the VAPID key string into a format the browser accepts
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding)
@@ -21,45 +21,64 @@ function urlBase64ToUint8Array(base64String) {
   return outputArray;
 }
 
+// The service worker is registered by vite-plugin-pwa (registerSW.js).
+// `ready` never resolves if no service worker is registered (e.g. `vite dev`),
+// so we race it against a timeout instead of hanging on "Updating...".
+function getActiveRegistration(timeoutMs = 8000) {
+  return Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise((_, reject) =>
+      setTimeout(
+        () => reject(new Error('Service worker is not active. Test push on a production build (npm run build && npm run preview) or the deployed site.')),
+        timeoutMs
+      )
+    ),
+  ]);
+}
+
+const pushSupported = () =>
+  'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+
 const Header = () => {
   const isLoggedIn = !!localStorage.getItem("token");
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [userId, setUserId] = useState(null);
   const [pushStatus, setPushStatus] = useState('idle'); // 'idle', 'loading', 'subscribed'
+  const [pushError, setPushError] = useState('');
 
   useEffect(() => {
-    // 1. Function to check if the browser already has an active push subscription
-    const checkLocalSubscription = async () => {
-      if ('serviceWorker' in navigator && 'PushManager' in window) {
-        try {
-          const registration = await navigator.serviceWorker.ready;
-          const existingSubscription = await registration.pushManager.getSubscription();
-          
-          if (existingSubscription) {
-            console.log("Browser is already subscribed to push notifications.");
-            setPushStatus('subscribed');
+    if (!isLoggedIn) return;
+
+    // Subscription state is per DEVICE, so the browser is the source of truth.
+    // If this browser is already subscribed, re-send it to the backend
+    // (idempotent via $addToSet) so a lost DB record heals itself.
+    const syncLocalSubscription = async (uid) => {
+      if (!pushSupported()) return;
+      try {
+        const registration = await getActiveRegistration();
+        const existing = await registration.pushManager.getSubscription();
+        if (existing) {
+          setPushStatus('subscribed');
+          if (uid) {
+            await api.post('/webpush/subscribe', {
+              subscription: existing.toJSON(),
+              userId: uid,
+            });
           }
-        } catch (error) {
-          console.error("Error checking local push subscription:", error);
         }
+      } catch (error) {
+        console.error("Error checking local push subscription:", error);
       }
     };
 
-    if (isLoggedIn) {
-      // 2. Fetch user data
-      api.get("/user/me")
-        .then(({ data }) => {
-          if (data?.avatar_url) setAvatarUrl(data.avatar_url);
-          if (data?._id || data?.id) setUserId(data._id || data.id);
-          
-          // Fallback check: if backend says we are subscribed
-          if (data?.push_subscription) setPushStatus('subscribed');
-        })
-        .catch((error) => console.error("Failed to fetch user data for header", error));
-
-      // 3. Run the local browser check on mount
-      checkLocalSubscription();
-    }
+    api.get("/user/me")
+      .then(({ data }) => {
+        if (data?.avatar_url) setAvatarUrl(data.avatar_url);
+        const uid = data?._id || data?.id;
+        if (uid) setUserId(uid);
+        syncLocalSubscription(uid);
+      })
+      .catch((error) => console.error("Failed to fetch user data for header", error));
   }, [isLoggedIn]);
 
   const getAvatarSrc = () => avatarUrl?.startsWith("/uploads") 
@@ -68,61 +87,80 @@ const Header = () => {
 
   const handleSubscribe = async () => {
     if (pushStatus === 'subscribed' || !userId) return;
+    setPushError('');
+
+    if (!pushSupported()) {
+      setPushError('Push is not supported here. On iPhone, add the site to your Home Screen first.');
+      return;
+    }
     if (!PUBLIC_VAPID_KEY) {
       console.error("VAPID key is missing! Check your .env file.");
+      setPushError('Push is not configured (missing VAPID key).');
       return;
     }
 
     try {
       setPushStatus('loading');
-      
-      let registration = await navigator.serviceWorker.getRegistration();
-      if (!registration) {
-        registration = await navigator.serviceWorker.register('/sw.js');
+
+      // Ask for permission explicitly (more reliable on mobile than relying on subscribe())
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        setPushError('Notifications are blocked. Allow them in your browser/site settings and try again.');
+        setPushStatus('idle');
+        return;
       }
-      await navigator.serviceWorker.ready;
-      
-      const convertedVapidKey = urlBase64ToUint8Array(PUBLIC_VAPID_KEY);
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: convertedVapidKey
-      });
+
+      const registration = await getActiveRegistration();
+
+      // Reuse the existing subscription if there is one, otherwise create a new one
+      let subscription = await registration.pushManager.getSubscription();
+      if (!subscription) {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY),
+        });
+      }
 
       await api.post('/webpush/subscribe', {
-        subscription: subscription,
-        userId: userId
+        subscription: subscription.toJSON(),
+        userId: userId,
       });
 
       setPushStatus('subscribed');
-
     } catch (error) {
       console.error("Failed to subscribe to push notifications:", error);
-      setPushStatus('idle'); 
+      setPushError(error?.message || 'Could not enable alerts. Please try again.');
+      setPushStatus('idle');
     }
   };
 
   const handleUnsubscribe = async () => {
     if (!userId) return;
+    setPushError('');
 
     try {
       setPushStatus('loading');
-      
-      const registration = await navigator.serviceWorker.ready;
+
+      const registration = await getActiveRegistration();
       const subscription = await registration.pushManager.getSubscription();
 
       if (subscription) {
-        // 1. Tell the browser to revoke the push subscription locally
+        const subJSON = subscription.toJSON();
+
+        // 1. Remove ONLY this device's subscription from the backend ($pull)
+        //    (sending no body would remove every device's subscription)
+        await api.delete(`/webpush/unsubscribe/${userId}`, {
+          data: { subscription: subJSON, userId },
+        });
+
+        // 2. Then revoke it locally in the browser
         await subscription.unsubscribe();
       }
 
-      // 2. Tell your FastAPI backend to remove it from the database
-      await api.delete(`/webpush/unsubscribe/${userId}`);
-
-      console.log("Successfully unsubscribed!");
-      setPushStatus('idle'); // Resets the button back to "Enable Alerts"
-
+      setPushStatus('idle');
     } catch (error) {
       console.error("Failed to unsubscribe:", error);
+      setPushError('Could not turn off alerts. Please try again.');
       setPushStatus('subscribed'); // Revert state if the API call fails
     }
   };
@@ -245,6 +283,15 @@ const Header = () => {
           )}
         </div>
       </div>
+      {pushError && (
+        <div
+          role="alert"
+          onClick={() => setPushError('')}
+          className="absolute right-4 top-full mt-2 max-w-xs cursor-pointer rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 shadow-md"
+        >
+          {pushError}
+        </div>
+      )}
     </nav>
   );
 };
