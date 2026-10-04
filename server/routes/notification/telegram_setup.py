@@ -3,11 +3,14 @@ import httpx
 from fastapi import APIRouter, HTTPException, Request
 from database import db
 from schemas.notification import TelegramPayload
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
+from .telegram_broadcast import broadcast_to_all, send_telegram
 
 router = APIRouter(tags=["Telegram"])
 
 BOT_USERNAME = os.getenv("TELEGRAM_BOT_USERNAME")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+ADMIN_TELEGRAM_ID = os.getenv("ADMIN_TELEGRAM_ID")
 
 @router.get("/telegram/status/{user_id}")
 async def check_telegram_status(user_id: str):
@@ -32,15 +35,25 @@ async def get_telegram_link(payload: TelegramPayload):
     return {"telegram_url": f"https://t.me/{BOT_USERNAME}?start={payload.userId}"}
 
 @router.post("/telegram/webhook")
-async def telegram_webhook(request: Request):
-    """Handles Telegram Webhook updates."""
+async def telegram_webhook(request: Request, bg: BackgroundTasks):
     data = await request.json()
-    
+
     if "message" in data:
         message = data["message"]
         chat_id = str(message["chat"]["id"])
         text = message.get("text", "")
 
+        # --- NEW: admin broadcast ---
+        if chat_id == ADMIN_TELEGRAM_ID and text.startswith("/broadcast"):
+            content = text[len("/broadcast"):].strip()
+            title, sep, body = content.partition("|")
+            if sep and title.strip() and body.strip():
+                bg.add_task(broadcast_to_all, title.strip(), body.strip(), chat_id)
+                await send_telegram(chat_id, "OK", "Broadcast start ho gaya...")
+            else:
+                await send_telegram(chat_id, "Error", "Format: /broadcast Title | Message")
+            return {"status": "ok"}
+        # --- END NEW ---
         # 1. /start command execution
         if text.startswith("/start"):
             parts = text.split(" ")

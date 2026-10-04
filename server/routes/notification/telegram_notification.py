@@ -29,33 +29,24 @@ IST = pytz.timezone('Asia/Kolkata')
 # ---------------------------------------------------------
 # DISPATCH HELPERS
 # ---------------------------------------------------------
+async def send_telegram(chat_id: str, title: str, body: str) -> bool:
+    if not TELEGRAM_BOT_TOKEN or not chat_id:
+        return False
 
-async def send_telegram(chat_id: str, title: str, body: str):
-    print(f"--> [TELE DEBUG] Attempting to send to chat_id: {chat_id}")
-    
-    if not TELEGRAM_BOT_TOKEN:
-        print("--> [TELE ERROR] TELEGRAM_BOT_TOKEN is missing!")
-        return
-    if not chat_id:
-        print("--> [TELE ERROR] chat_id is missing!")
-        return
-    
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    payload = {
-        "chat_id": chat_id,
-        "text": f"<b>{title}</b>\n{body}",
-        "parse_mode": "HTML"
-    }
-    
+    payload = {"chat_id": chat_id, "text": f"<b>{title}</b>\n{body}", "parse_mode": "HTML"}
+
     async with httpx.AsyncClient() as client:
         try:
             res = await client.post(url, json=payload)
-            if res.status_code != 200:
-                print(f"--> [TELEGRAM API ERROR]: {res.text}")
-            else:
-                print("--> [TELE SUCCESS] Message sent to Telegram!")
+            if res.status_code == 429:  # rate limited
+                wait = res.json().get("parameters", {}).get("retry_after", 1)
+                await asyncio.sleep(wait)
+                res = await client.post(url, json=payload)
+            return res.status_code == 200
         except Exception as e:
             print(f"--> [TELE REQUEST EXCEPTION]: {e}")
+            return False
 
 
 async def dispatch_notifications(user: dict, title: str, body: str):
