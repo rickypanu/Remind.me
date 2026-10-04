@@ -1,8 +1,8 @@
 from fastapi import APIRouter
-from .telegramsetup import router as telegram_router 
-from .notification import router as notification_sub_router
+from .telegram_setup import router as telegram_router 
+from .telegram_notification import router as notification_sub_router
 from .register_webpush import router as register_webpush_router
-from .notification import start_scheduler_tele
+from .telegram_notification import start_scheduler_tele
 from .webpush_notification import start_scheduler_web
 
 # Create a distinct master router

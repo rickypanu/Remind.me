@@ -31,13 +31,13 @@ IST = pytz.timezone('Asia/Kolkata')
 # ---------------------------------------------------------
 
 async def send_telegram(chat_id: str, title: str, body: str):
-    print(f"--> [DEBUG] Attempting to send to chat_id: {chat_id}")
+    print(f"--> [TELE DEBUG] Attempting to send to chat_id: {chat_id}")
     
     if not TELEGRAM_BOT_TOKEN:
-        print("--> [ERROR] TELEGRAM_BOT_TOKEN is missing!")
+        print("--> [TELE ERROR] TELEGRAM_BOT_TOKEN is missing!")
         return
     if not chat_id:
-        print("--> [ERROR] chat_id is missing!")
+        print("--> [TELE ERROR] chat_id is missing!")
         return
     
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
@@ -53,19 +53,19 @@ async def send_telegram(chat_id: str, title: str, body: str):
             if res.status_code != 200:
                 print(f"--> [TELEGRAM API ERROR]: {res.text}")
             else:
-                print("--> [SUCCESS] Message sent to Telegram!")
+                print("--> [TELE SUCCESS] Message sent to Telegram!")
         except Exception as e:
-            print(f"--> [REQUEST EXCEPTION]: {e}")
+            print(f"--> [TELE REQUEST EXCEPTION]: {e}")
 
 
 async def dispatch_notifications(user: dict, title: str, body: str):
     """Dispatches notifications exclusively via Telegram."""
     telegram_chat_id = user.get("telegram_chat_id")
-    print(f"--> [DEBUG] Found user: {user.get('_id')}, Telegram ID: {telegram_chat_id}")
+    print(f"--> [TELE DEBUG] Found user: {user.get('_id')}, Telegram ID: {telegram_chat_id}")
     if telegram_chat_id:
         await send_telegram(telegram_chat_id, title, body)
     else:
-        print("--> [DEBUG] Skipping user - No telegram_chat_id found in database.")
+        print("--> [TELE DEBUG] Skipping user - No telegram_chat_id found in database.")
 
 
 # ---------------------------------------------------------
@@ -85,7 +85,7 @@ async def remind_upcoming_tasks():
     }
 
     tasks = await db["tasks"].find(query).to_list(length=None)
-    print(f"--> [DEBUG] Found {len(tasks)} tasks due soon.")
+    print(f"--> [TELE DEBUG] Found {len(tasks)} tasks due soon.")
 
     for task in tasks:
         # ATOMIC LOCK: Claim/Lock the task in MongoDB FIRST before dispatching
@@ -156,7 +156,7 @@ async def remind_todays_tasks():
 
 
 async def remind_tomorrows_tasks():
-    print("--> [DEBUG] Cron Job 'remind_tomorrows_tasks' triggered.")
+    print("--> [TELE DEBUG] Cron Job 'remind_tomorrows_tasks' triggered.")
     now_ist = datetime.now(IST)
     now_utc = datetime.now(pytz.utc)
     
@@ -207,10 +207,10 @@ def start_scheduler_tele():
     scheduler = AsyncIOScheduler(timezone=IST)
 
     scheduler.add_job(remind_upcoming_tasks, CronTrigger(minute="*"))
-    scheduler.add_job(remind_todays_tasks, CronTrigger(hour="8,12,14,18,20", minute="0"))
+    scheduler.add_job(remind_todays_tasks, CronTrigger(hour="8,17,21,23", minute="0"))
     scheduler.add_job(remind_tomorrows_tasks, CronTrigger(hour="21", minute="0"))
 
     scheduler.start()
-    print("--> [DEBUG] Telegram notification background scheduler active.")
+    print("--> [TELE DEBUG] Telegram notification background scheduler active.")
     
     return scheduler # Return it so it can be shut down gracefully later

@@ -35,8 +35,6 @@ UPLOAD_DIR = os.path.join(ROOT_DIR, "uploads")
 os.makedirs(os.path.join(UPLOAD_DIR, "avatars"), exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
-origin = os.getenv("FRONTEND_ORIGINS", "http://localhost:3000")
-origins_list = [o.strip() for o in origin.split(",")]
 
 app.add_middleware(
     CORSMiddleware,
