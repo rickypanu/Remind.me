@@ -14,6 +14,7 @@ import {
   PenTool,
 } from "lucide-react";
 import api from "../../utils/api";
+import { getIstNowInputValue, istInputToUtcIso } from "../../utils/date";
 
 export default function CreateTask() {
   const navigate = useNavigate();
@@ -32,7 +33,8 @@ export default function CreateTask() {
   const [customCategory, setCustomCategory] = useState("");
   const customInputRef = useRef(null);
 
-  const now = new Date().toISOString().slice(0, 16);
+  // `min` for the picker must be IST wall-clock time (toISOString() alone is UTC, 5h30m behind)
+  const now = getIstNowInputValue();
 
   useEffect(() => {
     if (formData.category === "Other" && customInputRef.current) {
@@ -57,7 +59,13 @@ export default function CreateTask() {
     }
 
     try {
-      const isoDate = new Date(formData.due_date).toISOString();
+      // The picker value is IST wall-clock time -> convert to UTC for storage
+      const isoDate = istInputToUtcIso(formData.due_date);
+      if (!isoDate) {
+        setError("Please choose a valid due date and time.");
+        setLoading(false);
+        return;
+      }
       const finalCategory =
         formData.category === "Other"
           ? customCategory.trim()

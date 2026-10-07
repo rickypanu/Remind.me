@@ -1,4 +1,5 @@
 import os
+from html import escape
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
@@ -79,6 +80,17 @@ async def get_due_soon_copy(task_title: str, category: str = "Other") -> tuple[s
         print(f"Critical API Failure (Due Soon): {e}")
         # Absolute Last Resort: Hardcoded local string (Zero Tokens)
         return (f"{emoji} 1 Hour Left!", f"Time to lock in! '{task_title}' is due in 60 minutes.")
+
+
+def get_short_reminder_copy(task_title: str, category: str, minutes: int, html: bool = False) -> tuple[str, str]:
+    """Instant, fixed-text copy for the 10-min / 1-min reminders (no AI call = no delay,
+    no quota). html=True escapes the title for Telegram's HTML parse mode."""
+    emoji = _get_emoji(category)
+    safe_title = escape(task_title) if html else task_title
+    unit = "minute" if minutes == 1 else "minutes"
+    if minutes <= 1:
+        return f"{emoji} Due in 1 minute!", f"'{safe_title}' is due right now. Finish up!"
+    return f"{emoji} Due in {minutes} {unit}", f"'{safe_title}' is due in {minutes} {unit}. Time to wrap it up."
 
 
 async def get_today_digest_copy(tasks: list[dict], hour: int) -> tuple[str, str]:

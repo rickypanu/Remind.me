@@ -2,7 +2,6 @@ import os
 import json
 import asyncio
 from datetime import datetime, timedelta
-import pytz
 from dotenv import load_dotenv
 
 from pywebpush import webpush, WebPushException
@@ -12,6 +11,9 @@ from apscheduler.triggers.interval import IntervalTrigger
 from bson import ObjectId
 
 from database import db
+from .reminder_rules import REMINDER_OFFSETS, reminder_flag, reminder_window, minutes_left
+from .notification_messages import get_short_reminder_copy
+from utils.timezone import IST, now_utc, now_ist, ist_day_bounds_utc
 
 # Load environment variables
 load_dotenv()
@@ -25,7 +27,6 @@ if not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
 
 # Ensure the sub claim is formatted correctly
 VAPID_CLAIMS = {"sub": f"mailto:{VAPID_EMAIL}" if not VAPID_EMAIL.startswith("mailto:") else VAPID_EMAIL}
-IST = pytz.timezone("Asia/Kolkata")
 
 def to_mongo_id(val: str):
     """Safely converts string to ObjectId if applicable."""
@@ -62,45 +63,61 @@ async def send_push_async(user_id, subscription_info: dict, title: str, message:
             )
 
 async def remind_upcoming_tasks():
-    now = datetime.now(IST)
-    print(f"\n[DEBUG - {now.strftime('%H:%M:%S')}] Running 1-Hour Upcoming Task Check...", flush=True)
-    
-    target_start = now + timedelta(minutes=59)
-    target_end = now + timedelta(minutes=61)
+    """Sends the 1h / 10m / 1m push reminders. Runs every minute."""
+    now = now_utc()
 
-    query = {
-        "due_date": {"$gte": target_start, "$lt": target_end},
-        "status": {"$ne": "completed"}
-    }
+    for minutes in REMINDER_OFFSETS:
+        flag = reminder_flag("web", minutes)
+        start, end = reminder_window(now, minutes)
 
-    tasks = await db["tasks"].find(query).to_list(length=None)
-    print(f"[DEBUG] Found {len(tasks)} tasks due between {target_start.strftime('%H:%M:%S')} and {target_end.strftime('%H:%M:%S')}", flush=True)
+        query = {
+            "due_date": {"$gt": start, "$lte": end},
+            "status": {"$ne": "completed"},
+            flag: {"$ne": True},
+        }
+        if minutes == 60:
+            query["notified_due_soon_web"] = {"$ne": True}  # flag used before this update
 
-    for task in tasks:
-        task_id = task.get("_id")
-        user_id_str = str(task.get("user_id"))
-        task_title = task.get("title", "Untitled Task")
-        
-        user = await db["users"].find_one({"_id": to_mongo_id(user_id_str)})
-        
-        # Check for the new push_subscriptions array
-        if user and user.get("push_subscriptions"):
-            print(f"[DEBUG] Sending reminder for task '{task_title}' to user {user_id_str}", flush=True)
-            title = "Task Due Soon!"
-            body = f"'{task_title}' is due in 1 hour."
-            
+        tasks = await db["tasks"].find(query).to_list(length=None)
+        if tasks:
+            print(f"[DEBUG - {now_ist().strftime('%H:%M:%S')} IST] {len(tasks)} task(s) due in ~{minutes} min (push)", flush=True)
+
+        for task in tasks:
+            task_id = task.get("_id")
+            user_id_str = str(task.get("user_id"))
+            task_title = task.get("title", "Untitled Task")
+
+            # Atomic claim so the same reminder is never pushed twice
+            claim = await db["tasks"].update_one(
+                {"_id": task_id, flag: {"$ne": True}},
+                {"$set": {flag: True}},
+            )
+            if claim.modified_count == 0:
+                continue
+
+            user = await db["users"].find_one({"_id": to_mongo_id(user_id_str)})
+            if not (user and user.get("push_subscriptions")):
+                print(f"[DEBUG] User {user_id_str} has no push subscriptions. Skipped.", flush=True)
+                continue
+
+            if minutes == 60:
+                title = "Task Due Soon!"
+                body = f"'{task_title}' is due in 1 hour."
+            else:
+                title, body = get_short_reminder_copy(
+                    task_title, task.get("category", "Other"),
+                    min(minutes, minutes_left(task["due_date"], now)),
+                )
+
             # Loop through all devices the user is subscribed on
             for sub in user["push_subscriptions"]:
                 await send_push_async(user["_id"], sub, title, body)
-        else:
-            print(f"[DEBUG] User {user_id_str} has no push subscriptions. Skipped.", flush=True)
+
 
 async def remind_todays_tasks():
-    now = datetime.now(IST)
-    print(f"\n[DEBUG - {now.strftime('%H:%M:%S')}] Running Today's Task Check...", flush=True)
+    print(f"\n[DEBUG - {now_ist().strftime('%H:%M:%S')} IST] Running Today's Task Check...", flush=True)
     
-    start_of_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    end_of_today = start_of_today + timedelta(days=1)
+    start_of_today, end_of_today = ist_day_bounds_utc(0)
 
     query = {
         "due_date": {"$gte": start_of_today, "$lt": end_of_today},
@@ -132,11 +149,9 @@ async def remind_todays_tasks():
                 await send_push_async(user["_id"], sub, title, body)
 
 async def remind_tomorrows_tasks():
-    now = datetime.now(IST)
-    print(f"\n[DEBUG - {now.strftime('%H:%M:%S')}] Running Tomorrow's Task Check...", flush=True)
+    print(f"\n[DEBUG - {now_ist().strftime('%H:%M:%S')} IST] Running Tomorrow's Task Check...", flush=True)
     
-    start_of_tomorrow = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
-    end_of_tomorrow = start_of_tomorrow + timedelta(days=1)
+    start_of_tomorrow, end_of_tomorrow = ist_day_bounds_utc(1)
 
     query = {
         "due_date": {"$gte": start_of_tomorrow, "$lt": end_of_tomorrow},
@@ -170,7 +185,7 @@ async def remind_tomorrows_tasks():
 def start_scheduler_web():
     scheduler = AsyncIOScheduler(timezone=IST)
     
-    scheduler.add_job(remind_upcoming_tasks, IntervalTrigger(minutes=1, timezone=IST))
+    scheduler.add_job(remind_upcoming_tasks, IntervalTrigger(minutes=1, timezone=IST), coalesce=True, max_instances=1, misfire_grace_time=120)
     scheduler.add_job(remind_todays_tasks, CronTrigger(hour="8,13,17,21", minute="0", timezone=IST))
     scheduler.add_job(remind_tomorrows_tasks, CronTrigger(hour="21,23", minute="0", timezone=IST))
     

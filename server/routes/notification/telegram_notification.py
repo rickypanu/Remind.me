@@ -2,7 +2,6 @@ import asyncio
 import os
 from collections import defaultdict
 from datetime import datetime, timedelta
-import pytz
 import httpx
 from dotenv import load_dotenv
 
@@ -14,8 +13,11 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from database import db
+from utils.timezone import IST, UTC, now_utc, now_ist, as_utc, ist_day_bounds_utc
+from .reminder_rules import REMINDER_OFFSETS, reminder_flag, reminder_window, minutes_left
 from .notification_messages import (
     get_due_soon_copy,
+    get_short_reminder_copy,
     get_today_digest_copy,
     get_tomorrow_digest_copy,
 )
@@ -23,7 +25,6 @@ from .notification_messages import (
 router = APIRouter()
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-IST = pytz.timezone('Asia/Kolkata')
 
 
 # ---------------------------------------------------------
@@ -64,49 +65,61 @@ async def dispatch_notifications(user: dict, title: str, body: str):
 # ---------------------------------------------------------
 
 async def remind_upcoming_tasks():
-    print("--> [DEBUG] Cron Job 'remind_upcoming_tasks' triggered.")
-    now_utc = datetime.now(pytz.utc)
-    target_start = now_utc + timedelta(minutes=55)
-    target_end = now_utc + timedelta(minutes=65)
+    """Sends the 1h / 10m / 1m reminders. Runs every minute."""
+    now = now_utc()
 
-    query = {
-        "due_date": {"$gte": target_start, "$lt": target_end},
-        "status": {"$ne": "completed"},
-        "notified_due_soon": {"$ne": True}
-    }
+    for minutes in REMINDER_OFFSETS:
+        flag = reminder_flag("tele", minutes)
+        start, end = reminder_window(now, minutes)
 
-    tasks = await db["tasks"].find(query).to_list(length=None)
-    print(f"--> [TELE DEBUG] Found {len(tasks)} tasks due soon.")
+        query = {
+            "due_date": {"$gt": start, "$lte": end},
+            "status": {"$ne": "completed"},
+            flag: {"$ne": True},
+        }
+        if minutes == 60:
+            query["notified_due_soon"] = {"$ne": True}  # flag used before this update
 
-    for task in tasks:
-        # ATOMIC LOCK: Claim/Lock the task in MongoDB FIRST before dispatching
-        result = await db["tasks"].update_one(
-            {"_id": task["_id"], "notified_due_soon": {"$ne": True}},
-            {"$set": {"notified_due_soon": True, "last_notified_at": now_utc}}
-        )
+        tasks = await db["tasks"].find(query).to_list(length=None)
+        if tasks:
+            print(f"--> [TELE DEBUG] {len(tasks)} task(s) due in ~{minutes} min.")
 
-        # Dispatch ONLY if this execution successfully modified the database document
-        if result.modified_count > 0:
+        for task in tasks:
+            set_fields = {flag: True}
+            if minutes == 60:
+                # Only the 1-hour reminder feeds the digest cooldown (point: 10m/1m must not hide tasks from digests)
+                set_fields.update({"notified_due_soon": True, "last_notified_at": now})
+
+            # ATOMIC LOCK: claim the reminder in MongoDB FIRST, send only if we won the claim
+            result = await db["tasks"].update_one(
+                {"_id": task["_id"], flag: {"$ne": True}},
+                {"$set": set_fields},
+            )
+            if result.modified_count == 0:
+                continue
+
             user = await db["users"].find_one({"_id": task.get("user_id")})
-            if user:
-                title, body = await get_due_soon_copy(
-                    task_title=task.get("title", "Untitled Task"),
-                    category=task.get("category", "Other")
+            if not user:
+                continue
+
+            task_title = task.get("title", "Untitled Task")
+            category = task.get("category", "Other")
+            if minutes == 60:
+                title, body = await get_due_soon_copy(task_title=task_title, category=category)
+            else:
+                title, body = get_short_reminder_copy(
+                    task_title, category, min(minutes, minutes_left(task["due_date"], now)), html=True
                 )
-                await dispatch_notifications(user, title, body)
+            await dispatch_notifications(user, title, body)
 
 
 async def remind_todays_tasks():
     print("--> [DEBUG] Cron Job 'remind_todays_tasks' triggered.")
-    now_ist = datetime.now(IST)
-    now_utc = datetime.now(pytz.utc)
-    
-    start_of_today_ist = now_ist.replace(hour=0, minute=0, second=0, microsecond=0)
-    end_of_today_ist = start_of_today_ist + timedelta(days=1)
+    now_local = now_ist()
+    now = now_utc()
 
-    start_utc = start_of_today_ist.astimezone(pytz.utc)
-    end_utc = end_of_today_ist.astimezone(pytz.utc)
-    cooldown = now_utc - timedelta(minutes=45)
+    start_utc, end_utc = ist_day_bounds_utc(0)   # today in IST, as UTC
+    cooldown = now - timedelta(minutes=45)
 
     query = {
         "due_date": {"$gte": start_utc, "$lt": end_utc},
@@ -119,8 +132,8 @@ async def remind_todays_tasks():
 
     for task in tasks:
         last_notified = task.get("last_notified_at")
-        if last_notified and last_notified.tzinfo is None:
-            last_notified = pytz.utc.localize(last_notified)
+        if last_notified:
+            last_notified = as_utc(last_notified)
 
         # Suppress digest if task had an urgent 1-hour warning within the last 45 mins
         if last_notified and last_notified > cooldown:
@@ -136,26 +149,20 @@ async def remind_todays_tasks():
     if tasks_to_update:
         await db["tasks"].update_many(
             {"_id": {"$in": tasks_to_update}},
-            {"$set": {"last_notified_at": now_utc}}
+            {"$set": {"last_notified_at": now}}
         )
 
     for user_id, task_list in user_tasks.items():
         user = await db["users"].find_one({"_id": user_id})
         if user:
-            title, body = await get_today_digest_copy(task_list, now_ist.hour)
+            title, body = await get_today_digest_copy(task_list, now_local.hour)
             await dispatch_notifications(user, title, body)
 
 
 async def remind_tomorrows_tasks():
     print("--> [TELE DEBUG] Cron Job 'remind_tomorrows_tasks' triggered.")
-    now_ist = datetime.now(IST)
-    now_utc = datetime.now(pytz.utc)
-    
-    start_of_tomorrow_ist = now_ist.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
-    end_of_tomorrow_ist = start_of_tomorrow_ist + timedelta(days=1)
-
-    start_utc = start_of_tomorrow_ist.astimezone(pytz.utc)
-    end_utc = end_of_tomorrow_ist.astimezone(pytz.utc)
+    now = now_utc()
+    start_utc, end_utc = ist_day_bounds_utc(1)   # tomorrow in IST, as UTC
 
     query = {
         "due_date": {"$gte": start_utc, "$lt": end_utc},
@@ -177,7 +184,7 @@ async def remind_tomorrows_tasks():
     if tasks_to_update:
         await db["tasks"].update_many(
             {"_id": {"$in": tasks_to_update}},
-            {"$set": {"notified_tomorrow_digest": True, "last_notified_at": now_utc}}
+            {"$set": {"notified_tomorrow_digest": True, "last_notified_at": now}}
         )
 
     for user_id, task_list in user_tasks.items():
@@ -197,7 +204,7 @@ def start_scheduler_tele():
     print("--> [DEBUG] App Startup triggered. Initializing Scheduler...")
     scheduler = AsyncIOScheduler(timezone=IST)
 
-    scheduler.add_job(remind_upcoming_tasks, CronTrigger(minute="*"))
+    scheduler.add_job(remind_upcoming_tasks, CronTrigger(minute="*"), coalesce=True, max_instances=1, misfire_grace_time=120)
     scheduler.add_job(remind_todays_tasks, CronTrigger(hour="8,17,21,23", minute="0"))
     scheduler.add_job(remind_tomorrows_tasks, CronTrigger(hour="21", minute="0"))
 

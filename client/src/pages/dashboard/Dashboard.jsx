@@ -24,7 +24,7 @@ import {
   Plus,
 } from "lucide-react";
 import api from "../../utils/api";
-import { parseDueDate } from "../../utils/date";
+import { parseDueDate, getIstDayRange, getIstHour, APP_TIMEZONE } from "../../utils/date";
 import TaskCard from "../tasks/TaskCard";
 import Header from "../components/Header";
 
@@ -199,7 +199,7 @@ export default function Dashboard() {
   };
 
   const greeting = useMemo(() => {
-    const hour = new Date().getHours();
+    const hour = getIstHour();
     if (hour < 6) return "Late night grind";
     if (hour < 12) return "Good morning";
     if (hour < 18) return "Good afternoon";
@@ -214,9 +214,8 @@ export default function Dashboard() {
     completedTasks,
     doneTodayCount,
   } = useMemo(() => {
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).getTime();
+    // "Today" = the IST calendar day (same definition the server uses for reminders)
+    const { start: startOfToday, end: endOfToday } = getIstDayRange();
 
     const missed = [];
     const today = [];
@@ -309,7 +308,7 @@ export default function Dashboard() {
         {/* Greeting & Progress Bar */}
         <div className="pt-10 pb-6">
           <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-            {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+            {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: APP_TIMEZONE })}
           </p>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
             {greeting},{" "}

@@ -1,6 +1,5 @@
 import os
 import json
-import pytz
 from datetime import datetime
 from itertools import cycle
 from typing import Optional
@@ -11,9 +10,9 @@ from google.genai import types, errors
 
 from database import get_db
 from utils.security import get_current_user
+from utils.timezone import now_ist, to_utc
 
 router = APIRouter(tags=["Task"])
-IST = pytz.timezone('Asia/Kolkata')
 
 # 1. API Key Pool for Rate Limit Resilience
 # Add multiple keys to your .env like: GEMINI_API_KEYS="key1,key2,key3"
@@ -41,7 +40,7 @@ class MagicAddRequest(BaseModel):
 class TaskExtractionSchema(BaseModel):
     title: str = Field(description="Clean, concise task title translated to English")
     description: Optional[str] = Field(description="Brief summary of extra details or instructions")
-    due_date: datetime = Field(description="Deadline formatted as ISO 8601 with UTC timezone")
+    due_date: datetime = Field(description="Deadline in Indian Standard Time as ISO 8601 WITH the +05:30 offset, e.g. 2026-10-08T17:00:00+05:30")
     category: str = Field(description="Relevant category like Assignment, Project, Exam, etc.")
 
 async def generate_task_data(prompt: str) -> dict:
@@ -88,9 +87,9 @@ async def generate_task_data(prompt: str) -> dict:
         except Exception as e:
             last_exception = e
             continue
-       
-       
-        raise RuntimeError(f"All API keys and models exhausted. Last error: {last_exception}")
+
+    # Only reached after EVERY key/model combination has failed
+    raise RuntimeError(f"All API keys and models exhausted. Last error: {last_exception}")
 
 @router.post("/magic-add", status_code=status.HTTP_201_CREATED)
 async def magic_add_task(
@@ -98,12 +97,12 @@ async def magic_add_task(
     current_user: dict = Depends(get_current_user), 
     db = Depends(get_db)
 ):
-    current_time = datetime.now(IST).strftime("%A, %B %d, %Y at %I:%M %p IST")
+    current_time = now_ist().strftime("%A, %Y-%m-%d %H:%M IST (UTC+05:30)")
     
     # The prompt is now much smaller because Pydantic handles the formatting instructions
     prompt = f"""
     Current time: {current_time}. 
-    Extract task details from this text. Resolve relative dates (kal, sham, etc.) strictly to exact UTC times based on the current time.
+    Extract task details from this text. Resolve relative dates (kal, sham, etc.) in IST based on the current time, and return due_date in IST with the +05:30 offset.
     User's text: "{payload.text}"
     """
 
@@ -115,7 +114,7 @@ async def magic_add_task(
             "title": task_data["title"],
             "description": task_data.get("description"),
             "category": task_data["category"],
-            "due_date": datetime.fromisoformat(task_data["due_date"]),
+            "due_date": to_utc(datetime.fromisoformat(task_data["due_date"])),  # naive -> IST, aware -> UTC
             "status": "pending",
             "user_id": current_user["_id"]
         }

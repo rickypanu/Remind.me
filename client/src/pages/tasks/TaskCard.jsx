@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CheckCircle2, Circle, Trash2, Clock, AlertTriangle, Loader2 } from 'lucide-react';
 import api from '../../utils/api';
-import { getRelativeTime } from '../../utils/date';
+import { getRelativeTime, formatDueIst } from '../../utils/date';
 
 const getDynamicColor = (text) => {
   if (!text) return 'text-slate-600 bg-slate-100 border-slate-200';
@@ -175,7 +175,7 @@ export default function TaskCard({ task, refreshTasks, isPrevious }) {
                   }`}
                 >
                   <Clock size={12} className="mr-1.5 shrink-0" strokeWidth={2.5} />
-                  <span className="truncate">{relativeTimeString}</span>
+                  <span className="truncate">{relativeTimeString} · {formatDueIst(task.due_date)} IST</span>
                 </span>
               )}
             </div>

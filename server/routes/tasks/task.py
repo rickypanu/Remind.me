@@ -3,21 +3,18 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 from bson import ObjectId
-import pytz 
+from utils.timezone import to_utc
 from database import get_db
 from utils.security import get_current_user
 from schemas.task import TaskCreate, TaskResponse, TaskStatusUpdate
 
 router = APIRouter(tags=["Task"])
-IST = pytz.timezone('Asia/Kolkata')
 
 # --- API Routes ---
 @router.post("/", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
 async def add_task(task: TaskCreate, current_user: dict = Depends(get_current_user), db = Depends(get_db)):
-    # 1. Standardize Timezone to UTC
-    if task.due_date.tzinfo is None:
-        task.due_date = IST.localize(task.due_date)
-    utc_due_date = task.due_date.astimezone(pytz.utc)
+    # 1. Standardize to UTC (a datetime with no timezone is treated as IST)
+    utc_due_date = to_utc(task.due_date)
     
     # 2. Build task payload
     task_dict = task.dict()
