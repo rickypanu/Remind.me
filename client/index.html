@@ -17,6 +17,25 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="RemindMe" />
+
+    <!-- Apply saved theme before first paint (no flash). Keep keys in sync with src/theme/ThemeContext.jsx -->
+    <script>
+      (function () {
+        try {
+          var mode = localStorage.getItem("remindme-color-mode");
+          if (mode !== "light" && mode !== "dark") {
+            mode = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+          }
+          var style = localStorage.getItem("remindme-theme-style") === "minimal" ? "minimal" : "classic";
+          var root = document.documentElement;
+          if (mode === "dark") root.classList.add("dark");
+          root.setAttribute("data-theme", style);
+          var colors = { "classic-light": "#ffffff", "classic-dark": "#0f1117", "minimal-light": "#fafafa", "minimal-dark": "#0a0a0a" };
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute("content", colors[style + "-" + mode]);
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

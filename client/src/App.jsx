@@ -70,7 +70,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <div className="min-h-screen bg-background text-gray-100 font-sans">
+        <div className="min-h-screen bg-background text-gray-900 font-sans">
           <Routes>
             {/* UPDATED LOGIC: Redirect to dashboard instantly if token exists */}
             <Route path="/" element={token ? <Navigate to="/dashboard" replace /> : <Home />} />

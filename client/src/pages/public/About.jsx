@@ -20,7 +20,7 @@ import {
   Shield,
 } from "lucide-react";
 
-const APP_VERSION = "v3.1.1";
+const APP_VERSION = "v3.2.0";
 const REPO_URL = "https://github.com/rickypanu/Remind.me";
 const CONTACT_EMAIL = "rickypanu2005@gmail.com";
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8000").replace(/\/$/, "");

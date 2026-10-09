@@ -21,6 +21,7 @@ import {
 import api from "../../utils/api";
 import MenuItem from "../components/MenuItems";
 import AvatarPickerModal from "../components/AvatarPickerModal";
+import AppearanceSettings from "../components/AppearanceSettings";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -354,6 +355,9 @@ export default function Profile() {
               <MenuItem icon={Info} label="About App" to="/about" />
             </div>
           </div>
+
+          {/* Appearance: dark mode + Minimalism theme toggles */}
+          <AppearanceSettings />
 
           {/* Account Section */}
           <div>
