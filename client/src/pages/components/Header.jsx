@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, BellOff, BellRing, LayoutDashboard, Plus, CircleUser, Loader2 } from 'lucide-react';
+import { Bell, BellOff, BellRing, AlarmClock, Plus, CircleUser, Loader2,  LucideLayoutDashboard } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../../utils/api';
 
@@ -180,7 +180,7 @@ const Header = () => {
 
   return (
     <nav
-      className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200/80 antialiased shadow-sm font-sans"
+      className="sticky top-0 z-50 bg-[#F6FAFF]/85 backdrop-blur-xl border-b border-sky-100 antialiased"
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
       <div
@@ -195,10 +195,12 @@ const Header = () => {
           to={isLoggedIn ? '/dashboard' : '/'}
           className="flex items-center gap-2 sm:gap-3 group select-none active:scale-95 transition-transform outline-none rounded-xl focus-visible:ring-2 focus-visible:ring-blue-500"
         >
-          <div className="w-9 h-9 flex-shrink-0 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20 transition-all group-hover:shadow-blue-500/40 group-hover:-translate-y-0.5">
-            <LayoutDashboard size={20} strokeWidth={2.5} />
+          <div className="w-9 h-9 flex-shrink-0 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/25 transition-all group-hover:bg-blue-700 group-hover:-translate-y-0.5">
+            {/* <AlarmClock size={20} strokeWidth={2.5} /> */}
+            <LucideLayoutDashboard size={20} strokeWidth={2.5} />
+            
           </div>
-          <span className="text-[18px] sm:text-[19px] font-extrabold tracking-tight text-gray-900">
+          <span className="text-[18px] sm:text-[19px] font-extrabold tracking-tight text-slate-800">
             Remind<span className="text-blue-600">Me</span>
           </span>
         </Link>
@@ -209,13 +211,13 @@ const Header = () => {
             <>
               <Link
                 to="/login"
-                className="text-gray-600 hover:text-gray-900 px-3 py-2 sm:px-4 text-sm font-semibold rounded-xl hover:bg-gray-100 transition-colors"
+                className="text-slate-600 hover:text-slate-900 px-3 py-2 sm:px-4 text-sm font-semibold rounded-xl hover:bg-blue-50 transition-colors"
               >
                 Log in
               </Link>
               <Link
                 to="/register"
-                className="bg-gray-900 hover:bg-black text-white px-4 py-2 sm:px-5 sm:py-2.5 rounded-full text-sm font-semibold transition-all active:scale-95 shadow-md hover:shadow-lg whitespace-nowrap"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 sm:px-5 sm:py-2.5 rounded-full text-sm font-semibold transition-all active:scale-95 shadow-md shadow-blue-500/20 whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
               >
                 Get Started
               </Link>
@@ -230,10 +232,10 @@ const Header = () => {
                 aria-label={pushStatus === 'subscribed' ? 'Turn off alerts' : 'Turn on alerts'}
                 className={`group relative flex items-center justify-center gap-2 h-10 px-3 sm:px-4 rounded-full text-sm font-semibold active:scale-95 transition-all duration-200 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                   pushStatus === 'subscribed'
-                    ? 'bg-emerald-50 text-emerald-700 hover:bg-rose-50 hover:text-rose-600 border border-emerald-200/50 hover:border-rose-200/50'
+                    ? 'bg-emerald-50 text-emerald-700 hover:bg-rose-50 hover:text-rose-600 border border-emerald-200/60 hover:border-rose-200/60'
                     : pushStatus === 'loading'
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-transparent'
-                    : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-900'
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-transparent'
+                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700'
                 }`}
               >
                 {pushStatus === 'loading' && (
@@ -251,7 +253,7 @@ const Header = () => {
                   <Bell
                     size={18}
                     strokeWidth={2.5}
-                    className="text-gray-500 group-hover:text-blue-500 transition-colors"
+                    className="text-slate-500 group-hover:text-blue-600 transition-colors"
                   />
                 )}
 
@@ -279,22 +281,22 @@ const Header = () => {
                 <span className="hidden md:block">New reminder</span>
               </Link>
 
-              <div className="h-6 w-px bg-gray-200 mx-0.5 sm:mx-1" aria-hidden="true"></div>
+              <div className="h-6 w-px bg-slate-200 mx-0.5 sm:mx-1" aria-hidden="true"></div>
 
               {/* Profile Avatar */}
               <Link
                 to="/profile"
                 aria-label="Your profile"
-                className="flex items-center justify-center rounded-full text-gray-400 hover:text-gray-700 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 flex-shrink-0"
+                className="flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 flex-shrink-0"
               >
                 {avatarUrl ? (
                   <img
                     src={getAvatarSrc()}
                     alt=""
-                    className="h-9 w-9 rounded-full object-cover ring-2 ring-gray-100 shadow-sm hover:ring-blue-100 transition-all"
+                    className="h-9 w-9 rounded-full object-cover ring-2 ring-white shadow-sm hover:ring-blue-200 transition-all"
                   />
                 ) : (
-                  <div className="h-9 w-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 ring-1 ring-gray-200 hover:bg-gray-200 transition-all">
+                  <div className="h-9 w-9 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 ring-1 ring-blue-100 hover:bg-blue-100 transition-all">
                     <CircleUser size={22} strokeWidth={2} />
                   </div>
                 )}
