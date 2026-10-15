@@ -49,8 +49,8 @@ const pushSupported = () =>
 // Links shown in the menu. Only pages that exist and are useful for that visitor.
 const VISITOR_LINKS = [
   { to: '/', label: 'Home', icon: HomeIcon, end: true },
-  { to: '/about', label: 'About', icon: Info },
-  { to: '/faqs', label: 'FAQs', icon: HelpCircle },
+  // { to: '/about', label: 'About', icon: Info },
+  // { to: '/faqs', label: 'FAQs', icon: HelpCircle },
 ];
 const MEMBER_LINKS = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
