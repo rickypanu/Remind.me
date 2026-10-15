@@ -34,15 +34,29 @@ app = FastAPI(title="RemindMe API", lifespan=lifespan)
 
 
 # CORS_ORIGINS="https://your-site.com,https://www.your-site.com" in production. Defaults to "*" for local dev.
-_origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",") if o.strip()]
+# _origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",") if o.strip()]
+
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=_origins,
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
+# CORS_ORIGINS="https://your-site.com,https://www.your-site.com" in production. Unset = allow every origin.
+# Trailing slashes are ignored ("https://x.com/" would otherwise never match the browser's Origin header).
+_origins = [o.strip().rstrip("/") for o in os.getenv("CORS_ORIGINS", "*").split(",") if o.strip()]
+_allow_all = "*" in _origins
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_origins,
-    allow_credentials=True,
+    allow_origins=["*"] if _allow_all else _origins,
+    allow_origin_regex=None if _allow_all else r"^https?://(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$",
+    allow_credentials=not _allow_all,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+print(f"[startup] CORS: {'all origins' if _allow_all else _origins + ['localhost (any port)']}")
 
 # Include Routers
 app.include_router(auth_router, prefix="/auth")

@@ -1,6 +1,6 @@
-import React from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import React, { useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { QueryClientProvider } from "@tanstack/react-query";
 
 import Home from "./pages/public/Home";
 import Login from "./pages/auth/Login";
@@ -17,34 +17,43 @@ import About from "./pages/public/About";
 import TelegramSetup from "./pages/user/TelegramSetup";
 import Terms from "./pages/public/Terms";
 import FAQ from "./pages/public/Faqs";
+import notify from "./utils/notify";
+import { queryClient } from "./utils/queryClient";
+import { isLoggedIn, AUTH_EXPIRED_EVENT } from "./utils/auth";
 
-// Create a client for React Query
-const queryClient = new QueryClient();
+// The token is read every time a route renders (never cached in a variable),
+// so logging out or in takes effect on the very next navigation.
+const ProtectedRoute = ({ children }) =>
+  isLoggedIn() ? children : <Navigate to="/login" replace />;
 
-// Protected route wrapper
-const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem("token");
+const PublicOnlyRoute = ({ children }) =>
+  isLoggedIn() ? <Navigate to="/dashboard" replace /> : children;
 
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return children;
-};
+// Sends the user to the login page when the API reports an expired session.
+function AuthWatcher() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    const onExpired = () => {
+      notify.error("Your session has ended. Please log in again.");
+      navigate("/login", { replace: true });
+    };
+    window.addEventListener(AUTH_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, onExpired);
+  }, [navigate]);
+  return null;
+}
 
 function App() {
-  const token = localStorage.getItem("token"); // Added token check here
-
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <div className="min-h-screen bg-background text-gray-900 font-sans">
           <AppToaster />
+          <AuthWatcher />
           <Routes>
-            {/* UPDATED LOGIC: Redirect to dashboard instantly if token exists */}
-            <Route path="/" element={token ? <Navigate to="/dashboard" replace /> : <Home />} />
-            <Route path="/login" element={token ? <Navigate to="/dashboard" replace /> : <Login />} />
-            <Route path="/register" element={token ? <Navigate to="/dashboard" replace /> : <Register />} />
+                        <Route path="/" element={<PublicOnlyRoute><Home /></PublicOnlyRoute>} />
+            <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
+            <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
             
 
             <Route path="/forgot-password" element={<ForgotPassword />} />

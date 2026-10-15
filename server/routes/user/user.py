@@ -90,26 +90,28 @@ async def upload_avatar(
 # --- 4. Route to Delete Account ---
 @router.delete("/me", status_code=status.HTTP_200_OK)
 async def delete_user_account(
-    current_user: dict = Depends(get_current_user), 
+    current_user: dict = Depends(get_current_user),
     db = Depends(get_db)
 ):
+    """Permanently delete the user and everything stored for them.
+
+    Per-user data: reminders (tasks), the uploaded avatar, and the fields on the user document
+    itself (Telegram link, web-push subscriptions, reset tokens). The user document is removed
+    LAST so a failure part-way can simply be retried by the user.
+    """
     try:
-        raw_user_id = current_user["_id"] 
-        
+        raw_user_id = current_user["_id"]
         try:
             user_id_obj = ObjectId(raw_user_id) if isinstance(raw_user_id, str) else raw_user_id
         except InvalidId:
             raise HTTPException(status_code=400, detail="Invalid User ID format")
-            
-         # Delete user's tasks (tasks store user_id as a string)
-        await db["tasks"].delete_many({"user_id": str(user_id_obj)})
 
-        # Delete the user's uploaded avatar
-        await db["avatars"].delete_one({"_id": str(user_id_obj)})
+        user_id_str = str(user_id_obj)
+        # Tasks normally store user_id as a string; also match an ObjectId just in case.
+        await db["tasks"].delete_many({"user_id": {"$in": [user_id_str, user_id_obj]}})
+        await db["avatars"].delete_one({"_id": user_id_str})
 
-        # Delete the user
         delete_result = await db["users"].delete_one({"_id": user_id_obj})
-        
         if delete_result.deleted_count == 0:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -119,10 +121,10 @@ async def delete_user_account(
         return {"message": "Account and all associated data permanently deleted."}
 
     except HTTPException:
-        raise 
+        raise
     except Exception as e:
         print(f"Error deleting user: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An error occurred while deleting the account."
+            detail="We couldn't delete your account right now. Please try again."
         )

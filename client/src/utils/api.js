@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getToken, clearSession, signalAuthExpired } from "./auth";
 
 // Create an Axios instance
 const api = axios.create({
@@ -12,13 +13,26 @@ const api = axios.create({
 // Automatically attach the JWT token to every request
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    const token = getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
   (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// If the server rejects our token (expired, or the account was deleted), sign out cleanly.
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const hadToken = !!getToken();
+    if (error.response?.status === 401 && hadToken) {
+      clearSession();
+      signalAuthExpired();
+    }
     return Promise.reject(error);
   }
 );

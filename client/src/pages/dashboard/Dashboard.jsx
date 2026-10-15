@@ -27,6 +27,7 @@ import { parseDueDate, getIstDayRange, getIstHour, APP_TIMEZONE } from "../../ut
 import TaskCard from "../tasks/TaskCard";
 import Header from "../components/Header";
 import notify from "../../utils/notify";
+import { isLoggedIn } from "../../utils/auth";
 import usePageMeta from "../../utils/usePageMeta";
 
 // Constants
@@ -76,16 +77,10 @@ export default function Dashboard() {
     else notify.success(text);
   }, []);
 
-  // Auth Guard
-  const handleLogout = useCallback(() => {
-    localStorage.removeItem("token");
-    navigate("/");
-  }, [navigate]);
-
+  // Auth guard (expired sessions are handled globally by the API client)
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) handleLogout();
-  }, [handleLogout]);
+    if (!isLoggedIn()) navigate("/login", { replace: true });
+  }, [navigate]);
 
   // Stop the mic on unmount
   useEffect(() => {
@@ -110,10 +105,6 @@ export default function Dashboard() {
     staleTime: 5 * 60 * 1000,
     retry: (_, err) => err?.response?.status !== 401,
   });
-
-  useEffect(() => {
-    if (isError && error?.response?.status === 401) handleLogout();
-  }, [isError, error, handleLogout]);
 
   const userInfo = data?.userInfo || null;
   const tasks = useMemo(() => data?.tasks || [], [data]);
@@ -187,11 +178,8 @@ export default function Dashboard() {
       notify.success("Reminder added.");
     } catch (err) {
       console.error("Magic Add failed:", err);
-      // Catch token expiration specifically on form submit
-      if (err.response?.status === 401) {
-        handleLogout();
-        return;
-      }
+      // An expired session (401) is handled globally by the API client.
+      if (err.response?.status === 401) return;
       // Shows the server's own message (content rejected, AI busy, couldn't parse, offline...)
       notify.error(err, "Couldn't add that reminder. Try rephrasing it.");
     } finally {

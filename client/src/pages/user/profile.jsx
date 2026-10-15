@@ -21,6 +21,7 @@ import {
 import api from "../../utils/api";
 import notify from "../../utils/notify";
 import usePageMeta from "../../utils/usePageMeta";
+import { clearSession } from "../../utils/auth";
 import ThemeToggle from "../../components/ThemeToggle";
 import MenuItem from "../components/MenuItems";
 import AvatarPickerModal from "../components/AvatarPickerModal";
@@ -39,6 +40,7 @@ export default function Profile() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteText, setDeleteText] = useState("");
   const [showAvatarModal, setShowAvatarModal] = useState(false);
 
   // --- Profile Editing States ---
@@ -72,8 +74,9 @@ export default function Profile() {
         }
       } catch (error) {
         console.error("Failed to fetch user data:", error);
-        if (error.response?.status === 401) {
-          handleLogout();
+        // A 401 is handled globally by the API client (clears the session, goes to login).
+        if (error.response?.status !== 401) {
+          notify.error(error, "Could not load your profile. Please refresh the page.");
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -115,15 +118,18 @@ export default function Profile() {
   // --- Action Handlers ---
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/");
+    clearSession();
+    navigate("/", { replace: true });
   };
 
   const handleDeleteAccount = async () => {
+    if (deleteText.trim().toUpperCase() !== "DELETE") return;
     setDeleteLoading(true);
     try {
       await api.delete("/user/me");
-      handleLogout();
+      clearSession();
+      notify.success("Your account and all your data were deleted.");
+      navigate("/", { replace: true });
     } catch (error) {
       console.error("Failed to delete account:", error);
       notify.error(error, "Could not delete your account. Please try again later.");
@@ -416,13 +422,30 @@ export default function Profile() {
                     <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={20} />
                     <div>
                       <h3 className="font-bold text-red-700 text-sm">Are you absolutely sure?</h3>
-                      <p className="text-xs text-red-600 font-medium mt-0.5">This action cannot be undone.</p>
+                      <p className="text-xs text-red-600 font-medium mt-0.5">
+                        This permanently deletes your account, reminders and profile picture. It cannot be undone.
+                      </p>
                     </div>
                   </div>
+                  <label htmlFor="delete-confirm" className="block text-xs font-semibold text-red-700 mb-1.5">
+                    Type DELETE to confirm
+                  </label>
+                  <input
+                    id="delete-confirm"
+                    type="text"
+                    value={deleteText}
+                    onChange={(e) => setDeleteText(e.target.value)}
+                    autoComplete="off"
+                    placeholder="DELETE"
+                    className="w-full mb-4 px-3 py-2.5 rounded-xl border border-red-200 bg-white text-gray-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500"
+                  />
                   <div className="flex gap-3">
                     <button
                       type="button"
-                      onClick={() => setShowDeleteConfirm(false)}
+                      onClick={() => {
+                        setShowDeleteConfirm(false);
+                        setDeleteText("");
+                      }}
                       className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm"
                     >
                       Cancel
@@ -430,8 +453,8 @@ export default function Profile() {
                     <button
                       type="button"
                       onClick={handleDeleteAccount}
-                      disabled={deleteLoading}
-                      className="flex-1 py-3 bg-red-600 text-white rounded-xl text-sm font-semibold flex justify-center items-center hover:bg-red-700 transition-colors shadow-sm disabled:opacity-70"
+                      disabled={deleteLoading || deleteText.trim().toUpperCase() !== "DELETE"}
+                      className="flex-1 py-3 bg-red-600 text-white rounded-xl text-sm font-semibold flex justify-center items-center hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {deleteLoading ? <Loader2 size={16} className="animate-spin" /> : "Delete My Data"}
                     </button>
