@@ -17,20 +17,15 @@ import {
   XCircle,
 } from "lucide-react";
 import api from "../../utils/api";
+import ThemeToggle from '../../components/ThemeToggle';
+import Logo from '../../components/Logo';
+import usePageMeta from '../../utils/usePageMeta';
+import notify from '../../utils/notify';
+import { getErrorMessage } from '../../utils/errors';
 
-// Turns whatever the API sends back into one readable string
-const getErrorMessage = (err) => {
-  const detail = err?.response?.data?.detail;
-  if (typeof detail === "string" && detail) return detail;
-  if (Array.isArray(detail)) {
-    const msg = detail.map((d) => d?.msg).filter(Boolean).join(". ");
-    if (msg) return msg;
-  }
-  if (!err?.response) return "Can't reach the server. Please check your connection.";
-  return "Something went wrong. Please try again.";
-};
 
 export default function Register() {
+  usePageMeta({ title: 'Create your free account', description: 'Sign up for RemindMe free and get specific, daily and weekly reminders on Telegram and in your browser.' });
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -147,6 +142,7 @@ export default function Register() {
       });
 
       setSuccess(true);
+      notify.success('Account created. Redirecting you to log in.');
       setFormData({
         username: "",
         email: "",
@@ -168,7 +164,7 @@ export default function Register() {
   const strengthText = metCount <= 2 ? "text-rose-500" : metCount < 5 ? "text-amber-600" : "text-emerald-600";
 
   const inputBase =
-    "w-full py-3.5 pl-12 pr-12 bg-[#EEF4FB] border-2 rounded-2xl text-[#1E293B] font-medium placeholder:text-slate-400 placeholder:font-normal focus:bg-white focus:outline-none focus:ring-4 transition-all";
+    "w-full py-3.5 pl-12 pr-12 bg-[color:var(--rm-soft)] border-2 rounded-2xl text-[color:var(--rm-ink)] font-medium placeholder:text-slate-400 placeholder:font-normal focus:bg-white focus:outline-none focus:ring-4 transition-all";
   const tone = {
     neutral: "border-transparent focus:border-blue-500 focus:ring-blue-500/15",
     good: "border-emerald-400 focus:border-emerald-500 focus:ring-emerald-500/15",
@@ -200,11 +196,10 @@ export default function Register() {
   ];
 
   return (
-    <div className="register-root relative flex items-center justify-center min-h-screen px-4 py-10 bg-gradient-to-b from-[#E6F0FF] to-[#F6FAFF] overflow-hidden">
+    <div className="register-root relative flex items-center justify-center min-h-screen px-4 pt-24 pb-10 bg-gradient-to-b from-[color:var(--rm-hero-top)] to-[color:var(--rm-page)] overflow-hidden">
       <style
         dangerouslySetInnerHTML={{
           __html: `
-        @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&display=swap');
         .register-root { font-family: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif; }
         @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
         @keyframes fill { from { width: 0; } to { width: 100%; } }
@@ -214,6 +209,11 @@ export default function Register() {
       `,
         }}
       />
+
+      <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-4 py-4">
+        <Logo />
+        <ThemeToggle />
+      </div>
 
       {/* Soft background glows */}
       <div className="pointer-events-none absolute -top-24 -left-24 w-80 h-80 rounded-full bg-sky-200/50 blur-3xl" />
@@ -226,7 +226,7 @@ export default function Register() {
             <div className="mx-auto w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-5">
               <Check size={32} strokeWidth={3} />
             </div>
-            <h1 className="text-3xl font-extrabold text-[#1E293B] tracking-tight">You're all set</h1>
+            <h1 className="text-3xl font-extrabold text-[color:var(--rm-ink)] tracking-tight">You're all set</h1>
             <p className="mt-2 text-slate-500 font-medium">Account created. Taking you to login…</p>
             <div className="mt-6 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
               <div className="fill h-full rounded-full bg-emerald-500" />
@@ -246,7 +246,7 @@ export default function Register() {
               onClick={() => navigate(-1)}
               className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors mb-6 w-fit group focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-lg"
             >
-              <span className="p-1.5 rounded-lg bg-[#EEF4FB] group-hover:bg-blue-100 transition-colors">
+              <span className="p-1.5 rounded-lg bg-[color:var(--rm-soft)] group-hover:bg-blue-100 transition-colors">
                 <ArrowLeft size={16} />
               </span>
               Back
@@ -257,7 +257,7 @@ export default function Register() {
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-md shadow-indigo-500/25 mb-4">
                 <LayoutDashboard size={24} strokeWidth={2.5} />
               </div>
-              <h1 className="text-3xl font-extrabold text-[#1E293B] tracking-tight">
+              <h1 className="text-3xl font-extrabold text-[color:var(--rm-ink)] tracking-tight">
                 Create your account
               </h1>
               <p className="mt-2 text-slate-500 font-medium">

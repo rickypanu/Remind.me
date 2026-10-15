@@ -2,9 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send, CheckCircle2, AlertCircle, Loader2, MessageCircle } from 'lucide-react';
 import api from '../../utils/api';
+import notify from '../../utils/notify';
+import usePageMeta from '../../utils/usePageMeta';
+import ThemeToggle from '../../components/ThemeToggle';
 
 export default function TelegramSetup() {
   const navigate = useNavigate();
+  usePageMeta({ title: 'Connect Telegram', description: 'Connect your Telegram account to receive RemindMe reminders instantly on your phone.', noindex: true });
 
   // User & State Management
   const [userId, setUserId] = useState(null);
@@ -66,7 +70,7 @@ export default function TelegramSetup() {
   // 3. Connect Handler
   const handleConnect = async () => {
     if (!userId) {
-      alert('User session not found. Please log in again.');
+      notify.error('Your session was not found. Please log in again.');
       return;
     }
 
@@ -83,6 +87,7 @@ export default function TelegramSetup() {
           if (checkRes.data.connected) {
             setIsConnected(true);
             setIsConnecting(false);
+            notify.success('Telegram connected. You will now get reminders there.');
             if (checkRes.data.phone_number) {
               setPhoneNumber(checkRes.data.phone_number);
             }
@@ -95,10 +100,13 @@ export default function TelegramSetup() {
 
       setTimeout(() => {
         if (intervalRef.current) clearInterval(intervalRef.current);
-        setIsConnecting(false);
+        setIsConnecting((still) => {
+          if (still) notify.info('Still waiting? Press Start in the Telegram chat, then come back here.');
+          return false;
+        });
       }, 60000);
     } catch (err) {
-      alert('Error generating Telegram link.');
+      notify.error(err, 'Could not create the Telegram link. Please try again.');
       setIsConnecting(false);
     }
   };
@@ -109,15 +117,16 @@ export default function TelegramSetup() {
       await api.post('/telegram/disconnect', { userId });
       setIsConnected(false);
       setPhoneNumber('');
+      notify.success('Telegram disconnected.');
     } catch (err) {
-      alert('Error disconnecting Telegram.');
+      notify.error(err, 'Could not disconnect Telegram. Please try again.');
     }
   };
 
   // --- Loading State ---
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FAFAFC] flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-[color:var(--rm-page)] flex flex-col items-center justify-center p-4">
         <Loader2 className="animate-spin text-blue-500 mb-4" size={32} />
         <span className="text-gray-500 font-medium">Syncing connection...</span>
       </div>
@@ -127,7 +136,7 @@ export default function TelegramSetup() {
   // --- Error State ---
   if (errorMsg || !userId) {
     return (
-      <div className="min-h-screen bg-[#FAFAFC] flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-[color:var(--rm-page)] flex flex-col items-center justify-center p-4">
         <div className="bg-white border border-gray-100 rounded-3xl p-8 text-center max-w-sm w-full shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
           <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="text-red-500" size={32} />
@@ -146,12 +155,13 @@ export default function TelegramSetup() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAFC] pb-12 antialiased font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Text','SF_Pro_Display','Helvetica_Neue',sans-serif]">
+    <div className="min-h-screen bg-[color:var(--rm-page)] pb-12 antialiased font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Text','SF_Pro_Display','Helvetica_Neue',sans-serif]">
       
       {/* iOS-Style Header */}
       <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-gray-200/50 px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center gap-3 relative">
           <button
+            type="button"
             onClick={() => navigate(-1)}
             aria-label="Back"
             className="absolute left-0 p-2 -ml-2 text-blue-500 hover:opacity-70 transition-opacity flex items-center gap-1"
@@ -161,6 +171,7 @@ export default function TelegramSetup() {
           <h1 className="w-full text-center text-[17px] font-semibold text-gray-900 tracking-tight">
             Telegram Alerts
           </h1>
+          <div className="absolute right-0"><ThemeToggle /></div>
         </div>
       </nav>
 

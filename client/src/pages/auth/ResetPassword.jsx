@@ -1,9 +1,15 @@
 import React, { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Lock, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import api from '../../utils/api';
+import ThemeToggle from '../../components/ThemeToggle';
+import Logo from '../../components/Logo';
+import usePageMeta from '../../utils/usePageMeta';
+import notify from '../../utils/notify';
+import { getErrorMessage } from '../../utils/errors';
 
 export default function ResetPassword() {
+  usePageMeta({ title: 'Reset password', description: 'Choose a new password for your RemindMe account.' });
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
@@ -46,6 +52,7 @@ export default function ResetPassword() {
         new_password: formData.password
       });
       setSuccess(true);
+      notify.success('Password updated. You can log in now.');
       setTimeout(() => navigate('/login'), 3000);
     } catch (err) {
       setError(
@@ -59,14 +66,27 @@ export default function ResetPassword() {
 
   if (!token) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 text-red-600">
-        Missing reset token. Please check your email link again.
+      <div className="relative flex flex-col items-center justify-center gap-4 min-h-screen px-6 text-center bg-[color:var(--rm-page)]">
+        <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 py-4">
+          <Logo />
+          <ThemeToggle />
+        </div>
+        <p role="alert" className="max-w-sm font-medium text-red-600">
+          This reset link is missing its token. Please open the link from your email again, or request a new one.
+        </p>
+        <Link to="/forgot-password" className="rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700">
+          Request a new link
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen px-4 py-8 bg-gray-50">
+    <div className="relative flex items-center justify-center min-h-screen px-4 pt-24 pb-8 bg-[color:var(--rm-page)]">
+      <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-4 py-4">
+        <Logo />
+        <ThemeToggle />
+      </div>
       <div className="w-full max-w-md p-6 sm:p-8 bg-white shadow-xl rounded-2xl border border-gray-100">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight mb-2">

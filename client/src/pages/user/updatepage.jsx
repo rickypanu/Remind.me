@@ -12,6 +12,10 @@ import {
   Megaphone,
 } from "lucide-react";
 import api from "../../utils/api";
+import notify from "../../utils/notify";
+import { getErrorMessage } from "../../utils/errors";
+import usePageMeta from "../../utils/usePageMeta";
+import ThemeToggle from "../../components/ThemeToggle";
 
 // Helper to check if a date string is from today
 const isToday = (dateString) => {
@@ -84,6 +88,7 @@ function Entry({ update, isPreview = false, isLatest = false, canDelete = false,
 
 export default function UpdatesPage() {
   const navigate = useNavigate();
+  usePageMeta({ title: 'Product updates', description: 'New features, improvements and fixes in RemindMe.', noindex: true });
   const [currentUser, setCurrentUser] = useState(null);
   const [updates, setUpdates] = useState([]);
   const [newUpdate, setNewUpdate] = useState({ title: "", content: "" });
@@ -151,9 +156,10 @@ export default function UpdatesPage() {
 
       localStorage.setItem("seenUpdatesCount", newUpdatesList.length.toString());
       window.dispatchEvent(new Event("updatesRead"));
+      notify.success("Update published.");
     } catch (error) {
       console.error("Failed to post update:", error);
-      setError(error.response?.data?.detail || "Couldn't publish your update. Try again.");
+      setError(getErrorMessage(error, "Couldn't publish your update. Try again."));
       setIsPreviewMode(false);
     } finally {
       setIsPosting(false);
@@ -176,9 +182,10 @@ export default function UpdatesPage() {
       localStorage.setItem("seenUpdatesCount", filteredUpdates.length.toString());
       window.dispatchEvent(new Event("updatesRead"));
       setDeleteModalTarget(null);
+      notify.success("Update deleted.");
     } catch (error) {
       console.error("Failed to delete update:", error);
-      setError("Couldn't delete the update. Try again.");
+      notify.error(error, "Couldn't delete the update. Try again.");
       setDeleteModalTarget(null);
     } finally {
       setIsDeleting(false);
@@ -197,7 +204,7 @@ export default function UpdatesPage() {
   const canPublish = newUpdate.title.trim() && newUpdate.content.trim();
 
   return (
-    <div className="min-h-screen bg-[#F6F7FA] text-slate-900 antialiased font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Text','SF_Pro_Display','Helvetica_Neue',sans-serif]">
+    <div className="min-h-screen bg-[color:var(--rm-page)] text-slate-900 antialiased font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Text','SF_Pro_Display','Helvetica_Neue',sans-serif]">
       {/* Delete confirmation */}
       {deleteModalTarget && (
         <div
@@ -233,12 +240,16 @@ export default function UpdatesPage() {
 
       <div className="max-w-3xl mx-auto px-5 sm:px-8 pt-10 pb-24">
         {/* Header */}
-        <button
-          onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 rounded-md"
-        >
-          <ArrowLeft size={16} /> Back
-        </button>
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center gap-2 min-h-10 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 rounded-md"
+          >
+            <ArrowLeft size={16} /> Back
+          </button>
+          <ThemeToggle />
+        </div>
 
         <header className="mt-10 mb-14 flex items-end justify-between gap-6">
           <div>

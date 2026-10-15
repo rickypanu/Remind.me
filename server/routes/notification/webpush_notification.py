@@ -11,6 +11,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from bson import ObjectId
 
 from database import db
+from .task_queries import find_tasks, find_recurring_projected_to_day
 from .reminder_rules import REMINDER_OFFSETS, reminder_flag, reminder_window, minutes_left
 from .notification_messages import get_short_reminder_copy
 from utils.timezone import IST, now_utc, now_ist, ist_day_bounds_utc
@@ -78,7 +79,7 @@ async def remind_upcoming_tasks():
         if minutes == 60:
             query["notified_due_soon_web"] = {"$ne": True}  # flag used before this update
 
-        tasks = await db["tasks"].find(query).to_list(length=None)
+        tasks = await find_tasks(query)
         if tasks:
             print(f"[DEBUG - {now_ist().strftime('%H:%M:%S')} IST] {len(tasks)} task(s) due in ~{minutes} min (push)", flush=True)
 
@@ -124,7 +125,7 @@ async def remind_todays_tasks():
         "status": {"$ne": "completed"}
     }
 
-    tasks = await db["tasks"].find(query).to_list(length=None)
+    tasks = await find_tasks(query)
     
     user_tasks = {}
     for task in tasks:
@@ -158,7 +159,9 @@ async def remind_tomorrows_tasks():
         "status": {"$ne": "completed"}
     }
 
-    tasks = await db["tasks"].find(query).to_list(length=None)
+    tasks = await find_tasks(query)
+    # Daily / weekly reminders whose NEXT occurrence is still today also happen tomorrow
+    tasks += await find_recurring_projected_to_day(start_of_tomorrow)
     
     user_tasks = {}
     for task in tasks:

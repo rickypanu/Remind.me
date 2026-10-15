@@ -8,9 +8,11 @@ import Register from "./pages/auth/Register";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import Dashboard from "./pages/dashboard/Dashboard";
-import CreateTask from "./pages/user/createtask";
+import CreateTask from "./pages/user/CreateTask";
 import Profile from "./pages/user/profile";
-import UpdatesPage from "./pages/user/updatepage";
+import NotFound from "./pages/public/NotFound";
+import AppToaster from "./components/AppToaster";
+import UpdatesPage from "./pages/user/UpdatePage";
 import About from "./pages/public/About";
 import TelegramSetup from "./pages/user/TelegramSetup";
 import Terms from "./pages/public/Terms";
@@ -19,58 +21,25 @@ import FAQ from "./pages/public/Faqs";
 // Create a client for React Query
 const queryClient = new QueryClient();
 
-// Helper to safely get user info from localStorage or JWT Token
-const getCurrentUser = () => {
-  const token = localStorage.getItem("token");
-  const storedUser = localStorage.getItem("user");
-
-  if (storedUser) {
-    try {
-      return JSON.parse(storedUser);
-    } catch (e) {
-      console.error("Error parsing stored user", e);
-    }
-  }
-
-  if (token) {
-    try {
-      // Decode JWT payload token fallback
-      const base64Url = token.split(".")[1];
-      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split("")
-          .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-          .join(""),
-      );
-      return JSON.parse(jsonPayload);
-    } catch (e) {
-      console.error("Error decoding token", e);
-    }
-  }
-
-  return null;
-};
-
 // Protected route wrapper
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
 
   if (!token) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return children;
 };
 
 function App() {
-  const currentUser = getCurrentUser();
   const token = localStorage.getItem("token"); // Added token check here
 
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <div className="min-h-screen bg-background text-gray-900 font-sans">
+          <AppToaster />
           <Routes>
             {/* UPDATED LOGIC: Redirect to dashboard instantly if token exists */}
             <Route path="/" element={token ? <Navigate to="/dashboard" replace /> : <Home />} />
@@ -128,8 +97,8 @@ function App() {
             />
             <Route path="/about" element={<About />}  />
              
-            {/* Catch-all Route UPDATED */}
-            <Route path="*" element={<Navigate to={token ? "/dashboard" : "/"} replace />} />
+            {/* Anything else: friendly 404 page */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </div>
       </BrowserRouter>

@@ -13,6 +13,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from database import db
+from .task_queries import find_tasks, find_recurring_projected_to_day
 from utils.timezone import IST, UTC, now_utc, now_ist, as_utc, ist_day_bounds_utc
 from .reminder_rules import REMINDER_OFFSETS, reminder_flag, reminder_window, minutes_left
 from .notification_messages import (
@@ -80,7 +81,7 @@ async def remind_upcoming_tasks():
         if minutes == 60:
             query["notified_due_soon"] = {"$ne": True}  # flag used before this update
 
-        tasks = await db["tasks"].find(query).to_list(length=None)
+        tasks = await find_tasks(query)
         if tasks:
             print(f"--> [TELE DEBUG] {len(tasks)} task(s) due in ~{minutes} min.")
 
@@ -126,7 +127,7 @@ async def remind_todays_tasks():
         "status": {"$ne": "completed"}
     }
 
-    tasks = await db["tasks"].find(query).to_list(length=None)
+    tasks = await find_tasks(query)
     user_tasks = defaultdict(list)
     tasks_to_update = []
 
@@ -170,7 +171,9 @@ async def remind_tomorrows_tasks():
         "notified_tomorrow_digest": {"$ne": True}
     }
 
-    tasks = await db["tasks"].find(query).to_list(length=None)
+    tasks = await find_tasks(query)
+    # Daily / weekly reminders whose NEXT occurrence is still today also happen tomorrow
+    tasks += await find_recurring_projected_to_day(start_utc, {"notified_tomorrow_digest": {"$ne": True}})
     user_tasks = defaultdict(list)
     tasks_to_update = []
 

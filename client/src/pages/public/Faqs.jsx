@@ -16,9 +16,11 @@ import {
   ThumbsDown,
   LayoutGrid,
 } from 'lucide-react';
+import PublicLayout from '../../components/PublicLayout';
+import usePageMeta from '../../utils/usePageMeta';
+import { mailto } from '../../config/site';
 
-const SUPPORT_MAILTO =
-  'mailto:rickypanu2005@gmail.com?subject=Support%20Request%20-%20GetRemindMe';
+const SUPPORT_MAILTO = mailto('Support Request - RemindMe');
 
 // Each FAQ can optionally have:
 //   steps: string[]            -> rendered as a numbered list
@@ -30,7 +32,7 @@ const faqData = [
     category: 'Getting Started',
     question: 'What is RemindMe?',
     answer:
-      'RemindMe is a task and deadline tracker built for students. Add assignments, projects, exams or placement deadlines, and we remind you before they are due through Telegram and browser notifications.',
+      'RemindMe sends you reminders at the right time: a specific date and time, every day, or on chosen days every week. Add assignments, projects, exams, habits or routines, and we remind you through Telegram and browser notifications.',
   },
   {
     id: 2,
@@ -65,7 +67,7 @@ const faqData = [
     category: 'Tasks',
     question: 'How do I add a task?',
     answer:
-      'There are two ways. Use the "New Reminder" button to fill in the title, description, category and due date yourself, or use Magic Add on the dashboard to just type or speak a sentence.',
+      'There are two ways. Use the "New reminder" button to fill in the title, notes, category and schedule yourself, or use Magic Add on the dashboard to just type or speak a sentence.',
     link: { to: '/create-task', label: 'Create a task' },
   },
   {
@@ -74,6 +76,14 @@ const faqData = [
     question: 'What is Magic Add and how do I get the best results?',
     answer:
       'Magic Add reads a normal sentence, like "Submit DBMS assignment tomorrow 5pm", and fills in the title, deadline and category for you using AI. Mention the day and time to get an accurate deadline, and check the new task on your dashboard afterwards. Task titles are saved in English.',
+  },
+  {
+    id: 26,
+    category: 'Tasks',
+    question: 'How do daily and weekly reminders work?',
+    answer:
+      'When you create a reminder, choose "Specific date", "Every day" or "Every week". Daily and weekly reminders need a time (and, for weekly, the days you want). When you tick one off, it moves to its next occurrence automatically, and you keep getting reminded until you delete it or its end date passes. Magic Add understands phrases like "gym every Monday and Thursday at 7am".',
+    link: { to: '/create-task', label: 'Create a reminder' },
   },
   {
     id: 7,
@@ -101,7 +111,7 @@ const faqData = [
     category: 'Tasks',
     question: 'How do I complete, undo or delete a task?',
     answer:
-      'Tap the circle on a task card to mark it complete. Tap it again to move it back to pending. Use the delete option on the card to remove it, and confirm when asked.',
+      'Tap the circle on a task card to mark it complete. Tap it again to move it back to pending. For a daily or weekly reminder, ticking it off finishes only that occurrence and schedules the next one. Use the delete option on the card to remove it (and stop the whole series), and confirm when asked.',
   },
   {
     id: 11,
@@ -117,7 +127,7 @@ const faqData = [
     category: 'Notifications',
     question: 'Which reminders will I get?',
     answer:
-      'For every task that is not completed, you get a heads-up about 1 hour before it is due, a summary of your tasks for today, and an evening heads-up about tomorrow\'s tasks. Completed tasks never trigger reminders.',
+      'For every task that is not completed, you get a heads-up about 1 hour before it is due (plus short reminders at 10 minutes and 1 minute), a summary of your tasks for today, and an evening heads-up about tomorrow\'s tasks. Daily and weekly reminders repeat on their schedule. Completed tasks never trigger reminders.',
   },
   {
     id: 13,
@@ -144,7 +154,7 @@ const faqData = [
     category: 'Notifications',
     question: 'How do I turn on browser notifications?',
     answer:
-      'Click "Enable Alerts" in the top bar and press Allow when your browser asks. The button changes to "Subscribed". This is set up per device, so enable it on each phone or laptop where you want alerts.',
+      'Click "Turn on alerts" in the top bar (or in the menu on mobile) and press Allow when your browser asks. The button changes to "Alerts on". This is set up per device, so enable it on each phone or laptop where you want alerts.',
   },
   {
     id: 16,
@@ -155,7 +165,7 @@ const faqData = [
       'Make sure notifications are Allowed for this site in your browser or phone settings (not Blocked).',
       'Check that Do Not Disturb, Focus mode or battery saver is not silencing your browser.',
       'On a laptop, your browser needs to be running in the background to receive alerts.',
-      'Hover over "Subscribed" and tap "Unsubscribe", then press "Enable Alerts" again to refresh the connection.',
+      'Turn alerts off and on again from the top bar to refresh the connection.',
       'On iPhone, notifications only work once the site is added to your Home Screen (see the next question).',
     ],
   },
@@ -164,12 +174,12 @@ const faqData = [
     category: 'Notifications',
     question: 'Do browser notifications work on iPhone?',
     answer:
-      'Yes, but only on iOS 16.4 or newer and only after you add RemindMe to your Home Screen. Open the app from that Home Screen icon, then tap "Enable Alerts". Notifications will not work from a normal Safari tab.',
+      'Yes, but only on iOS 16.4 or newer and only after you add RemindMe to your Home Screen. Open the app from that Home Screen icon, then turn on alerts. Notifications will not work from a normal Safari tab.',
     steps: [
       'Open the site in Safari and tap the Share button.',
       'Choose "Add to Home Screen".',
       'Open RemindMe from the new Home Screen icon.',
-      'Tap "Enable Alerts" and allow notifications.',
+      'Turn on alerts and allow notifications.',
     ],
   },
   {
@@ -191,7 +201,7 @@ const faqData = [
     category: 'Notifications',
     question: 'How do I stop notifications?',
     answer:
-      'For browser alerts, hover over "Subscribed" in the top bar (or tap it on mobile) and choose "Unsubscribe". This only turns off alerts for the device you are using. For Telegram, open the Telegram setup page and disconnect.',
+      'For browser alerts, click "Alerts on" in the top bar (or in the mobile menu) to turn them off. This only turns off alerts for the device you are using. For Telegram, open the Telegram setup page and disconnect.',
     link: { to: '/telegram-setup', label: 'Telegram settings' },
   },
 
@@ -217,8 +227,23 @@ const faqData = [
     category: 'Account & Privacy',
     question: 'What personal data do you store?',
     answer:
-      'Your name, email and password (stored securely hashed), your tasks, and your profile picture. If you connect Telegram we store your chat ID, and your phone number only if you choose to share it. For browser alerts we store a notification address for each device you enable. Read our Terms for the full details.',
+      'Your name, email and password (stored securely hashed), your reminders (title, notes and category are encrypted), and your profile picture. If you connect Telegram we store your chat ID, and your phone number only if you choose to share it. For browser alerts we store a notification address for each device you enable. Read our Terms for the full details.',
     link: { to: '/terms', label: 'Read the Terms' },
+  },
+  {
+    id: 27,
+    category: 'Account & Privacy',
+    question: 'Are my reminders private?',
+    answer:
+      'Yes. The title, notes and category of every reminder are encrypted before they are saved, with a separate key for each user, so the database only holds unreadable ciphertext. They are decrypted only for you after you log in, and briefly on our server to deliver your own notifications. Reminders made with the form are never sent to an AI service; text you type into Magic Add is sent to Google Gemini to be understood.',
+    link: { to: '/terms', label: 'Read the Privacy Policy' },
+  },
+  {
+    id: 28,
+    category: 'Tasks',
+    question: 'Why was my reminder rejected?',
+    answer:
+      'To keep RemindMe safe for everyone, reminders are screened automatically. Text containing sexual, vulgar, hateful or harmful content is not saved. Reword it and try again. If you think a normal reminder was blocked by mistake, contact support and tell us the exact wording.',
   },
   {
     id: 24,
@@ -272,6 +297,11 @@ function Highlight({ text, query }) {
 
 export default function FAQ() {
   const navigate = useNavigate();
+  usePageMeta({
+    title: 'FAQs & Help',
+    description:
+      'Answers about RemindMe: daily, weekly and one-time reminders, Magic Add, Telegram and browser notifications, privacy and your account.',
+  });
   const [openId, setOpenId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
@@ -299,11 +329,13 @@ export default function FAQ() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] py-8 px-4 sm:px-6 lg:px-8 font-sans selection:bg-indigo-100 selection:text-indigo-900">
+    <PublicLayout>
+    <div className="py-8 px-4 sm:px-6 lg:px-8 font-sans selection:bg-indigo-100 selection:text-indigo-900">
       <div className="max-w-3xl mx-auto space-y-8">
         {/* Top Navigation */}
         <div>
           <button
+            type="button"
             onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors w-fit"
           >
@@ -324,7 +356,7 @@ export default function FAQ() {
               How can we help?
             </h1>
             <p className="text-slate-500 font-medium">
-              Answers about tasks, Magic Add, Telegram and browser reminders,
+              Answers about reminders, Magic Add, Telegram and browser alerts,
               and your account.
             </p>
           </div>
@@ -559,5 +591,6 @@ export default function FAQ() {
         </div>
       </div>
     </div>
+    </PublicLayout>
   );
 }

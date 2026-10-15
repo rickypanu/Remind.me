@@ -1,74 +1,105 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
-from typing import Optional, List
-from datetime import datetime
+from typing import List
+
 from bson import ObjectId
-from utils.timezone import to_utc
+from fastapi import APIRouter, Depends, HTTPException, status
+
 from database import get_db
-from utils.security import get_current_user
 from schemas.task import TaskCreate, TaskResponse, TaskStatusUpdate
+from utils.moderation import enforce
+from utils.recurrence import RECURRING_TYPES, advance_after_completion, next_occurrence
+from utils.security import get_current_user
+from utils.timezone import now_utc, to_utc
+
+from utils.task_store import to_response, to_storage
 
 router = APIRouter(tags=["Task"])
 
+
+def build_task_document(task: TaskCreate, user_id: str) -> dict:
+    """Plain-text task document (encryption is applied by the caller via to_storage)."""
+    doc = {
+        "title": task.title,
+        "description": task.description,
+        "category": task.category,
+        "status": "pending",
+        "user_id": user_id,
+        "schedule_type": task.schedule_type,
+        "time_of_day": task.time_of_day,
+        "weekdays": task.weekdays,
+        "ends_on": task.ends_on,
+        "completed_count": 0,
+        "created_at": now_utc(),
+    }
+    if task.schedule_type in RECURRING_TYPES:
+        first = next_occurrence(task.schedule_type, task.time_of_day, task.weekdays, now_utc(), task.ends_on)
+        if first is None:
+            raise HTTPException(status_code=422, detail="That schedule has no upcoming occurrence. Check the end date.")
+        doc["due_date"] = first
+    else:
+        doc["due_date"] = to_utc(task.due_date)  # a datetime with no timezone is treated as IST
+    return doc
+
+
 # --- API Routes ---
 @router.post("/", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
-async def add_task(task: TaskCreate, current_user: dict = Depends(get_current_user), db = Depends(get_db)):
-    # 1. Standardize to UTC (a datetime with no timezone is treated as IST)
-    utc_due_date = to_utc(task.due_date)
-    
-    # 2. Build task payload
-    task_dict = task.dict()
-    task_dict["due_date"] = utc_due_date
-    task_dict["user_id"] = current_user["_id"]
-    
-    # 3. Insert into database
-    result = await db["tasks"].insert_one(task_dict)
-    
-    # 4. Format for Pydantic response
-    task_dict["id"] = str(result.inserted_id)
-    task_dict["user_id"] = str(task_dict["user_id"]) 
-    return task_dict
+async def add_task(task: TaskCreate, current_user: dict = Depends(get_current_user), db=Depends(get_db)):
+    # 1. Content moderation BEFORE anything is stored
+    enforce(task.title, task.description, task.category)
+
+    # 2. Build the plain document, encrypt the private fields, insert ciphertext only
+    user_id = str(current_user["_id"])
+    plain = build_task_document(task, user_id)
+    stored = to_storage(user_id, plain)
+    result = await db["tasks"].insert_one(stored)
+
+    stored["_id"] = result.inserted_id
+    return to_response(stored)
+
 
 @router.get("/", response_model=List[TaskResponse])
-async def get_tasks(current_user: dict = Depends(get_current_user), db = Depends(get_db)):
-    # Fetch only the tasks belonging to the logged-in user
-    cursor = db["tasks"].find({"user_id": current_user["_id"]})
-    tasks = await cursor.to_list(length=100)
-    
-    # Format ObjectIds for JSON serialization
-    formatted_tasks = []
-    for task in tasks:
-        task["id"] = str(task.pop("_id"))
-        task["user_id"] = str(task["user_id"])
-        formatted_tasks.append(task)
-        
-    return formatted_tasks
+async def get_tasks(current_user: dict = Depends(get_current_user), db=Depends(get_db)):
+    # Only the logged-in user's reminders, decrypted in memory for them alone
+    cursor = db["tasks"].find({"user_id": str(current_user["_id"])})
+    tasks = await cursor.to_list(length=1000)
+    return [to_response(t) for t in tasks]
+
 
 @router.patch("/{task_id}")
-async def update_task_status(task_id: str, payload: TaskStatusUpdate, current_user: dict = Depends(get_current_user), db = Depends(get_db)):
+async def update_task_status(task_id: str, payload: TaskStatusUpdate, current_user: dict = Depends(get_current_user), db=Depends(get_db)):
     if not ObjectId.is_valid(task_id):
         raise HTTPException(status_code=400, detail="Invalid task ID")
-        
-    result = await db["tasks"].update_one(
-        {"_id": ObjectId(task_id), "user_id": current_user["_id"]},
-        {"$set": {"status": payload.status}}
-    )
-    
-    if result.modified_count == 0:
-        raise HTTPException(status_code=404, detail="Task not found or not modified")
-        
-    return {"message": "Task updated successfully"}
+
+    query = {"_id": ObjectId(task_id), "user_id": str(current_user["_id"])}
+    task = await db["tasks"].find_one(query)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    # Completing a daily / weekly reminder finishes only THIS occurrence: it rolls to the next one.
+    if payload.status == "completed" and task.get("schedule_type", "once") in RECURRING_TYPES:
+        change = advance_after_completion(task, now_utc())
+        update = {"$set": change["set"], "$inc": change["inc"]}
+        if change["unset"]:
+            update["$unset"] = change["unset"]
+        await db["tasks"].update_one(query, update)
+        return {
+            "message": "Done for now. Next one is scheduled." if change["next_due"] else "Series finished.",
+            "recurring": True,
+            "next_due": change["next_due"],
+        }
+
+    result = await db["tasks"].update_one(query, {"$set": {"status": payload.status}})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return {"message": "Task updated successfully", "recurring": False}
+
 
 @router.delete("/{task_id}")
-async def delete_task(task_id: str, current_user: dict = Depends(get_current_user), db = Depends(get_db)):
+async def delete_task(task_id: str, current_user: dict = Depends(get_current_user), db=Depends(get_db)):
     if not ObjectId.is_valid(task_id):
         raise HTTPException(status_code=400, detail="Invalid task ID")
-        
-    result = await db["tasks"].delete_one(
-        {"_id": ObjectId(task_id), "user_id": current_user["_id"]}
-    )
-    
+
+    result = await db["tasks"].delete_one({"_id": ObjectId(task_id), "user_id": str(current_user["_id"])})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Task not found or you are not authorized to delete it")
-        
+
     return {"message": "Task deleted successfully"}

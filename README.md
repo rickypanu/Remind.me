@@ -1,108 +1,85 @@
-```markdown
 # GetRemindMe
 
 **Developed by:** Ricky Panu
 
 ## Overview
-GetRemindMe is a full-stack, student-focused web application designed to make task management and automated scheduling effortless. It features a Progressive Web App (PWA) frontend built with React and Vite, powered by a robust Python FastAPI backend. By leveraging the Google Gemini API, the app parses natural language to automatically schedule tasks and delivers timely reminders via Web Push notifications and Telegram Bot integration.
+GetRemindMe is a full-stack, student-focused reminder app. A React + Vite PWA frontend talks to a FastAPI + MongoDB backend. Google Gemini turns natural language into reminders, and reminders are delivered through Web Push and Telegram.
 
 ## Features
-* **Natural Language Parsing:** Input tasks conversationally, and the Gemini API automatically extracts the task details and scheduling intent.
-* **Multi-Channel Notifications:** Receive reliable, automated task reminders via Telegram and Web Push notifications.
-* **Progressive Web App (PWA):** Fully installable on desktop and mobile devices with offline support via Workbox service workers.
-* **Modern Tech Stack:** Lightning-fast frontend tooling with Vite and high-performance asynchronous backend processing with FastAPI.
+* **Natural-language add:** "Remind me to revise physics every weekday at 7pm" becomes a structured reminder.
+* **One-time, daily and weekly reminders:** daily and weekly reminders repeat automatically and roll forward when completed or missed.
+* **Encrypted reminders:** title, description and category are encrypted at rest (AES-256-GCM, a separate key per user).
+* **Content moderation:** sexual, vulgar, hateful and harmful reminders are rejected with a clear message.
+* **Resilient Gemini:** any number of API keys and models, with automatic fallback on rate limits and errors.
+* **Dark / light theme:** saved and applied on every page.
+* **Responsive PWA:** hamburger menu on mobile, no horizontal scrolling, installable, with offline support.
+* **SEO basics:** per-page titles and descriptions, favicon set, `robots.txt`, styled 404 page.
 
 ## Tech Stack
-**Frontend (Client)**
-* React.js
-* Vite
-* PWA (Workbox / Service Workers)
-* Oxlint (Linting)
-
-**Backend (Server)**
-* Python
-* FastAPI
-* MongoDB
-* Google Gemini API
-* Telegram Bot API
+**Client:** React 19, Vite, Tailwind v4, react-hot-toast, vite-plugin-pwa
+**Server:** FastAPI, Motor (MongoDB), APScheduler, google-genai, pywebpush, cryptography
 
 ## Prerequisites
-* [Node.js](https://nodejs.org/) (v16 or higher recommended)
-* [Python](https://www.python.org/downloads/) (v3.8 or higher)
-* MongoDB database (local or Atlas)
-* Google Gemini API Key
-* Telegram Bot Token
+* Node.js 18+
+* Python 3.10+
+* MongoDB (local or Atlas)
+* At least one Gemini API key
+* Telegram bot token (optional, for Telegram reminders)
 
-## Getting Started
-
-### 1. Backend Setup
-Navigate to the backend directory and set up your Python environment:
-
+## Backend setup
 ```bash
-# Navigate to the backend folder 
 cd server
-
-# Create and activate a virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows use: venv\Scripts\activate
-
-# Install dependencies
+source venv/bin/activate          # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-
+cp .env.example .env              # then fill it in
 ```
 
-Create a `.env` file in the backend directory and add your environment variables:
+Required in `.env`:
+* `MONGODB_URL`, `DATABASE_NAME`, `SECRET_KEY`
+* `REMINDER_ENCRYPTION_KEY` – generate with
+  `python -c "import secrets; print(secrets.token_urlsafe(48))"`.
+  **Back it up.** Without it, stored reminders cannot be read. The server refuses to start if it is missing.
+* `GEMINI_API_KEYS=key1,key2,key3` (see `.env.example` for other styles and `GEMINI_MODELS`)
 
-```env
-MONGO_URI=your_mongodb_connection_string
-GEMINI_API_KEY=your_gemini_api_key
-TELEGRAM_BOT_TOKEN=your_telegram_token
+Optional: Telegram, VAPID, Brevo and `CORS_ORIGINS` (set this in production).
 
-```
-
-Start the FastAPI development server:
-
+Run:
 ```bash
 uvicorn main:app --reload
-
 ```
 
-*The backend will typically run on `http://localhost:8000`.*
-
-### 2. Frontend Setup
-
-Open a new terminal, navigate to the client directory, and start the Vite development server:
-
+### Encrypt existing reminders (one time)
+Reminders created before this update are stored as plaintext and are still readable. Encrypt them with:
 ```bash
-# Navigate to the frontend folder
-cd remindme/client
+python -m scripts.encrypt_existing_tasks
+```
 
-# Install dependencies
+### Key rotation
+Put the new key in `REMINDER_ENCRYPTION_KEY` and the old one in `REMINDER_ENCRYPTION_KEY_PREVIOUS`, then re-run the script.
+
+### Tests
+```bash
+pip install -r requirements-dev.txt
+pytest tests
+```
+
+## Frontend setup
+```bash
+cd client
 npm install
-
-# Start the development server
-npm run dev
-
+npm run dev        # http://localhost:5173
+npm run build      # production build in dist/
 ```
+Update the site URL and contact details in `client/src/config/site.js`.
 
-*The frontend will typically run on `http://localhost:5173`.*
+## Notes on privacy
+* Reminders are encrypted in the database and decrypted by the server only for the authenticated owner. The server holds the key, so this protects against database leaks and other users, not against someone with access to both the server and its key.
+* Reminder text is never sent to Gemini to write notification wording. Text typed into "magic add" is sent to Gemini to be parsed.
+* Telegram and Web Push messages leave your server and contain the reminder text.
 
-## Build for Production
-
-To build the frontend for production (which generates the service workers and minified assets):
-
-```bash
-cd remindme/client
-npm run build
-
-```
-
-The optimized PWA files will be output to the `remindme/client/dist/` directory.
+## Recurrence model
+`schedule_type` is `once`, `daily` or `weekly`. `time_of_day` is `HH:MM` in IST, `weekdays` is 0 (Mon) to 6 (Sun), and `ends_on` is optional. `due_date` always holds the next occurrence in UTC.
 
 ## License
-
 This project is proprietary and developed by Ricky Panu.
-
-```
-
-```

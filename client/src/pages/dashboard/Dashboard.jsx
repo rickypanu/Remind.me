@@ -16,7 +16,6 @@ import {
   CalendarDays,
   CheckCircle2,
   Sparkles,
-  Check,
   ArrowUp,
   Mic,
   MicOff,
@@ -27,6 +26,8 @@ import api from "../../utils/api";
 import { parseDueDate, getIstDayRange, getIstHour, APP_TIMEZONE } from "../../utils/date";
 import TaskCard from "../tasks/TaskCard";
 import Header from "../components/Header";
+import notify from "../../utils/notify";
+import usePageMeta from "../../utils/usePageMeta";
 
 // Constants
 const VOICE_LANG = "en-IN";
@@ -47,15 +48,16 @@ function TaskSkeleton() {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  usePageMeta({
+    title: "Dashboard",
+    description: "Your reminders for today and upcoming days, including daily and weekly repeats.",
+    noindex: true,
+  });
   const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState("today");
   const [isMissedOpen, setIsMissedOpen] = useState(false);
   const [isDoneOpen, setIsDoneOpen] = useState(false);
-
-  // Toast: { text, type: "success" | "error" }
-  const [toast, setToast] = useState(null);
-  const toastTimeoutRef = useRef(null);
 
   // Magic Add
   const [magicText, setMagicText] = useState("");
@@ -68,11 +70,10 @@ export default function Dashboard() {
 
   const [completedSort, setCompletedSort] = useState("date-desc");
 
-  // --- Toast helper ---
-  const showToast = useCallback((text, type = "success", duration = 3500) => {
-    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-    setToast({ text, type });
-    toastTimeoutRef.current = setTimeout(() => setToast(null), duration);
+  // --- Feedback helper (shared toasts from utils/notify) ---
+  const showToast = useCallback((text, type = "success") => {
+    if (type === "error") notify.error(text);
+    else notify.success(text);
   }, []);
 
   // Auth Guard
@@ -86,10 +87,9 @@ export default function Dashboard() {
     if (!token) handleLogout();
   }, [handleLogout]);
 
-  // Clean up timers / mic on unmount
+  // Stop the mic on unmount
   useEffect(() => {
     return () => {
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
       recognitionRef.current?.abort?.();
     };
   }, []);
@@ -136,7 +136,7 @@ export default function Dashboard() {
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      showToast("❌ Voice input is not supported in this browser.", "error", 3000);
+      notify.error("Voice input is not supported in this browser. Try Chrome, or type your reminder instead.");
       return;
     }
 
@@ -166,7 +166,7 @@ export default function Dashboard() {
 
     recognition.onerror = (event) => {
       if (event.error !== "no-speech" && event.error !== "aborted") {
-        showToast("❌ Mic access error. Check your browser permissions.", "error", 3000);
+        notify.error("Couldn't use the microphone. Allow mic access in your browser settings and try again.");
       }
     };
 
@@ -181,10 +181,10 @@ export default function Dashboard() {
 
     setIsMagicAdding(true);
     try {
-      await api.post("/tasks/magic-add", { text: magicText });
+      await api.post("/tasks/magic-add", { text: magicText.trim() });
       setMagicText("");
       queryClient.invalidateQueries({ queryKey: ["dashboardData"] });
-      showToast("✨ Task added!");
+      notify.success("Reminder added.");
     } catch (err) {
       console.error("Magic Add failed:", err);
       // Catch token expiration specifically on form submit
@@ -192,7 +192,8 @@ export default function Dashboard() {
         handleLogout();
         return;
       }
-      showToast("❌ Couldn't understand that task. Try rephrasing it.", "error");
+      // Shows the server's own message (content rejected, AI busy, couldn't parse, offline...)
+      notify.error(err, "Couldn't add that reminder. Try rephrasing it.");
     } finally {
       setIsMagicAdding(false);
     }
@@ -284,23 +285,9 @@ export default function Dashboard() {
     : { Icon: Coffee, title: "Nothing due today", body: "You're all caught up. Enjoy your break!", cta: "Add a reminder" },
   [activeTab]);
 
-  const isError_ = toast?.type === "error";
-
   return (
-    <div className="min-h-screen bg-[#FAFAFC] pb-28 text-slate-900 antialiased font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Text','Helvetica_Neue',sans-serif] relative overflow-x-hidden">
+    <div className="min-h-screen bg-[color:var(--rm-page)] pb-28 text-slate-900 antialiased font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Text','Helvetica_Neue',sans-serif] relative overflow-x-hidden">
       
-      {/* Toast Notification */}
-      <div aria-live="polite" role="status" className="contents">
-        {toast && (
-          <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-50 max-w-[calc(100vw-2rem)] bg-slate-900 text-white px-5 py-3 rounded-full shadow-2xl flex items-center gap-2.5 text-sm font-semibold animate-in fade-in slide-in-from-bottom-5 duration-300 border border-slate-800">
-            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white shrink-0 ${isError_ ? "bg-red-500" : "bg-emerald-500"}`}>
-              {isError_ ? <AlertCircle size={12} strokeWidth={3} /> : <Check size={12} strokeWidth={3} />}
-            </div>
-            <span>{toast.text}</span>
-          </div>
-        )}
-      </div>
-
       <Header />
 
       <main className="max-w-xl mx-auto px-5 sm:px-6">
@@ -330,7 +317,8 @@ export default function Dashboard() {
             onChange={(e) => setMagicText(e.target.value)}
             disabled={isMagicAdding}
             aria-label="Add a task by typing or speaking"
-            placeholder={isListening ? "Listening..." : "e.g. Submit report tomorrow 5pm"}
+            placeholder={isListening ? "Listening..." : "e.g. Submit report tomorrow 5pm, or Gym every Monday 7am"}
+            maxLength={500}
             className={`w-full bg-white text-sm sm:text-[15px] text-slate-900 font-medium placeholder:text-slate-400 rounded-[20px] border shadow-[0_4px_20px_rgb(0,0,0,0.03)] pl-12 pr-28 py-4 outline-none transition-all duration-200 ${
               isListening
                 ? "border-red-300 ring-4 ring-red-500/10"

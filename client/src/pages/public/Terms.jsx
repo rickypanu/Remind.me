@@ -1,9 +1,26 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Shield, FileText } from 'lucide-react';
+import PublicLayout from '../../components/PublicLayout';
+import usePageMeta from '../../utils/usePageMeta';
+import { SITE } from '../../config/site';
 
-const CONTACT_EMAIL = 'rickypanu2005@gmail.com';
-const LAST_UPDATED = 'October 4, 2026';
+const CONTACT_EMAIL = SITE.supportEmail;
+const LAST_UPDATED = 'October 14, 2026';
+
+// Turns any e-mail address inside a sentence into a clickable mailto: link
+const EMAIL_RE = /([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/g;
+function linkify(text) {
+  return String(text).split(EMAIL_RE).map((part, i) =>
+    i % 2 === 1 ? (
+      <a key={i} href={`mailto:${part}`} className="font-semibold text-blue-600 underline underline-offset-2 hover:text-blue-700 break-all">
+        {part}
+      </a>
+    ) : (
+      part
+    )
+  );
+}
 
 // Each item: { title, body: string | string[], list?: string[] }
 const termsSections = [
@@ -29,12 +46,13 @@ const termsSections = [
       'attempt to access another user\'s account or data, or probe or disrupt the service;',
       'send spam, malware or other malicious content, or misuse notification features;',
       'overload the service, including by automated or scripted requests (for example, abusing Magic Add);',
-      'upload a profile picture that is unlawful, offensive, infringes someone else\'s rights, or that you do not have the right to use.',
+      'upload a profile picture that is unlawful, offensive, infringes someone else\'s rights, or that you do not have the right to use;',
+      'write reminders, notes or categories that contain sexual, vulgar, hateful, threatening or otherwise harmful content, or that encourage violence, self-harm or illegal activity. RemindMe automatically screens reminders and will refuse to save content that breaks this rule.',
     ],
   },
   {
     title: '5. Notifications and Communications',
-    body: 'RemindMe can send you task reminders through the channels you choose to enable:',
+    body: 'RemindMe can send you reminders (one-time, daily or weekly) through the channels you choose to enable:',
     list: [
       'Telegram: by connecting your account to our Telegram bot, you consent to receive automated task alerts and reminders there.',
       'Browser notifications: by clicking "Enable Alerts" and allowing notifications in your browser, you consent to receive reminders on that device.',
@@ -85,7 +103,7 @@ const privacySections = [
     body: 'We collect the following information:',
     list: [
       'Account details: your name, email address and password (stored only as a secure hash, never in plain text).',
-      'Task data: the titles, descriptions, categories, due dates and status of the tasks you create, including tasks created with Magic Add.',
+      'Task data: the titles, descriptions, categories, schedules (specific date, daily or weekly), due dates and status of the reminders you create, including those created with Magic Add.',
       'Profile picture: a photo you upload (stored in our database) or the illustration you choose.',
       'Telegram details, if you connect it: your Telegram chat ID and, only if you choose to share it, your phone number.',
       'Browser notification details, if you enable alerts: a push subscription (an address and encryption keys issued by your browser) for each device you enable.',
@@ -103,7 +121,7 @@ const privacySections = [
       'Vercel (frontend hosting), Render (backend hosting) and MongoDB Atlas (database storage).',
       'Telegram, which delivers Telegram reminders and is subject to its own privacy policy.',
       'Brevo, which sends our account emails (password reset and password-changed confirmation).',
-      'Google (Gemini API), which processes the text you enter in Magic Add to extract task details.',
+      'Google (Gemini API), which processes the text you enter in Magic Add to extract task details. Reminders you create with the regular form, and the text of notifications we send you, are not sent to Gemini.',
       'Your browser vendor\'s push service (for example Google, Mozilla, Apple or Microsoft), which delivers browser notifications to your device.',
       'DiceBear, which serves some illustration avatars. When such an avatar is shown, your browser requests the image from DiceBear\'s servers, which can see your IP address.',
       'Your browser\'s speech recognition, if you use voice input. Depending on your browser, audio may be processed by the browser vendor. RemindMe does not receive or store your audio, only the resulting text.',
@@ -118,8 +136,8 @@ const privacySections = [
     body: 'We keep your data while your account is active. You can delete your account and all associated personal data, including your tasks, profile picture, Telegram link and notification subscriptions, at any time by going to your Profile and choosing "Delete Account". This cannot be undone. Deleted data is removed from our active databases; copies may remain in infrastructure backups of our providers for a limited period before they are overwritten.',
   },
   {
-    title: '6. Data Security',
-    body: 'We use reasonable security practices to protect your information from unauthorised access, alteration, disclosure or destruction, including storing passwords as secure hashes and using encrypted connections, in line with applicable Indian laws. However, no method of transmission or storage over the internet is completely secure or error-free.',
+    title: '6. Data Security and Private Reminders',
+    body: 'Your reminder titles, notes and categories are encrypted before they are saved in our database, using a separate key for each user, so they are stored as unreadable ciphertext and are only shown to you after you log in. Our servers decrypt them briefly, in memory, only to show them to you or to deliver your own reminders; the text of your reminders is never used for advertising and is not shared with other users. Schedule times are stored unencrypted because they are needed to send reminders on time. We use reasonable security practices to protect your information from unauthorised access, alteration, disclosure or destruction, including storing passwords as secure hashes and using encrypted connections, in line with applicable Indian laws. However, no method of transmission or storage over the internet is completely secure or error-free.',
   },
   {
     title: '7. Cookies, Local Storage and Offline Cache',
@@ -150,16 +168,16 @@ function Block({ section }) {
       <h3 className="text-lg font-semibold text-gray-900 mb-2">{section.title}</h3>
       <div className="space-y-3">
         {paragraphs.map((text, i) => (
-          <p key={i}>{text}</p>
+          <p key={i}>{linkify(text)}</p>
         ))}
         {section.list && (
           <ul className="list-disc pl-5 space-y-1.5 marker:text-blue-400">
             {section.list.map((item, i) => (
-              <li key={i}>{item}</li>
+              <li key={i}>{linkify(item)}</li>
             ))}
           </ul>
         )}
-        {section.after && <p>{section.after}</p>}
+        {section.after && <p>{linkify(section.after)}</p>}
       </div>
     </div>
   );
@@ -167,6 +185,11 @@ function Block({ section }) {
 
 export default function Terms() {
   const navigate = useNavigate();
+  usePageMeta({
+    title: 'Terms of Service & Privacy Policy',
+    description:
+      'Read the RemindMe Terms of Service and Privacy Policy: how your reminders are encrypted, which notification channels we use, and how to delete your data.',
+  });
 
   // Scroll to top when page loads
   useEffect(() => {
@@ -174,72 +197,64 @@ export default function Terms() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      {/* Main Container - Keeps everything centered and aligned */}
-      <div className="max-w-3xl mx-auto">
-        {/* Back Button */}
-        <button
-          onClick={() => navigate(-1)}
-          className="w-fit mb-6 flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors font-medium bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200"
-        >
-          <ArrowLeft size={18} />
-          Back
-        </button>
+    <PublicLayout>
+      <div className="py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
+        {/* Main Container - Keeps everything centered and aligned */}
+        <div className="max-w-3xl mx-auto">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="w-fit mb-6 flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors font-medium bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200"
+          >
+            <ArrowLeft size={18} />
+            Back
+          </button>
 
-        {/* Content Card */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-          {/* Header */}
-          <div className="bg-blue-600 px-8 py-10 text-center text-white">
-            <h1 className="text-3xl font-extrabold tracking-tight mb-2">Legal &amp; Privacy</h1>
-            <p className="text-blue-100 font-medium">Last updated: {LAST_UPDATED}</p>
-          </div>
+          {/* Content Card */}
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            <div className="bg-blue-600 px-6 sm:px-8 py-10 text-center text-white">
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">Legal &amp; Privacy</h1>
+              <p className="text-blue-100 font-medium">Last updated: {LAST_UPDATED}</p>
+            </div>
 
-          {/* Content Body */}
-          <div className="p-8 sm:p-12 space-y-12 text-gray-700">
-            {/* Quick jump links */}
-            <nav className="flex flex-wrap gap-3 text-sm font-semibold">
-              <a
-                href="#terms"
-                className="px-4 py-2 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
-              >
-                Terms of Service
-              </a>
-              <a
-                href="#privacy"
-                className="px-4 py-2 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
-              >
-                Privacy Policy
-              </a>
-            </nav>
+            <div className="p-5 sm:p-12 space-y-12 text-gray-700 break-words">
+              {/* Quick jump links */}
+              <nav aria-label="On this page" className="flex flex-wrap gap-3 text-sm font-semibold">
+                <a href="#terms" className="px-4 py-2 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors">
+                  Terms of Service
+                </a>
+                <a href="#privacy" className="px-4 py-2 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors">
+                  Privacy Policy
+                </a>
+              </nav>
 
-            {/* Terms of Service Section */}
-            <section id="terms" className="scroll-mt-6">
-              <div className="flex items-center gap-3 mb-6 border-b pb-4">
-                <FileText className="text-blue-600" size={28} />
-                <h2 className="text-2xl font-bold text-gray-900">Terms of Service</h2>
-              </div>
-              <div className="space-y-6 text-sm leading-relaxed">
-                {termsSections.map((section) => (
-                  <Block key={section.title} section={section} />
-                ))}
-              </div>
-            </section>
+              <section id="terms" className="scroll-mt-24">
+                <div className="flex items-center gap-3 mb-6 border-b pb-4">
+                  <FileText className="text-blue-600 shrink-0" size={28} />
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Terms of Service</h2>
+                </div>
+                <div className="space-y-6 text-sm leading-relaxed">
+                  {termsSections.map((section) => (
+                    <Block key={section.title} section={section} />
+                  ))}
+                </div>
+              </section>
 
-            {/* Privacy Policy Section */}
-            <section id="privacy" className="scroll-mt-6">
-              <div className="flex items-center gap-3 mb-6 border-b pb-4">
-                <Shield className="text-blue-600" size={28} />
-                <h2 className="text-2xl font-bold text-gray-900">Privacy Policy</h2>
-              </div>
-              <div className="space-y-6 text-sm leading-relaxed">
-                {privacySections.map((section) => (
-                  <Block key={section.title} section={section} />
-                ))}
-              </div>
-            </section>
+              <section id="privacy" className="scroll-mt-24">
+                <div className="flex items-center gap-3 mb-6 border-b pb-4">
+                  <Shield className="text-blue-600 shrink-0" size={28} />
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Privacy Policy</h2>
+                </div>
+                <div className="space-y-6 text-sm leading-relaxed">
+                  {privacySections.map((section) => (
+                    <Block key={section.title} section={section} />
+                  ))}
+                </div>
+              </section>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </PublicLayout>
   );
 }

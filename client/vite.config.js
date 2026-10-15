@@ -7,7 +7,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 const pwaPlugin = VitePWA({
   registerType: 'autoUpdate',
   manifest: false,
-  includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon-*.png'],
+  includeAssets: ['favicon.ico', 'favicon-*.png', 'apple-touch-icon.png', 'icon-*.png', 'robots.txt'],
   workbox: {
     // Loads your push/notificationclick handlers inside the generated sw.js
     importScripts: ['/push-sw.js'],

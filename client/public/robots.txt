@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /create-task
+Disallow: /profile
+Disallow: /telegram-setup
+Disallow: /updates
+Disallow: /reset-password

@@ -19,11 +19,15 @@ import {
   Shield,
 } from "lucide-react";
 import api from "../../utils/api";
+import notify from "../../utils/notify";
+import usePageMeta from "../../utils/usePageMeta";
+import ThemeToggle from "../../components/ThemeToggle";
 import MenuItem from "../components/MenuItems";
 import AvatarPickerModal from "../components/AvatarPickerModal";
 import AppearanceSettings from "../components/AppearanceSettings";
 
 export default function Profile() {
+  usePageMeta({ title: 'Profile & settings', description: 'Manage your RemindMe profile, appearance, notifications and account.', noindex: true });
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
@@ -122,7 +126,7 @@ export default function Profile() {
       handleLogout();
     } catch (error) {
       console.error("Failed to delete account:", error);
-      alert("Failed to delete account. Please try again later.");
+      notify.error(error, "Could not delete your account. Please try again later.");
     } finally {
       setDeleteLoading(false);
     }
@@ -140,9 +144,10 @@ export default function Profile() {
       await api.patch("/user/me", { username: trimmedName });
       setUserInfo((prev) => (prev ? { ...prev, username: trimmedName } : prev));
       setIsEditingName(false);
+      notify.success("Name updated.");
     } catch (error) {
       console.error("Failed to update name:", error);
-      alert("Failed to update name. Please try again.");
+      notify.error(error, "Could not update your name. Please try again.");
     } finally {
       setIsUpdatingName(false);
     }
@@ -168,11 +173,12 @@ export default function Profile() {
       if (response.data?.avatar_url) {
         setAvatarUrl(response.data.avatar_url);
         setUserInfo((prev) => (prev ? { ...prev, avatar_url: response.data.avatar_url } : prev));
+        notify.success("Profile picture updated.");
       }
     } catch (error) {
       console.error("Failed to upload avatar:", error);
       setAvatarUrl(userInfo?.avatar_url || null);
-      alert("Failed to upload image.");
+      notify.error(error, "Could not upload that image. Use a picture under 2 MB.");
     } finally {
       URL.revokeObjectURL(tempPreviewUrl);
       setIsUploadingImage(false);
@@ -189,10 +195,11 @@ export default function Profile() {
     try {
       await api.patch("/user/me", { avatar_url: illustrationUrl });
       setUserInfo((prev) => (prev ? { ...prev, avatar_url: illustrationUrl } : prev));
+      notify.success("Profile picture updated.");
     } catch (error) {
       console.error("Failed to update avatar illustration:", error);
       setAvatarUrl(previousUrl);
-      alert("Failed to set avatar.");
+      notify.error(error, "Could not set that picture. Please try again.");
     } finally {
       setIsUploadingImage(false);
     }
@@ -210,7 +217,7 @@ export default function Profile() {
   // --- Render Loading Skeleton ---
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FAFAFC] pt-20 px-4 flex flex-col items-center">
+      <div className="min-h-screen bg-[color:var(--rm-page)] pt-20 px-4 flex flex-col items-center">
         <div className="h-24 w-24 rounded-full bg-gray-100 animate-pulse mb-4" />
         <div className="h-6 w-32 bg-gray-100 animate-pulse rounded-lg mb-2" />
         <div className="h-4 w-48 bg-gray-100 animate-pulse rounded-lg mb-8" />
@@ -220,7 +227,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAFC] pb-20 relative antialiased font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Text','SF_Pro_Display','Helvetica_Neue',sans-serif]">
+    <div className="min-h-screen bg-[color:var(--rm-page)] pb-20 relative antialiased font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Text','SF_Pro_Display','Helvetica_Neue',sans-serif]">
       
       {/* iOS-Style Sticky Header */}
       <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-gray-200/50 px-4 py-3">
@@ -235,6 +242,7 @@ export default function Profile() {
           <h1 className="w-full text-center text-[17px] font-semibold text-gray-900 tracking-tight">
             Profile
           </h1>
+          <div className="absolute right-0"><ThemeToggle /></div>
         </div>
       </nav>
 

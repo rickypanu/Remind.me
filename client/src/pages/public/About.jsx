@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import PublicLayout from "../../components/PublicLayout";
+import Logo from "../../components/Logo";
+import usePageMeta from "../../utils/usePageMeta";
+import { SITE, mailto } from "../../config/site";
 import {
-  ArrowLeft,
   ArrowRight,
-  Server,
+  Lock,
   BellRing,
   Sparkles,
   Smartphone,
   Code,
-  LayoutDashboard,
   Mail,
   Bug,
   ExternalLink,
@@ -20,9 +22,8 @@ import {
   Shield,
 } from "lucide-react";
 
-const APP_VERSION = "v3.2.0";
-const REPO_URL = "https://github.com/rickypanu/Remind.me";
-const CONTACT_EMAIL = "rickypanu2005@gmail.com";
+const APP_VERSION = "v4.0.0";
+const REPO_URL = SITE.repoUrl;
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8000").replace(/\/$/, "");
 
 // ---- Live service status (pings the backend's /health endpoint) ----
@@ -68,19 +69,19 @@ const features = [
     icon: Sparkles,
     tone: "bg-purple-50 text-purple-600",
     title: "Magic Add (AI)",
-    text: "Type or speak a sentence like “DBMS assignment tomorrow 5pm” and AI fills in the title, deadline and category for you.",
+    text: "Type or speak “DBMS assignment tomorrow 5pm” or “gym every Monday at 7am” and AI fills in the title, schedule and category for you.",
   },
   {
     icon: BellRing,
     tone: "bg-blue-50 text-blue-600",
-    title: "Multi-Channel Reminders",
-    text: "Get a heads-up about an hour before each deadline, plus daily summaries, through browser Web Push and Telegram.",
+    title: "Specific, Daily & Weekly Reminders",
+    text: "Set one-time deadlines or repeat reminders every day or on chosen weekdays, delivered through browser Web Push and Telegram.",
   },
   {
-    icon: Server,
+    icon: Lock,
     tone: "bg-indigo-50 text-indigo-600",
-    title: "FastAPI Task Engine",
-    text: "An asynchronous Python backend with scheduled jobs and MongoDB, built to deliver reminders on time.",
+    title: "Private by Design",
+    text: "Your reminder titles, notes and categories are encrypted before they are stored, and inappropriate content is screened out automatically.",
   },
   {
     icon: Smartphone,
@@ -109,14 +110,14 @@ const supportLinks = [
     text: "Explore code, architecture, & releases on GitHub",
   },
   {
-    href: `mailto:${CONTACT_EMAIL}`,
+    href: mailto("Hello from the RemindMe site"),
     icon: Mail,
     tone: "bg-blue-50 text-blue-600 group-hover:bg-blue-100",
     title: "Contact Developer",
     text: "Collaborations, inquiries, and feedback",
   },
   {
-    href: `mailto:${CONTACT_EMAIL}?subject=Bug%20Report%20-%20GetRemindMe%20App`,
+    href: mailto("Bug Report - RemindMe App"),
     icon: Bug,
     tone: "bg-orange-50 text-orange-500 group-hover:bg-orange-100",
     title: "Report an Issue",
@@ -128,48 +129,53 @@ export default function About() {
   const navigate = useNavigate();
   const status = useServiceStatus();
   const ui = STATUS_UI[status];
+  const isLoggedIn = !!localStorage.getItem("token");
+  usePageMeta({
+    title: "About",
+    description:
+      "About RemindMe: a reminder app for specific, daily and weekly reminders with Magic Add AI, Telegram and browser notifications, and encrypted private reminders.",
+  });
+  // Only show shortcuts the visitor can actually open
+  const actions = isLoggedIn
+    ? quickActions
+    : [
+        { to: "/register", label: "Create account", icon: PlusCircle, tone: "bg-blue-50 text-blue-600 group-hover:bg-blue-100", hover: "hover:border-blue-300" },
+        ...quickActions.filter((a) => a.to === "/faqs" || a.to === "/terms"),
+      ];
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20 text-slate-800 transition-colors duration-300">
-      {/* Top Navigation - Glassmorphism */}
-      <nav className="sticky top-0 z-20 bg-white/80 backdrop-blur-xl border-b border-gray-200 px-4 py-4 transition-colors">
-        <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate(-1)}
-              className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all active:scale-95"
-              aria-label="Go back"
-            >
-              <ArrowLeft size={20} />
-            </button>
-            <h1 className="text-xl font-bold text-gray-900">About</h1>
-          </div>
-        </div>
-      </nav>
-
+    <PublicLayout>
+      <div className="pb-12 text-slate-800">
       {/* Main Content */}
-      <main className="max-w-2xl mx-auto px-4 mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <main className="max-w-2xl mx-auto px-4 pt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         {/* Header Hero Card */}
         <div className="relative overflow-hidden bg-white p-8 rounded-3xl border border-gray-200 shadow-sm mb-6 text-center group transition-colors">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-400"></div>
 
-          <div className="mx-auto h-16 w-16 bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-2xl flex items-center justify-center mb-5 shadow-lg shadow-blue-500/25 group-hover:rotate-6 transition-transform duration-300">
-            <LayoutDashboard size={28} strokeWidth={2.5} />
+          <div className="flex justify-center mb-5">
+            <Logo to={isLoggedIn ? "/dashboard" : "/"} size="lg" />
           </div>
 
-          <h2 className="text-3xl font-black text-gray-900 tracking-tight mb-2">
-            Get<span className="text-blue-600">RemindMe</span>
-          </h2>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-2">
+            About Get<span className="text-blue-600">RemindMe</span>
+          </h1>
 
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-full mb-4 border border-blue-200/60">
             <span>{APP_VERSION}</span>
             <span className="text-blue-300">•</span>
             <span>Production Release</span>
           </div>
+          <div className={`ml-2 inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold rounded-full mb-4 border ${ui.wrap}`} role="status">
+            <span className="relative flex h-2 w-2">
+              {ui.ping && <span className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${ui.pingColor}`}></span>}
+              <span className={`relative inline-flex h-2 w-2 rounded-full ${ui.dot}`}></span>
+            </span>
+            {ui.label}
+          </div>
 
           <p className="text-gray-600 leading-relaxed max-w-md mx-auto text-sm sm:text-base">
-            Built to remove friction from student productivity. GetRemindMe is a smart task and deadline tracker that
-            sends reminders through Web Push and Telegram, and lets you add tasks just by typing or speaking.
+            Built to remove friction from student productivity. GetRemindMe sends specific, daily and weekly reminders
+            through Web Push and Telegram, and lets you add them just by typing or speaking.
           </p>
         </div>
 
@@ -179,7 +185,7 @@ export default function About() {
         </div>
 
         <div className="grid grid-cols-2 gap-4 mb-8">
-          {quickActions.map(({ to, label, icon: Icon, tone, hover }) => (
+          {actions.map(({ to, label, icon: Icon, tone, hover }) => (
             <Link
               key={to}
               to={to}
@@ -215,7 +221,7 @@ export default function About() {
           ))}
 
           {/* Telegram CTA */}
-          <div className="sm:col-span-2 bg-gradient-to-r from-sky-500/10 via-blue-500/10 to-indigo-500/10 border border-sky-200 p-5 rounded-2xl flex items-center justify-between gap-4">
+          <div className="sm:col-span-2 bg-gradient-to-r from-sky-500/10 via-blue-500/10 to-indigo-500/10 border border-sky-200 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
               <div className="p-3 bg-sky-500 text-white rounded-xl shadow-md shadow-sky-500/20">
                 <Send size={20} />
@@ -275,6 +281,7 @@ export default function About() {
           </p>
         </div>
       </main>
-    </div>
+      </div>
+    </PublicLayout>
   );
 }

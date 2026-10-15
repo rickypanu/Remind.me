@@ -1,7 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Bell, BellOff, BellRing, AlarmClock, Plus, CircleUser, Loader2,  LucideLayoutDashboard } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  Bell, BellOff, BellRing, Plus, CircleUser, Loader2, Menu, X,
+  LayoutDashboard, Newspaper, Send, Info, HelpCircle, Home as HomeIcon, LogIn, UserPlus,
+} from 'lucide-react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import api from '../../utils/api';
+import notify from '../../utils/notify';
+import Logo from '../../components/Logo';
+import ThemeToggle from '../../components/ThemeToggle';
 
 const PUBLIC_VAPID_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
 
@@ -40,20 +46,25 @@ function getActiveRegistration(timeoutMs = 8000) {
 const pushSupported = () =>
   'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 
-const Header = () => {
-  const isLoggedIn = !!localStorage.getItem('token');
+// Links shown in the menu. Only pages that exist and are useful for that visitor.
+const VISITOR_LINKS = [
+  { to: '/', label: 'Home', icon: HomeIcon, end: true },
+  { to: '/about', label: 'About', icon: Info },
+  { to: '/faqs', label: 'FAQs', icon: HelpCircle },
+];
+const MEMBER_LINKS = [
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/updates', label: 'Updates', icon: Newspaper },
+  { to: '/telegram-setup', label: 'Telegram', icon: Send },
+  { to: '/about', label: 'About', icon: Info },
+  { to: '/faqs', label: 'FAQs', icon: HelpCircle },
+];
+
+/** Push notification on/off logic, shared by the desktop button and the mobile menu button. */
+function usePush(isLoggedIn) {
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [userId, setUserId] = useState(null);
   const [pushStatus, setPushStatus] = useState('idle'); // 'idle' | 'loading' | 'subscribed'
-  const [pushError, setPushError] = useState('');
-  const errorTimerRef = useRef(null);
-
-  // Auto-dismiss the error bubble after a few seconds
-  useEffect(() => {
-    if (!pushError) return;
-    errorTimerRef.current = setTimeout(() => setPushError(''), 6000);
-    return () => clearTimeout(errorTimerRef.current);
-  }, [pushError]);
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -69,10 +80,7 @@ const Header = () => {
         if (existing) {
           setPushStatus('subscribed');
           if (uid) {
-            await api.post('/webpush/subscribe', {
-              subscription: existing.toJSON(),
-              userId: uid,
-            });
+            await api.post('/webpush/subscribe', { subscription: existing.toJSON(), userId: uid });
           }
         }
       } catch (error) {
@@ -91,22 +99,16 @@ const Header = () => {
       .catch((error) => console.error('Failed to fetch user data for header', error));
   }, [isLoggedIn]);
 
-  const getAvatarSrc = () =>
-    avatarUrl?.startsWith('/uploads')
-      ? `${import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '')}${avatarUrl}`
-      : avatarUrl;
-
   const handleSubscribe = async () => {
     if (pushStatus === 'subscribed' || !userId) return;
-    setPushError('');
 
     if (!pushSupported()) {
-      setPushError('Push is not supported here. On iPhone, add the site to your Home Screen first.');
+      notify.error('Push is not supported here. On iPhone, add the site to your Home Screen first.');
       return;
     }
     if (!PUBLIC_VAPID_KEY) {
       console.error('VAPID key is missing! Check your .env file.');
-      setPushError('Push is not configured (missing VAPID key).');
+      notify.error('Push alerts are not configured on this site yet.');
       return;
     }
 
@@ -115,7 +117,7 @@ const Header = () => {
 
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
-        setPushError('Notifications are blocked. Allow them in your browser/site settings and try again.');
+        notify.error('Notifications are blocked. Allow them in your browser or site settings and try again.');
         setPushStatus('idle');
         return;
       }
@@ -130,22 +132,19 @@ const Header = () => {
         });
       }
 
-      await api.post('/webpush/subscribe', {
-        subscription: subscription.toJSON(),
-        userId,
-      });
+      await api.post('/webpush/subscribe', { subscription: subscription.toJSON(), userId });
 
       setPushStatus('subscribed');
+      notify.success('Alerts are on for this device.');
     } catch (error) {
       console.error('Failed to subscribe to push notifications:', error);
-      setPushError(error?.message || 'Could not enable alerts. Please try again.');
+      notify.error(error, 'Could not enable alerts. Please try again.');
       setPushStatus('idle');
     }
   };
 
   const handleUnsubscribe = async () => {
     if (!userId) return;
-    setPushError('');
 
     try {
       setPushStatus('loading');
@@ -157,133 +156,176 @@ const Header = () => {
         const subJSON = subscription.toJSON();
 
         // 1. Remove ONLY this device's subscription from the backend ($pull)
-        await api.delete(`/webpush/unsubscribe/${userId}`, {
-          data: { subscription: subJSON, userId },
-        });
+        await api.delete(`/webpush/unsubscribe/${userId}`, { data: { subscription: subJSON, userId } });
 
         // 2. Then revoke it locally in the browser
         await subscription.unsubscribe();
       }
 
       setPushStatus('idle');
+      notify.success('Alerts are off for this device.');
     } catch (error) {
       console.error('Failed to unsubscribe:', error);
-      setPushError('Could not turn off alerts. Please try again.');
+      notify.error(error, 'Could not turn off alerts. Please try again.');
       setPushStatus('subscribed'); // revert if the API call fails
     }
   };
 
-  const toggleSubscription = () => {
+  const toggle = () => {
     if (pushStatus === 'subscribed') handleUnsubscribe();
     else if (pushStatus === 'idle') handleSubscribe();
   };
 
+  return { avatarUrl, pushStatus, toggle };
+}
+
+function PushButton({ pushStatus, onClick, fullWidth = false }) {
+  const base =
+    'group relative flex items-center justify-center gap-2 h-10 px-3 rounded-full text-sm font-semibold active:scale-95 transition-all duration-200 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
+  const tone =
+    pushStatus === 'subscribed'
+      ? 'bg-emerald-50 text-emerald-700 hover:bg-rose-50 hover:text-rose-600 border border-emerald-200/60 hover:border-rose-200/60'
+      : pushStatus === 'loading'
+      ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-transparent'
+      : 'bg-white text-slate-700 border border-slate-200 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700';
+
   return (
-    <nav
-      className="sticky top-0 z-50 bg-[#F6FAFF]/85 backdrop-blur-xl border-b border-sky-100 antialiased"
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={pushStatus === 'loading'}
+      aria-pressed={pushStatus === 'subscribed'}
+      aria-label={pushStatus === 'subscribed' ? 'Turn off alerts' : 'Turn on alerts'}
+      className={`${base} ${tone} ${fullWidth ? 'w-full' : 'lg:px-4'}`}
+    >
+      {pushStatus === 'loading' && <Loader2 size={18} strokeWidth={2.5} className="animate-spin text-blue-500" />}
+      {pushStatus === 'subscribed' && (
+        <>
+          <BellRing size={18} strokeWidth={2.5} className="block group-hover:hidden text-emerald-600" />
+          <BellOff size={18} strokeWidth={2.5} className="hidden group-hover:block text-rose-500" />
+        </>
+      )}
+      {pushStatus === 'idle' && (
+        <Bell size={18} strokeWidth={2.5} className="text-slate-500 group-hover:text-blue-600 transition-colors" />
+      )}
+      <span className={fullWidth ? 'block' : 'hidden lg:block lg:w-[100px] text-center'}>
+        {pushStatus === 'loading' ? (
+          'Updating...'
+        ) : pushStatus === 'subscribed' ? (
+          <>
+            <span className="block group-hover:hidden">Alerts on</span>
+            <span className="hidden group-hover:block">Turn off</span>
+          </>
+        ) : (
+          'Turn on alerts'
+        )}
+      </span>
+    </button>
+  );
+}
+
+const Header = () => {
+  const isLoggedIn = !!localStorage.getItem('token');
+  const { avatarUrl, pushStatus, toggle } = usePush(isLoggedIn);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const { pathname } = useLocation();
+  const menuButtonRef = useRef(null);
+  const panelRef = useRef(null);
+
+  const closeMenu = useCallback((returnFocus = false) => {
+    setMenuOpen(false);
+    if (returnFocus) menuButtonRef.current?.focus();
+  }, []);
+
+  // Close the menu whenever the page changes
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
+  // Menu open: Escape closes, background does not scroll, focus moves inside, wide screens auto-close
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e) => {
+      if (e.key === 'Escape') closeMenu(true);
+    };
+    const onResize = () => {
+      if (window.matchMedia('(min-width: 768px)').matches) setMenuOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('resize', onResize);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    panelRef.current?.querySelector('a,button')?.focus();
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('resize', onResize);
+      document.body.style.overflow = prev;
+    };
+  }, [menuOpen, closeMenu]);
+
+  const getAvatarSrc = () =>
+    avatarUrl?.startsWith('/uploads')
+      ? `${import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '')}${avatarUrl}`
+      : avatarUrl;
+
+  const links = isLoggedIn ? MEMBER_LINKS : VISITOR_LINKS;
+  const desktopLinkClass = ({ isActive }) =>
+    `px-3 py-2 rounded-xl text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+      isActive ? 'text-blue-700 bg-blue-50' : 'text-slate-600 hover:text-slate-900 hover:bg-blue-50'
+    }`;
+
+  return (
+    <>
+    <header
+      className="sticky top-0 z-50 bg-[color:var(--rm-page)]/90 backdrop-blur-xl border-b border-sky-100 antialiased"
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
       <div
-        className={`flex items-center justify-between h-16 mx-auto w-full transition-all duration-300 ${
-          isLoggedIn
-            ? 'max-w-6xl px-4 sm:px-6 lg:px-8'
-            : 'max-w-7xl px-4 sm:px-6 md:px-12 lg:px-20'
+        className={`flex items-center justify-between gap-3 h-16 mx-auto w-full ${
+          isLoggedIn ? 'max-w-6xl px-4 sm:px-6 lg:px-8' : 'max-w-7xl px-4 sm:px-6 md:px-12 lg:px-20'
         }`}
       >
-        {/* Logo */}
-        <Link
-          to={isLoggedIn ? '/dashboard' : '/'}
-          className="flex items-center gap-2 sm:gap-3 group select-none active:scale-95 transition-transform outline-none rounded-xl focus-visible:ring-2 focus-visible:ring-blue-500"
-        >
-          <div className="w-9 h-9 flex-shrink-0 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/25 transition-all group-hover:bg-blue-700 group-hover:-translate-y-0.5">
-            {/* <AlarmClock size={20} strokeWidth={2.5} /> */}
-            <LucideLayoutDashboard size={20} strokeWidth={2.5} />
-            
-          </div>
-          <span className="text-[18px] sm:text-[19px] font-extrabold tracking-tight text-slate-800">
-            Remind<span className="text-blue-600">Me</span>
-          </span>
-        </Link>
+        <Logo to={isLoggedIn ? '/dashboard' : '/'} />
 
-        {/* Actions */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        {/* Desktop navigation */}
+        <nav aria-label="Main" className="hidden md:flex items-center gap-1 min-w-0">
+          {(isLoggedIn ? [] : VISITOR_LINKS.filter((l) => l.to !== '/')).map(({ to, label }) => (
+            <NavLink key={to} to={to} className={desktopLinkClass}>
+              {label}
+            </NavLink>
+          ))}
+        </nav>
+
+        {/* Desktop actions */}
+        <div className="hidden md:flex items-center gap-2 lg:gap-3 shrink-0">
+          <ThemeToggle />
           {!isLoggedIn ? (
             <>
               <Link
                 to="/login"
-                className="text-slate-600 hover:text-slate-900 px-3 py-2 sm:px-4 text-sm font-semibold rounded-xl hover:bg-blue-50 transition-colors"
+                className="text-slate-600 hover:text-slate-900 px-4 py-2 text-sm font-semibold rounded-xl hover:bg-blue-50 transition-colors"
               >
                 Log in
               </Link>
               <Link
                 to="/register"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 sm:px-5 sm:py-2.5 rounded-full text-sm font-semibold transition-all active:scale-95 shadow-md shadow-blue-500/20 whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-all active:scale-95 shadow-md shadow-blue-500/20 whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
               >
                 Get Started
               </Link>
             </>
           ) : (
             <>
-              {/* Push Subscription Button */}
-              <button
-                onClick={toggleSubscription}
-                disabled={pushStatus === 'loading'}
-                aria-pressed={pushStatus === 'subscribed'}
-                aria-label={pushStatus === 'subscribed' ? 'Turn off alerts' : 'Turn on alerts'}
-                className={`group relative flex items-center justify-center gap-2 h-10 px-3 sm:px-4 rounded-full text-sm font-semibold active:scale-95 transition-all duration-200 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-                  pushStatus === 'subscribed'
-                    ? 'bg-emerald-50 text-emerald-700 hover:bg-rose-50 hover:text-rose-600 border border-emerald-200/60 hover:border-rose-200/60'
-                    : pushStatus === 'loading'
-                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-transparent'
-                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700'
-                }`}
-              >
-                {pushStatus === 'loading' && (
-                  <Loader2 size={18} strokeWidth={2.5} className="animate-spin text-blue-500" />
-                )}
-
-                {pushStatus === 'subscribed' && (
-                  <>
-                    <BellRing size={18} strokeWidth={2.5} className="block group-hover:hidden text-emerald-600" />
-                    <BellOff size={18} strokeWidth={2.5} className="hidden group-hover:block text-rose-500" />
-                  </>
-                )}
-
-                {pushStatus === 'idle' && (
-                  <Bell
-                    size={18}
-                    strokeWidth={2.5}
-                    className="text-slate-500 group-hover:text-blue-600 transition-colors"
-                  />
-                )}
-
-                <span className="hidden sm:block w-[100px] text-center">
-                  {pushStatus === 'loading' ? (
-                    'Updating...'
-                  ) : pushStatus === 'subscribed' ? (
-                    <>
-                      <span className="block group-hover:hidden">Alerts on</span>
-                      <span className="hidden group-hover:block">Turn off</span>
-                    </>
-                  ) : (
-                    'Turn on alerts'
-                  )}
-                </span>
-              </button>
-
-              {/* New Reminder */}
+              <PushButton pushStatus={pushStatus} onClick={toggle} />
               <Link
                 to="/create-task"
-                className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white w-10 h-10 md:w-auto md:px-4 rounded-full text-sm font-semibold shadow-md shadow-blue-500/20 active:scale-95 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white w-10 h-10 lg:w-auto lg:px-4 rounded-full text-sm font-semibold shadow-md shadow-blue-500/20 active:scale-95 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
                 aria-label="New reminder"
               >
                 <Plus size={18} strokeWidth={2.5} />
-                <span className="hidden md:block">New reminder</span>
+                <span className="hidden lg:block">New reminder</span>
               </Link>
-
-              <div className="h-6 w-px bg-slate-200 mx-0.5 sm:mx-1" aria-hidden="true"></div>
-
-              {/* Profile Avatar */}
+              <div className="h-6 w-px bg-slate-200 mx-0.5" aria-hidden="true"></div>
               <Link
                 to="/profile"
                 aria-label="Your profile"
@@ -293,6 +335,8 @@ const Header = () => {
                   <img
                     src={getAvatarSrc()}
                     alt=""
+                    width="36"
+                    height="36"
                     className="h-9 w-9 rounded-full object-cover ring-2 ring-white shadow-sm hover:ring-blue-200 transition-all"
                   />
                 ) : (
@@ -304,18 +348,106 @@ const Header = () => {
             </>
           )}
         </div>
+
+        {/* Mobile actions: theme toggle + hamburger */}
+        <div className="flex md:hidden items-center gap-2 shrink-0">
+          <ThemeToggle />
+          <button
+            ref={menuButtonRef}
+            type="button"
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-menu"
+            className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 active:scale-95 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          >
+            {menuOpen ? <X size={20} strokeWidth={2.25} /> : <Menu size={20} strokeWidth={2.25} />}
+          </button>
+        </div>
       </div>
 
-      {pushError && (
-        <div
-          role="alert"
-          onClick={() => setPushError('')}
-          className="absolute right-4 top-full mt-2 max-w-xs cursor-pointer rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 shadow-md"
-        >
-          {pushError}
+      {/* Mobile menu */}
+      {menuOpen && (
+        <div className="md:hidden">
+          <nav
+            id="mobile-menu"
+            ref={panelRef}
+            aria-label="Mobile"
+            className="absolute inset-x-0 top-full z-50 max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain border-b border-sky-100 bg-[color:var(--rm-page)] px-4 pb-6 pt-3 shadow-xl"
+          >
+            <ul className="flex flex-col gap-1">
+              {links.map(({ to, label, icon: Icon, end }) => (
+                <li key={to}>
+                  <NavLink
+                    to={to}
+                    end={end}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                        isActive ? 'bg-blue-50 text-blue-700' : 'text-slate-700 hover:bg-blue-50'
+                      }`
+                    }
+                  >
+                    <Icon size={19} strokeWidth={2.25} />
+                    {label}
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-4 grid gap-2.5 border-t border-sky-100 pt-4">
+              {isLoggedIn ? (
+                <>
+                  <Link
+                    to="/create-task"
+                    className="flex items-center justify-center gap-2 rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 active:scale-[0.98] transition-all"
+                  >
+                    <Plus size={18} strokeWidth={2.5} /> New reminder
+                  </Link>
+                  <PushButton pushStatus={pushStatus} onClick={toggle} fullWidth />
+                  <Link
+                    to="/profile"
+                    className="flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 active:scale-[0.98] transition-all"
+                  >
+                    {avatarUrl ? (
+                      <img src={getAvatarSrc()} alt="" width="22" height="22" className="h-[22px] w-[22px] rounded-full object-cover" />
+                    ) : (
+                      <CircleUser size={20} />
+                    )}
+                    Profile &amp; settings
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/register"
+                    className="flex items-center justify-center gap-2 rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 active:scale-[0.98] transition-all"
+                  >
+                    <UserPlus size={18} /> Get Started
+                  </Link>
+                  <Link
+                    to="/login"
+                    className="flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 active:scale-[0.98] transition-all"
+                  >
+                    <LogIn size={18} /> Log in
+                  </Link>
+                </>
+              )}
+            </div>
+          </nav>
         </div>
       )}
-    </nav>
+    </header>
+    {/* Backdrop lives OUTSIDE the header (the header's blur would otherwise trap position:fixed) */}
+    {menuOpen && (
+      <button
+        type="button"
+        aria-label="Close menu"
+        tabIndex={-1}
+        onClick={() => closeMenu(true)}
+        className="md:hidden fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-[2px] cursor-default"
+      />
+    )}
+    </>
   );
 };
 

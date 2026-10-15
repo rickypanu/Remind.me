@@ -12,26 +12,33 @@ from routes.auth import auth_router
 from routes.user import user_router
 from routes.tasks import task_router
 
-from routes.notification import notification_router, start_scheduler_tele, start_scheduler_web 
+from routes.notification import notification_router, start_scheduler_tele, start_scheduler_web, start_scheduler_recurring
+from utils.crypto import assert_encryption_configured
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Fail fast (before serving anything) if the reminder-encryption key is missing
+    assert_encryption_configured()
+
     scheduler_tele = start_scheduler_tele()
     scheduler_web = start_scheduler_web()
-    
+    scheduler_recurring = start_scheduler_recurring()
+
     yield
-    
-    if scheduler_tele:
-        scheduler_tele.shutdown()
-    if scheduler_web:
-        scheduler_web.shutdown()
+
+    for scheduler in (scheduler_tele, scheduler_web, scheduler_recurring):
+        if scheduler:
+            scheduler.shutdown()
 
 app = FastAPI(title="RemindMe API", lifespan=lifespan)
 
 
+# CORS_ORIGINS="https://your-site.com,https://www.your-site.com" in production. Defaults to "*" for local dev.
+_origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -537,3 +537,67 @@ html.dark[data-theme="minimal"] [class~="bg-[#E5E5EA]"] { background-color: #1c1
     transition: background-color .25s ease, border-color .25s ease, color .25s ease, fill .25s ease !important;
   }
 }
+
+/* =====================================================================
+   SEMANTIC PAGE TOKENS (used by Home, Header, Footer, layouts)
+   Replaces hard-coded hex colours so every theme (light / dark / minimal) applies everywhere.
+   ===================================================================== */
+:root {
+  --rm-page: #F6FAFF;
+  --rm-soft: #EEF4FB;
+  --rm-soft-2: #E4EFFC;
+  --rm-hero-top: #E6F0FF;
+  --rm-ink: #1E293B;
+  --rm-accent: #2563EB;
+  --rm-icon-bg: #DBEAFE;
+  --rm-cta-1: #DBEAFE;
+  --rm-cta-2: #E0F2FE;
+  --rm-cta-3: #D1FAE5;
+  --rm-toast-bg: #1E293B;
+  --rm-toast-fg: #ffffff;
+}
+html.dark {
+  --rm-page: #0f1117;
+  --rm-soft: #232833;
+  --rm-soft-2: #1c2029;
+  --rm-hero-top: #151b2b;
+  --rm-ink: #f1f4f9;
+  --rm-accent: #60a5fa;
+  --rm-icon-bg: #1e3a5f;
+  --rm-cta-1: #17233b;
+  --rm-cta-2: #132a3a;
+  --rm-cta-3: #12302a;
+  --rm-toast-bg: #2d3340;
+  --rm-toast-fg: #f1f4f9;
+}
+html[data-theme="minimal"] {
+  --rm-page: #fafafa; --rm-soft: #f0f0f0; --rm-soft-2: #ececec; --rm-hero-top: #f5f5f5; --rm-ink: #171717;
+  --rm-accent: #171717; --rm-icon-bg: #e5e5e5; --rm-cta-1: #f0f0f0; --rm-cta-2: #f0f0f0; --rm-cta-3: #f0f0f0;
+}
+html.dark[data-theme="minimal"] {
+  --rm-page: #0a0a0a; --rm-soft: #1c1c1c; --rm-soft-2: #161616; --rm-hero-top: #111111; --rm-ink: #f5f5f5;
+  --rm-accent: #e5e5e5; --rm-icon-bg: #262626; --rm-cta-1: #161616; --rm-cta-2: #161616; --rm-cta-3: #161616;
+  --rm-toast-bg: #262626;
+}
+html[data-theme="minimal"] { --rm-toast-bg: #171717; }
+body { background-color: var(--rm-page); color: var(--rm-ink); }
+/* Inputs / pickers follow the theme (browsers otherwise keep a light popup) */
+html.dark input, html.dark textarea, html.dark select { color-scheme: dark; }
+
+/* Toasts (react-hot-toast), themed */
+.rm-toast {
+  background: var(--rm-toast-bg) !important;
+  color: var(--rm-toast-fg) !important;
+  border-radius: 9999px !important;
+  padding: 10px 16px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  max-width: min(92vw, 460px) !important;
+  box-shadow: 0 10px 30px rgb(0 0 0 / .22) !important;
+}
+html[data-theme="minimal"] .rm-toast { border-radius: 6px !important; box-shadow: none !important; border: 1px solid var(--color-gray-200); }
+
+/* Smooth, but not on first paint */
+html.theme-transition, html.theme-transition *, html.theme-transition *::before, html.theme-transition *::after {
+  transition: background-color .25s ease, border-color .25s ease, color .25s ease, fill .25s ease !important;
+}

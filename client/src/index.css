@@ -1,7 +1,27 @@
 @import "tailwindcss";
+
+/* Never allow sideways scrolling. `clip` (unlike `hidden`) keeps position: sticky working. */
 html {
   scrollbar-width: none;      /* Firefox */
+  max-width: 100%;
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
 }
 html::-webkit-scrollbar {
   display: none;              /* Chrome, Edge, Safari */
+}
+body {
+  min-width: 320px;
+  max-width: 100%;
+  overflow-x: clip;
+  overflow-wrap: break-word;
+}
+img, svg, video, canvas { max-width: 100%; }
+input, select, textarea, button { max-width: 100%; }
+/* 16px inputs stop iOS Safari zooming the page when a field is focused */
+@media (max-width: 767px) {
+  input, select, textarea { font-size: max(16px, 1em); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }

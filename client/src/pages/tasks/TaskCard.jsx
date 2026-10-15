@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CheckCircle2, Circle, Trash2, Clock, AlertTriangle, Loader2 } from 'lucide-react';
+import { CheckCircle2, Circle, Trash2, Clock, AlertTriangle, Loader2, Repeat } from 'lucide-react';
 import api from '../../utils/api';
 import { getRelativeTime, formatDueIst } from '../../utils/date';
 
@@ -76,20 +76,24 @@ export default function TaskCard({ task, refreshTasks, isPrevious }) {
 
     try {
       setLocalStatus(newStatus); // optimistic update
-      await api.patch(`/tasks/${task.id}`, { status: newStatus });
+      const { data } = await api.patch(`/tasks/${task.id}`, { status: newStatus });
 
       // Let the checkmark animation play before the card moves
       timeoutRef.current = setTimeout(() => {
-        refreshTasks(
-          newStatus === 'completed' ? 'Task marked complete!' : '↩️ Task moved to pending'
-        );
+        let message = newStatus === 'completed' ? 'Task marked complete!' : 'Task moved back to pending';
+        if (data?.recurring && newStatus === 'completed') {
+          message = data.next_due
+            ? `Done! Next reminder: ${formatDueIst(data.next_due)} IST`
+            : 'Done! That was the last reminder in this series.';
+        }
+        refreshTasks(message);
         setIsUpdating(false);
       }, 500);
     } catch (error) {
       console.error('Failed to update status', error);
       setLocalStatus(task.status); // revert
       setIsUpdating(false);
-      refreshTasks('❌ Could not update task. Try again.', 'error');
+      refreshTasks('Could not update the reminder. Please try again.', 'error');
     }
   };
 
@@ -97,16 +101,17 @@ export default function TaskCard({ task, refreshTasks, isPrevious }) {
     setIsDeleting(true);
     try {
       await api.delete(`/tasks/${task.id}`);
-      refreshTasks('🗑️ Task deleted successfully!');
+      refreshTasks('Reminder deleted.');
     } catch (error) {
       console.error('Failed to delete task', error);
       setIsDeleting(false);
       setShowConfirm(false);
-      refreshTasks('❌ Could not delete task. Try again.', 'error');
+      refreshTasks('Could not delete the reminder. Please try again.', 'error');
     }
   };
 
   const relativeTimeString = getRelativeTime(task.due_date);
+  const isRecurring = task.schedule_type === 'daily' || task.schedule_type === 'weekly';
   const isCompleted = localStatus === 'completed';
   const isOverdue = relativeTimeString.startsWith('Overdue') && !isCompleted;
   const isHighPriority = String(task.priority || '').toLowerCase() === 'high' && !isCompleted;
@@ -168,6 +173,15 @@ export default function TaskCard({ task, refreshTasks, isPrevious }) {
                 </span>
               )}
 
+              {isRecurring && (
+                <span
+                  className={`inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md border bg-blue-50 border-blue-200 text-blue-700 ${isCompleted ? 'opacity-60' : ''}`}
+                >
+                  <Repeat size={11} strokeWidth={2.75} aria-hidden="true" />
+                  {task.schedule_label || (task.schedule_type === 'daily' ? 'Every day' : 'Every week')}
+                </span>
+              )}
+
               {task.due_date && relativeTimeString && (
                 <span
                   className={`flex items-center text-xs font-bold transition-colors duration-500 ${
@@ -175,13 +189,13 @@ export default function TaskCard({ task, refreshTasks, isPrevious }) {
                   }`}
                 >
                   <Clock size={12} className="mr-1.5 shrink-0" strokeWidth={2.5} />
-                  <span className="truncate">{relativeTimeString} · {formatDueIst(task.due_date)} IST</span>
+                  <span className="min-w-0 break-words">{relativeTimeString} · {formatDueIst(task.due_date)} IST</span>
                 </span>
               )}
             </div>
 
             <h3
-              className={`text-base sm:text-lg font-bold leading-tight transition-colors duration-500 ${
+              className={`text-base sm:text-lg font-bold leading-tight break-words transition-colors duration-500 ${
                 isCompleted ? 'text-slate-400' : 'text-slate-900'
               }`}
             >
@@ -235,8 +249,8 @@ export default function TaskCard({ task, refreshTasks, isPrevious }) {
               id={`delete-desc-${task.id}`}
               className="text-sm text-slate-500 font-medium leading-relaxed mb-6"
             >
-              "<span className="font-semibold text-slate-700">{task.title}</span>" will be deleted
-              permanently.
+              "<span className="font-semibold text-slate-700 break-words">{task.title}</span>" will be deleted
+              permanently{isRecurring ? ', and all of its future reminders will stop' : ''}.
             </p>
 
             <div className="flex gap-3">

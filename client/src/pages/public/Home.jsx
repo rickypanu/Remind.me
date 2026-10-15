@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import usePageMeta from "../../utils/usePageMeta";
 
 /* ---------------------------------------------------------------
    Tiny natural-language parser, runs fully in the browser so
@@ -47,15 +48,6 @@ function parseReminder(raw) {
     day = nextWeekday(now, idx, true);
     repeat = `Weekly, ${cap(m[1].slice(0, 3).toLowerCase())}`;
     strip(m[0]);
-  } else if ((m = t.match(/\b(?:on )?(?:the )?(\d{1,2})(?:st|nd|rd|th)? of every month\b/i))) {
-    const dom = +m[1];
-    day = new Date(now.getFullYear(), now.getMonth(), dom);
-    if (day < new Date(now.getFullYear(), now.getMonth(), now.getDate())) day = new Date(now.getFullYear(), now.getMonth() + 1, dom);
-    repeat = "Monthly";
-    strip(m[0]);
-  } else if (/\b(every month|monthly)\b/i.test(t)) {
-    repeat = "Monthly";
-    strip(/\b(every month|monthly)\b/gi);
   } else if (/\b(every day|everyday|daily|every morning|every evening|every night)\b/i.test(t)) {
     repeat = "Daily";
     strip(/\b(every day|everyday|daily)\b/gi);
@@ -179,7 +171,7 @@ const MODES = [
 const PLACEHOLDERS = [
   "Remind me to push code at 6 PM",
   "Call mom tomorrow morning",
-  "Pay rent on the 1st of every month",
+  "Pay rent on the 1st",
   "Gym every Friday at 7 AM",
   "Take medicine in 30 minutes",
 ];
@@ -227,7 +219,7 @@ function InstallButton() {
       <button
         type="button"
         onClick={() => (canPrompt ? install() : setHelp(!help))}
-        className="inline-flex items-center gap-2.5 px-5 py-3 rounded-2xl font-semibold bg-white hover:bg-slate-50 text-[#1E293B] border border-slate-300 transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
+        className="inline-flex items-center gap-2.5 px-5 py-3 rounded-2xl font-semibold bg-white hover:bg-slate-50 text-[color:var(--rm-ink)] border border-slate-300 transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
       >
         <Download size={18} /> Install web app
       </button>
@@ -245,7 +237,7 @@ function InstallButton() {
 function PushBanner({ title = "TaskBot", body, time = "now" }) {
   return (
     <div className="flex items-start gap-3 rounded-2xl bg-white border border-slate-200 px-3.5 py-3 shadow-sm">
-      <span className="w-8 h-8 rounded-lg bg-[#DBEAFE] text-[#2563EB] flex items-center justify-center flex-shrink-0">
+      <span className="w-8 h-8 rounded-lg bg-[color:var(--rm-icon-bg)] text-[color:var(--rm-accent)] flex items-center justify-center flex-shrink-0">
         <Bell size={15} />
       </span>
       <div className="min-w-0 flex-1">
@@ -261,6 +253,11 @@ function PushBanner({ title = "TaskBot", body, time = "now" }) {
 
 export default function Home() {
   const navigate = useNavigate();
+  usePageMeta({
+    fullTitle: "RemindMe: Specific, Daily & Weekly Reminders",
+    description:
+      "RemindMe sends specific, daily and weekly reminders to Telegram and your browser. Type or speak a task, try it free without signing up, and never miss a deadline or habit again.",
+  });
   const [mode, setMode] = useState("type");
   const [text, setText] = useState("");
   const [phIdx, setPhIdx] = useState(0);
@@ -346,11 +343,10 @@ export default function Home() {
   };
 
   return (
-    <div className="home-root min-h-screen w-full bg-[#F6FAFF] text-[#1E293B] antialiased overflow-x-hidden flex flex-col">
+    <div className="home-root min-h-screen w-full bg-[color:var(--rm-page)] text-[color:var(--rm-ink)] antialiased overflow-x-hidden flex flex-col">
       <style
         dangerouslySetInnerHTML={{
           __html: `
-        @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&display=swap');
         .home-root { font-family: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif; }
         @keyframes wave { 0%, 100% { height: 6px; } 50% { height: 26px; } }
         @keyframes pop { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
@@ -365,20 +361,20 @@ export default function Home() {
 
       <main className="flex-grow">
         {/* Hero + live try-it */}
-        <div className="bg-gradient-to-b from-[#E6F0FF] to-[#F6FAFF]">
+        <div className="bg-gradient-to-b from-[color:var(--rm-hero-top)] to-[color:var(--rm-page)]">
         <section className="max-w-3xl mx-auto px-6 pt-14 pb-20 md:pt-20 md:pb-28 text-center">
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-[1.05]">
             Tell it what to remember.
             <br />
-            It nudges you <span className="text-[#2563EB]">on time.</span>
+            It nudges you <span className="text-[color:var(--rm-accent)]">on time.</span>
           </h1>
           <p className="mt-5 text-lg md:text-xl text-slate-600 max-w-xl mx-auto leading-relaxed">
-            Try it right here. No signup. Type, speak or fill a form, then send yourself a real test notification.
+            Set a specific reminder, or repeat it every day or every week. Try it right here, no signup: type, speak or fill a form, then send yourself a real test notification.
           </p>
 
           <div className="mt-10 rounded-[2rem] bg-white border border-slate-200 p-4 md:p-6 text-left shadow-[0_30px_80px_-30px_rgba(15,27,45,0.35)]">
             {/* Tabs */}
-            <div role="tablist" aria-label="How you add a reminder" className="grid grid-cols-3 gap-1 p-1 rounded-full bg-[#EEF4FB] mb-5">
+            <div role="tablist" aria-label="How you add a reminder" className="grid grid-cols-3 gap-1 p-1 rounded-full bg-[color:var(--rm-soft)] mb-5">
               {MODES.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
@@ -387,7 +383,7 @@ export default function Home() {
                   type="button"
                   onClick={() => setMode(id)}
                   className={`inline-flex items-center justify-center gap-1.5 py-2.5 rounded-full text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-sky-300 ${
-                    mode === id ? "bg-white text-[#2563EB] shadow-sm" : "text-slate-600 hover:text-slate-900"
+                    mode === id ? "bg-white text-[color:var(--rm-accent)] shadow-sm" : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
                   <Icon size={15} /> {label}
@@ -404,7 +400,7 @@ export default function Home() {
                   onChange={(e) => setText(e.target.value)}
                   placeholder={PLACEHOLDERS[phIdx]}
                   aria-label="Type your reminder"
-                  className="w-full rounded-2xl bg-[#EEF4FB] px-5 py-4 text-lg font-medium placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-sky-200"
+                  className="w-full rounded-2xl bg-[color:var(--rm-soft)] px-5 py-4 text-lg font-medium placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-sky-200"
                 />
                 {!text && (
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -414,7 +410,7 @@ export default function Home() {
                         key={c}
                         type="button"
                         onClick={() => setText(c)}
-                        className="px-3.5 py-1.5 rounded-full text-sm font-semibold border border-slate-200 text-slate-700 hover:border-[#229ED9] hover:text-[#1E293B] transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
+                        className="px-3.5 py-1.5 rounded-full text-sm font-semibold border border-slate-200 text-slate-700 hover:border-[#229ED9] hover:text-[color:var(--rm-ink)] transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
                       >
                         {c}
                       </button>
@@ -461,7 +457,7 @@ export default function Home() {
                     value={form.task}
                     onChange={(e) => setForm({ ...form, task: e.target.value })}
                     placeholder="What should I remind you about?"
-                    className="mt-1 w-full rounded-xl bg-[#EEF4FB] px-4 py-3 text-base font-medium text-[#1E293B] placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-sky-200"
+                    className="mt-1 w-full rounded-xl bg-[color:var(--rm-soft)] px-4 py-3 text-base font-medium text-[color:var(--rm-ink)] placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-sky-200"
                   />
                 </label>
                 <label className="text-sm font-semibold text-slate-600">
@@ -470,7 +466,7 @@ export default function Home() {
                     type="date"
                     value={form.date}
                     onChange={(e) => setForm({ ...form, date: e.target.value })}
-                    className="mt-1 w-full rounded-xl bg-[#EEF4FB] px-4 py-3 text-base font-medium text-[#1E293B] focus:outline-none focus:ring-4 focus:ring-sky-200"
+                    className="mt-1 w-full rounded-xl bg-[color:var(--rm-soft)] px-4 py-3 text-base font-medium text-[color:var(--rm-ink)] focus:outline-none focus:ring-4 focus:ring-sky-200"
                   />
                 </label>
                 <label className="text-sm font-semibold text-slate-600">
@@ -479,7 +475,7 @@ export default function Home() {
                     type="time"
                     value={form.time}
                     onChange={(e) => setForm({ ...form, time: e.target.value })}
-                    className="mt-1 w-full rounded-xl bg-[#EEF4FB] px-4 py-3 text-base font-medium text-[#1E293B] focus:outline-none focus:ring-4 focus:ring-sky-200"
+                    className="mt-1 w-full rounded-xl bg-[color:var(--rm-soft)] px-4 py-3 text-base font-medium text-[color:var(--rm-ink)] focus:outline-none focus:ring-4 focus:ring-sky-200"
                   />
                 </label>
                 <label className="col-span-2 text-sm font-semibold text-slate-600">
@@ -487,9 +483,9 @@ export default function Home() {
                   <select
                     value={form.repeat}
                     onChange={(e) => setForm({ ...form, repeat: e.target.value })}
-                    className="mt-1 w-full rounded-xl bg-[#EEF4FB] px-4 py-3 text-base font-medium text-[#1E293B] focus:outline-none focus:ring-4 focus:ring-sky-200"
+                    className="mt-1 w-full rounded-xl bg-[color:var(--rm-soft)] px-4 py-3 text-base font-medium text-[color:var(--rm-ink)] focus:outline-none focus:ring-4 focus:ring-sky-200"
                   >
-                    {["Once", "Daily", "Weekly", "Monthly"].map((r) => <option key={r}>{r}</option>)}
+                    {["Once", "Daily", "Weekly"].map((r) => <option key={r}>{r}</option>)}
                   </select>
                 </label>
               </div>
@@ -536,14 +532,14 @@ export default function Home() {
                     type="button"
                     onClick={sendTest}
                     disabled={test === "waiting"}
-                    className="flex-1 bg-white border border-slate-300 hover:border-slate-500 disabled:opacity-60 text-[#1E293B] px-6 py-3.5 rounded-full font-semibold inline-flex items-center justify-center gap-2 transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
+                    className="flex-1 bg-white border border-slate-300 hover:border-slate-500 disabled:opacity-60 text-[color:var(--rm-ink)] px-6 py-3.5 rounded-full font-semibold inline-flex items-center justify-center gap-2 transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
                   >
                     <Bell size={16} /> {test === "waiting" ? "Sending in a few seconds…" : "Test a notification now"}
                   </button>
                 </div>
 
                 {test === "done" && (
-                  <div className="pop mt-4 rounded-2xl bg-[#E4EFFC] p-3">
+                  <div className="pop mt-4 rounded-2xl bg-[color:var(--rm-soft-2)] p-3">
                     <PushBanner body={`Time for: ${result.task}`} />
                     <p className="mt-2 px-1 text-sm text-slate-600">
                       {testNote || "That's what it looks like. Create a free account to get it at the real time."}
@@ -570,7 +566,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="rounded-[2rem] bg-[#E4EFFC] p-5 md:p-6 space-y-5">
+            <div className="rounded-[2rem] bg-[color:var(--rm-soft-2)] p-5 md:p-6 space-y-5">
               {AUTO_MSGS.map((m) => (
                 <div key={m.when}>
                   <p className="text-xs font-semibold text-slate-600 mb-2 ml-1">{m.when}</p>
@@ -579,7 +575,7 @@ export default function Home() {
                     {m.actions && (
                       <div className="mt-3 flex gap-2">
                         {m.actions.map((a) => (
-                          <span key={a} className="px-3 py-1 rounded-full bg-[#EEF4FB] border border-slate-200 text-xs font-semibold text-slate-700">{a}</span>
+                          <span key={a} className="px-3 py-1 rounded-full bg-[color:var(--rm-soft)] border border-slate-200 text-xs font-semibold text-slate-700">{a}</span>
                         ))}
                       </div>
                     )}
@@ -606,7 +602,7 @@ export default function Home() {
             </div>
             <div className="rounded-3xl bg-white border border-slate-200 p-6">
               <p className="font-bold text-lg mb-4">Telegram</p>
-              <div className="rounded-2xl bg-[#E4EFFC] p-3">
+              <div className="rounded-2xl bg-[color:var(--rm-soft-2)] p-3">
                 <div className="rounded-2xl rounded-tl-sm bg-white px-3.5 py-2.5 text-[13px] shadow-sm inline-block">
                   <span className="block text-xs font-bold text-[#229ED9] mb-0.5">TaskBot</span>
                   It's 2:00 PM. Time to review those deployment logs.
@@ -619,19 +615,17 @@ export default function Home() {
 
         {/* CTA */}
         <section className="px-6 md:px-12 lg:px-20 pb-24">
-          <div className="max-w-7xl mx-auto rounded-[2rem] bg-gradient-to-br from-[#DBEAFE] via-[#E0F2FE] to-[#D1FAE5] border border-sky-100 text-[#1E293B] px-8 py-14 md:px-16 md:py-20 text-center md:text-left md:flex md:items-center md:justify-between gap-10">
+          <div className="max-w-7xl mx-auto rounded-[2rem] bg-gradient-to-br from-[color:var(--rm-cta-1)] via-[color:var(--rm-cta-2)] to-[color:var(--rm-cta-3)] border border-sky-100 text-[color:var(--rm-ink)] px-8 py-14 md:px-16 md:py-20 text-center md:text-left md:flex md:items-center md:justify-between gap-10">
             <div>
               <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight">Liked what you tried?</h2>
               <p className="mt-3 text-slate-600 text-lg max-w-md mx-auto md:mx-0">Create a free account and your first reminder is live in under a minute.</p>
             </div>
             <div className="mt-8 md:mt-0 flex flex-col gap-4 items-center md:items-start flex-shrink-0">
-              <Link to="/register">
-                <button
-                  type="button"
-                  className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-8 py-4 rounded-full font-bold text-lg inline-flex items-center gap-2 transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
-                >
-                  Create free account <ArrowRight size={18} />
-                </button>
+              <Link
+                to="/register"
+                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-8 py-4 rounded-full font-bold text-lg inline-flex items-center gap-2 transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
+              >
+                Create free account <ArrowRight size={18} />
               </Link>
               <InstallButton />
             </div>
