@@ -35,5 +35,19 @@
   "theme_color": "#ffffff",
   "display": "standalone",
   "orientation": "any",
-  "description": "Specific, daily and weekly reminders delivered to Telegram and your browser."
+  "description": "Specific, daily and weekly reminders delivered to Telegram and your browser.",
+  "shortcuts": [
+    {
+      "name": "New reminder",
+      "short_name": "New",
+      "url": "/create-task",
+      "icons": [
+        {
+          "src": "/icon-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
 }

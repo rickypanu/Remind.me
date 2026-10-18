@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import {
-  ChevronLeft,
   Calendar,
   AlignLeft,
   Type,
@@ -16,11 +14,10 @@ import {
   CalendarClock,
   CalendarDays,
 } from "lucide-react";
-import api from "../../utils/api";
+import { createTask } from "../../offline/taskStore";
+import AppPage from "../../components/AppPage";
 import notify from "../../utils/notify";
-import { getErrorMessage } from "../../utils/errors";
 import usePageMeta from "../../utils/usePageMeta";
-import ThemeToggle from "../../components/ThemeToggle";
 import { getIstNowInputValue, istInputToUtcIso } from "../../utils/date";
 
 const SCHEDULES = [
@@ -45,7 +42,6 @@ const fieldBase =
 
 export default function CreateTask() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   usePageMeta({
     title: "New reminder",
     description: "Create a specific, daily or weekly reminder and get notified on Telegram and in your browser.",
@@ -131,20 +127,15 @@ export default function CreateTask() {
     }
 
     try {
-      await api.post("/tasks/", payload);
-      queryClient.invalidateQueries({ queryKey: ["dashboardData"] });
-
-      notify.success(
-        scheduleType === "once"
-          ? "Reminder created."
-          : scheduleType === "daily"
-          ? "Daily reminder created."
-          : "Weekly reminder created."
-      );
-      setTimeout(() => navigate("/dashboard"), 700);
+      // Saved to this device first (works with no connection), then uploaded in the background.
+      await createTask(payload);
+      const created =
+        scheduleType === "once" ? "Reminder created." : scheduleType === "daily" ? "Daily reminder created." : "Weekly reminder created.";
+      notify.success(navigator.onLine ? created : `${created} Saved on this device. It will sync when you're back online.`);
+      navigate("/dashboard");
     } catch (err) {
-      // Includes the server's moderation message when content is rejected
-      const message = getErrorMessage(err, "Couldn't create the reminder. Please check the form and try again.");
+      console.error("Could not save reminder locally", err);
+      const message = "Couldn't save the reminder on this device. Please check your browser storage and try again.";
       setError(message);
       notify.error(message);
       setLoading(false);
@@ -152,30 +143,8 @@ export default function CreateTask() {
   };
 
   return (
-    <div className="min-h-screen bg-[color:var(--rm-page)] pb-12 text-slate-900 antialiased font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Text','SF_Pro_Display','Helvetica_Neue',sans-serif]">
-      {/* Navigation Bar */}
-      <nav
-        className="sticky top-0 z-40 bg-white/70 backdrop-blur-xl border-b border-black/[0.06] px-4 py-3"
-        style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top, 0px))" }}
-      >
-        <div className="max-w-2xl mx-auto flex items-center justify-between gap-2">
-          <Link
-            to="/dashboard"
-            className="inline-flex items-center min-h-10 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors group active:scale-95"
-          >
-            <ChevronLeft size={18} className="mr-0.5 -ml-1 transition-transform group-hover:-translate-x-0.5" />
-            <span>Back</span>
-          </Link>
-          <span className="text-sm font-semibold text-slate-900">New Reminder</span>
-          <ThemeToggle />
-        </div>
-      </nav>
-
-      <main className="max-w-xl mx-auto px-4 sm:px-5 mt-6">
+    <AppPage title="New reminder" subtitle="One time, every day, or on the days you choose." backTo="/dashboard" backLabel="Dashboard" width="narrow">
         <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200/60 p-5 sm:p-8 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-          <h1 className="text-2xl font-semibold text-slate-900 mb-1 tracking-tight">Create Reminder</h1>
-          <p className="text-sm text-slate-500 mb-6">One time, every day, or on the days you choose.</p>
-
           {error && (
             <div role="alert" className="mb-6 p-3 px-4 rounded-xl bg-rose-50 border border-rose-100 text-rose-700 flex items-start gap-2.5 text-sm font-medium">
               <AlertCircle size={16} className="shrink-0 text-rose-500 mt-0.5" />
@@ -426,7 +395,6 @@ export default function CreateTask() {
             </div>
           </form>
         </div>
-      </main>
-    </div>
+    </AppPage>
   );
 }

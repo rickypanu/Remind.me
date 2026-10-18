@@ -4,9 +4,10 @@ import React, {
   useMemo,
   useCallback,
   useRef,
+  useLayoutEffect,
 } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   Loader2,
   AlertCircle,
@@ -29,6 +30,11 @@ import Header from "../components/Header";
 import notify from "../../utils/notify";
 import { isLoggedIn } from "../../utils/auth";
 import usePageMeta from "../../utils/usePageMeta";
+import useOfflineTasks from "../../offline/useOfflineTasks";
+import { getMeta, setMeta } from "../../offline/db";
+import { syncNow } from "../../offline/sync";
+import { feedback } from "../../feedback/feedback";
+import { formatDueIst } from "../../utils/date";
 
 // Constants
 const VOICE_LANG = "en-IN";
@@ -54,7 +60,6 @@ export default function Dashboard() {
     description: "Your reminders for today and upcoming days, including daily and weekly repeats.",
     noindex: true,
   });
-  const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState("today");
   const [isMissedOpen, setIsMissedOpen] = useState(false);
@@ -71,11 +76,21 @@ export default function Dashboard() {
 
   const [completedSort, setCompletedSort] = useState("date-desc");
 
-  // --- Feedback helper (shared toasts from utils/notify) ---
-  const showToast = useCallback((text, type = "success") => {
-    if (type === "error") notify.error(text);
-    else notify.success(text);
+  // The input grows with what is typed or spoken, so the whole reminder is always visible
+  const magicRef = useRef(null);
+  const fitMagicBox = useCallback(() => {
+    const el = magicRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    const max = Math.round(window.innerHeight * 0.45);
+    el.style.height = `${Math.min(el.scrollHeight, max)}px`;
+    el.style.overflowY = el.scrollHeight > max ? "auto" : "hidden";
   }, []);
+  useLayoutEffect(fitMagicBox, [magicText, fitMagicBox]);
+  useEffect(() => {
+    window.addEventListener("resize", fitMagicBox);
+    return () => window.removeEventListener("resize", fitMagicBox);
+  }, [fitMagicBox]);
 
   // Auth guard (expired sessions are handled globally by the API client)
   useEffect(() => {
@@ -89,33 +104,63 @@ export default function Dashboard() {
     };
   }, []);
 
-  // Data Fetching
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["dashboardData"],
+  // Profile: network first, then the copy saved on this device (so the greeting works offline)
+  const userQuery = useQuery({
+    queryKey: ["dashboardUser"],
+    networkMode: "always", // run even with no connection: the queryFn falls back to the saved copy
     queryFn: async () => {
-      const [userResponse, tasksResponse] = await Promise.all([
-        api.get("/user/me"),
-        api.get("/tasks/"),
-      ]);
-      return {
-        userInfo: userResponse.data,
-        tasks: tasksResponse.data || [],
-      };
+      if (navigator.onLine) {
+        try {
+          const { data } = await api.get("/user/me", { timeout: 8000 });
+          await setMeta("userInfo", data);
+          return data;
+        } catch (err) {
+          if (err?.response?.status === 401) throw err; // handled globally (signs the user out)
+          // no answer / server error: use the saved copy below
+        }
+      }
+      const cached = await getMeta("userInfo");
+      if (cached) return cached;
+      throw new Error("No saved profile yet");
     },
     staleTime: 5 * 60 * 1000,
-    retry: (_, err) => err?.response?.status !== 401,
+    retry: (count, err) => err?.response?.status !== 401 && count < 1,
   });
+  const userInfo = userQuery.data || null;
+  const userId = userQuery.isPending ? undefined : userInfo?._id || userInfo?.id || null;
 
-  const userInfo = data?.userInfo || null;
-  const tasks = useMemo(() => data?.tasks || [], [data]);
+  // Reminders: read from IndexedDB, written to IndexedDB first, uploaded in the background
+  const { tasks, ready, toggleTask, editTask, removeTask } = useOfflineTasks(userId);
+  const isLoading = !ready;
+  const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
 
-  const refreshTasks = useCallback(
-    (message, type = "success") => {
-      queryClient.invalidateQueries({ queryKey: ["dashboardData"] });
-      const text = typeof message === "string" ? message : "Task marked complete!";
-      showToast(text, type);
+  const savedOfflineNote = () => (navigator.onLine ? "" : " Saved on this device.");
+
+  const handleToggle = useCallback(
+    async (task) => {
+      const result = await toggleTask(task);
+      const next = result?.task;
+      if (next) {
+        let message = next.status === "completed" ? "Task marked complete!" : "Task moved back to pending";
+        if (next.schedule_type !== "once" && task.status !== "completed") {
+          message =
+            next.status === "pending" && next.due_date
+              ? `Done! Next reminder: ${formatDueIst(next.due_date)} IST`
+              : "Done! That was the last reminder in this series.";
+        }
+        notify.success(message + savedOfflineNote());
+      }
+      return result;
     },
-    [queryClient, showToast]
+    [toggleTask]
+  );
+
+  const handleDelete = useCallback(
+    async (task) => {
+      await removeTask(task);
+      notify.success("Reminder deleted." + savedOfflineNote());
+    },
+    [removeTask]
   );
 
   // --- Voice Input ---
@@ -170,11 +215,18 @@ export default function Dashboard() {
     e.preventDefault();
     if (!magicText.trim() || isMagicAdding) return;
 
+    // Smart add asks the server's AI to read the sentence, so it needs a connection.
+    if (!navigator.onLine) {
+      notify.info("Smart add needs an internet connection. Tap + to add a reminder offline.", { icon: "📴" });
+      return;
+    }
+
     setIsMagicAdding(true);
     try {
       await api.post("/tasks/magic-add", { text: magicText.trim() });
       setMagicText("");
-      queryClient.invalidateQueries({ queryKey: ["dashboardData"] });
+      await syncNow({ force: true }); // pulls the new reminder into the local database
+      feedback.added();
       notify.success("Reminder added.");
     } catch (err) {
       console.error("Magic Add failed:", err);
@@ -262,6 +314,13 @@ export default function Dashboard() {
 
   const displayedTasks = activeTab === "upcoming" ? upcomingTasks : todayTasks;
 
+  const cardProps = (task) => ({
+    task,
+    onToggle: handleToggle,
+    onDelete: handleDelete,
+    onEdit: editTask,
+  });
+
   // Memoized layout configurations
   const tabs = useMemo(() => [
     { id: "today", label: "Today", count: todayTasks.length, icon: Sun },
@@ -278,14 +337,14 @@ export default function Dashboard() {
       
       <Header />
 
-      <main className="max-w-xl mx-auto px-5 sm:px-6">
+      <main className="max-w-3xl mx-auto px-4 sm:px-6">
         
         {/* Greeting & Progress Bar */}
         <div className="pt-10 pb-6">
           <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
             {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: APP_TIMEZONE })}
           </p>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight text-balance">
             {greeting},{" "}
             <span className="text-blue-600 font-semibold">
               {userInfo?.username ? userInfo.username.split(" ")[0] : "there"}
@@ -295,26 +354,34 @@ export default function Dashboard() {
 
         {/* Magic Add with Voice */}
         <form onSubmit={handleMagicAdd} className="mb-2 relative group">
-          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+          <div className="absolute left-4 top-[18px] flex items-center pointer-events-none">
             <Sparkles className="text-blue-400 group-focus-within:text-blue-600 transition-colors duration-200" size={20} strokeWidth={2.5} />
           </div>
 
-          <input
-            type="text"
+          <textarea
+            ref={magicRef}
+            rows={1}
             value={magicText}
             onChange={(e) => setMagicText(e.target.value)}
+            onKeyDown={(e) => {
+              // Enter sends, Shift+Enter adds a new line
+              if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                e.currentTarget.form?.requestSubmit();
+              }
+            }}
             disabled={isMagicAdding}
             aria-label="Add a task by typing or speaking"
-            placeholder={isListening ? "Listening..." : "e.g. Submit report tomorrow 5pm, or Gym every Monday 7am"}
+            placeholder={isListening ? "Listening..." : isOffline ? "Offline: tap + to add a reminder" : "e.g. Submit report tomorrow 5pm, or Gym every Monday 7am"}
             maxLength={500}
-            className={`w-full bg-white text-sm sm:text-[15px] text-slate-900 font-medium placeholder:text-slate-400 rounded-[20px] border shadow-[0_4px_20px_rgb(0,0,0,0.03)] pl-12 pr-28 py-4 outline-none transition-all duration-200 ${
+            className={`block w-full resize-none bg-white text-sm sm:text-[15px] leading-6 text-slate-900 font-medium placeholder:text-slate-400 rounded-[20px] border shadow-[0_4px_20px_rgb(0,0,0,0.03)] pl-12 pr-28 py-[18px] min-h-[60px] outline-none transition-[border-color,box-shadow] duration-200 ${
               isListening
                 ? "border-red-300 ring-4 ring-red-500/10"
                 : "border-slate-100 focus:border-blue-200 focus:ring-4 focus:ring-blue-500/10"
             }`}
           />
 
-          <div className="absolute inset-y-2 right-2 flex items-center gap-1.5">
+          <div className="absolute bottom-2 right-2 flex items-center gap-1.5">
             <button
               type="button"
               onClick={handleVoiceInput}
@@ -371,7 +438,7 @@ export default function Dashboard() {
             {isMissedOpen && (
               <div className="p-3 pt-1 grid gap-2.5 max-h-[40vh] overflow-y-auto border-t border-rose-100/60">
                 {missedTasks.map((task) => (
-                  <TaskCard key={task.id || task._id} task={task} refreshTasks={refreshTasks} isPrevious={false} />
+                  <TaskCard key={task.id} {...cardProps(task)} isPrevious={false} />
                 ))}
               </div>
             )}
@@ -410,18 +477,6 @@ export default function Dashboard() {
             <TaskSkeleton />
             <TaskSkeleton />
           </div>
-        ) : isError && error?.response?.status !== 401 ? (
-          <div className="text-center py-12 px-6 bg-white rounded-[24px] border border-rose-100 mb-8">
-            <AlertCircle className="mx-auto text-rose-500 mb-3" size={24} />
-            <h3 className="text-slate-900 font-bold text-base mb-1">Couldn't load your tasks</h3>
-            <p className="text-xs text-slate-500 font-medium mb-4">Check your connection and try again.</p>
-            <button
-              onClick={() => queryClient.invalidateQueries({ queryKey: ["dashboardData"] })}
-              className="px-4 py-2 bg-slate-900 text-white text-sm font-semibold rounded-full active:scale-95 transition-transform"
-            >
-              Retry
-            </button>
-          </div>
         ) : (
           <div className="grid gap-3 mb-8">
             {displayedTasks.length === 0 ? (
@@ -441,7 +496,7 @@ export default function Dashboard() {
               </div>
             ) : (
               displayedTasks.map((task) => (
-                <TaskCard key={task.id || task._id} task={task} refreshTasks={refreshTasks} isPrevious={false} />
+                <TaskCard key={task.id} {...cardProps(task)} isPrevious={false} />
               ))
             )}
           </div>
@@ -472,7 +527,7 @@ export default function Dashboard() {
             </button>
 
             {isDoneOpen && (
-              <div className="p-3.5 pt-2 grid gap-2.5 max-h-[45vh] overflow-y-auto border-t border-slate-100 animate-in fade-in duration-200">
+              <div className="p-3.5 pt-2 grid gap-2.5 max-h-[45vh] overflow-y-auto border-t border-slate-100">
                 <div className="flex justify-end px-1 pb-1">
                   <div className="relative group">
                     <select
@@ -491,13 +546,14 @@ export default function Dashboard() {
                 </div>
 
                 {sortedCompletedTasks.map((task) => (
-                  <TaskCard key={task.id || task._id} task={task} refreshTasks={refreshTasks} isPrevious={true} />
+                  <TaskCard key={task.id} {...cardProps(task)} isPrevious={true} />
                 ))}
               </div>
             )}
           </div>
         )}
       </main>
+
     </div>
   );
 }

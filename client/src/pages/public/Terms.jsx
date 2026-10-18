@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Shield, FileText } from 'lucide-react';
+import { Shield, FileText } from 'lucide-react';
 import PublicLayout from '../../components/PublicLayout';
+import PageHeader from '../../components/PageHeader';
 import usePageMeta from '../../utils/usePageMeta';
 import { SITE } from '../../config/site';
 
@@ -184,7 +184,6 @@ function Block({ section }) {
 }
 
 export default function Terms() {
-  const navigate = useNavigate();
   usePageMeta({
     title: 'Terms of Service & Privacy Policy',
     description:
@@ -198,17 +197,10 @@ export default function Terms() {
 
   return (
     <PublicLayout>
-      <div className="py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
+      <div className="pt-6 sm:pt-8 pb-16 px-4 sm:px-6">
         {/* Main Container - Keeps everything centered and aligned */}
         <div className="max-w-3xl mx-auto">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="w-fit mb-6 flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors font-medium bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200"
-          >
-            <ArrowLeft size={18} />
-            Back
-          </button>
+          <PageHeader backTo />
 
           {/* Content Card */}
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
-  ArrowLeft,
+  Bell,
   LogOut,
   Trash2,
   User as UserIcon,
@@ -15,17 +15,18 @@ import {
   Check,
   X,
   Newspaper,
-  Send,
   Shield,
 } from "lucide-react";
 import api from "../../utils/api";
 import notify from "../../utils/notify";
 import usePageMeta from "../../utils/usePageMeta";
 import { clearSession } from "../../utils/auth";
-import ThemeToggle from "../../components/ThemeToggle";
 import MenuItem from "../components/MenuItems";
 import AvatarPickerModal from "../components/AvatarPickerModal";
 import AppearanceSettings from "../components/AppearanceSettings";
+import AppPage from "../../components/AppPage";
+import { flushPending } from "../../offline/sync";
+import { countPending } from "../../offline/db";
 
 export default function Profile() {
   usePageMeta({ title: 'Profile & settings', description: 'Manage your RemindMe profile, appearance, notifications and account.', noindex: true });
@@ -117,7 +118,16 @@ export default function Profile() {
 
   // --- Action Handlers ---
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Reminders changed offline live only on this device until they upload: try now, and warn if any remain.
+    if (navigator.onLine) await flushPending().catch(() => {});
+    const waiting = await countPending().catch(() => 0);
+    if (waiting > 0) {
+      const leave = window.confirm(
+        `${waiting} change${waiting === 1 ? " hasn't" : "s haven't"} been uploaded yet. Logging out now will discard ${waiting === 1 ? "it" : "them"}. Log out anyway?`
+      );
+      if (!leave) return;
+    }
     clearSession();
     navigate("/", { replace: true });
   };
@@ -233,28 +243,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen bg-[color:var(--rm-page)] pb-20 relative antialiased font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Text','SF_Pro_Display','Helvetica_Neue',sans-serif]">
-      
-      {/* iOS-Style Sticky Header */}
-      <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-gray-200/50 px-4 py-3">
-        <div className="max-w-xl mx-auto flex items-center gap-3 relative">
-          <Link
-            to="/dashboard"
-            aria-label="Back to Dashboard"
-            className="absolute left-0 p-2 -ml-2 text-blue-500 hover:opacity-70 transition-opacity flex items-center gap-1"
-          >
-            <ArrowLeft size={22} strokeWidth={2.5} />
-          </Link>
-          <h1 className="w-full text-center text-[17px] font-semibold text-gray-900 tracking-tight">
-            Profile
-          </h1>
-          <div className="absolute right-0"><ThemeToggle /></div>
-        </div>
-      </nav>
-
-      {/* Main Content */}
-      <main className="max-w-xl mx-auto px-4 mt-8">
-        
+    <AppPage title="Profile" subtitle="Your account and preferences." backTo="/dashboard" backLabel="Dashboard" width="narrow">
         {/* User Avatar & Info Header */}
         <div className="flex flex-col items-center text-center mb-10">
           <button
@@ -362,9 +351,9 @@ export default function Profile() {
           <div>
             <h3 className="px-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">General</h3>
             <div className="bg-white border border-gray-100 rounded-[24px] overflow-hidden shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
+              <MenuItem icon={Bell} label="Notifications" subLabel="Browser alerts, Telegram, sound and vibration" to="/notifications" />
               <MenuItem icon={Newspaper} label="Updates" to="/updates" badge={unreadUpdatesCount} />
-              <MenuItem icon={HelpCircle} label="FAQ's" to="/faqs" />
-              <MenuItem icon={Send} label="Connect Telegram" to="/telegram-setup" />
+              <MenuItem icon={HelpCircle} label="FAQs" to="/faqs" />
               <MenuItem icon={Shield} label="Legal & Privacy" to="/terms" />
               <MenuItem icon={Info} label="About App" to="/about" />
             </div>
@@ -465,8 +454,6 @@ export default function Profile() {
             </div>
           </div>
         </div>
-      </main>
-
       {/* Avatar Selector Modal */}
       <AvatarPickerModal
         isOpen={showAvatarModal}
@@ -474,6 +461,6 @@ export default function Profile() {
         onUploadClick={() => fileInputRef.current?.click()}
         onSelectIllustration={handleIllustrationSelect}
       />
-    </div>
+    </AppPage>
   );
 }

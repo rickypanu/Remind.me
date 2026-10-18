@@ -49,7 +49,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="RemindMe" />
 
-    <!-- Apply saved theme before first paint (no flash). Keep keys in sync with src/theme/ThemeContext.jsx -->
+    <!-- Apply saved theme before first paint (no flash). Keep keys and the accent list in sync with src/theme/ThemeContext.jsx -->
     <script>
       (function () {
         try {
@@ -58,9 +58,12 @@
             mode = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
           }
           var style = localStorage.getItem("remindme-theme-style") === "minimal" ? "minimal" : "classic";
+          var accent = localStorage.getItem("remindme-accent");
+          if (["indigo", "violet", "pink", "orange", "green", "teal"].indexOf(accent) === -1) accent = "blue";
           var root = document.documentElement;
           if (mode === "dark") root.classList.add("dark");
           root.setAttribute("data-theme", style);
+          root.setAttribute("data-accent", accent);
           var colors = { "classic-light": "#ffffff", "classic-dark": "#0f1117", "minimal-light": "#fafafa", "minimal-dark": "#0a0a0a" };
           var meta = document.querySelector('meta[name="theme-color"]');
           if (meta) meta.setAttribute("content", colors[style + "-" + mode]);

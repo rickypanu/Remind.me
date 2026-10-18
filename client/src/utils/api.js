@@ -30,7 +30,7 @@ api.interceptors.response.use(
   (error) => {
     const hadToken = !!getToken();
     if (error.response?.status === 401 && hadToken) {
-      clearSession();
+      clearSession({ keepOffline: true });
       signalAuthExpired();
     }
     return Promise.reject(error);

@@ -1,8 +1,8 @@
 import React from "react";
-import { Moon, Sun, Palette } from "lucide-react";
-import { useTheme } from "../../theme/ThemeContext";
+import { Moon, Sun, Palette, Check } from "lucide-react";
+import { useTheme, ACCENTS } from "../../theme/ThemeContext";
 
-function Switch({ checked, onChange, label }) {
+export function Switch({ checked, onChange, label }) {
   return (
     <button
       type="button"
@@ -23,7 +23,7 @@ function Switch({ checked, onChange, label }) {
   );
 }
 
-function Row({ icon: Icon, label, subLabel, checked, onChange }) {
+export function Row({ icon: Icon, label, subLabel, checked, onChange }) {
   return (
     <div className="flex items-center justify-between p-4 bg-white border-b border-gray-100 last:border-0">
       <div className="flex items-center gap-4">
@@ -40,9 +40,11 @@ function Row({ icon: Icon, label, subLabel, checked, onChange }) {
   );
 }
 
-/** "Appearance" card for the Profile page: dark mode + Minimalism theme switches. */
+/** "Appearance" card for the Profile page: dark mode, Minimalism theme and accent colour. */
 export default function AppearanceSettings() {
-  const { isDark, isMinimal, toggleColorMode, toggleThemeStyle } = useTheme();
+  const { isDark, isMinimal, accent, selectAccent, toggleColorMode, toggleThemeStyle } = useTheme();
+  const active = isMinimal ? "black" : accent;
+  const swatches = [...ACCENTS, { id: "black", label: "Black", swatch: "#171717" }];
 
   return (
     <div>
@@ -62,6 +64,37 @@ export default function AppearanceSettings() {
           checked={isMinimal}
           onChange={toggleThemeStyle}
         />
+        <div className="p-4 bg-white">
+          <div className="flex items-baseline justify-between">
+            <p className="font-medium text-gray-900">Accent colour</p>
+            <p className="text-xs text-gray-500">{swatches.find((s) => s.id === active)?.label}</p>
+          </div>
+          <div role="radiogroup" aria-label="Accent colour" className="mt-3 flex flex-wrap gap-3">
+            {swatches.map(({ id, label, swatch }) => {
+              const on = active === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  aria-label={label}
+                  title={label}
+                  onClick={() => selectAccent(id)}
+                  className={`relative flex h-10 w-10 items-center justify-center rounded-full transition active:scale-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                    on ? "ring-2 ring-offset-2" : "hover:scale-110"
+                  }`}
+                  style={{ backgroundColor: swatch, "--tw-ring-color": swatch }}
+                >
+                  {on && <Check size={18} strokeWidth={3} className="text-[#ffffff]" />}
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-3 text-xs leading-relaxed text-gray-500">
+            Black uses the Minimalism theme. Colours change buttons, links and highlights across the app.
+          </p>
+        </div>
       </div>
     </div>
   );

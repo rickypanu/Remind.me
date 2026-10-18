@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { CheckCircle2, Circle, Trash2, Clock, AlertTriangle, Loader2, Repeat } from 'lucide-react';
-import api from '../../utils/api';
+import React, { useState, useEffect } from 'react';
+import { CheckCircle2, Circle, Trash2, Pencil, Clock, Loader2, Repeat, CloudOff } from 'lucide-react';
 import { getRelativeTime, formatDueIst } from '../../utils/date';
+import { feedback } from '../../feedback/feedback';
+import ConfirmDeleteDialog from '../../components/ConfirmDeleteDialog';
+import EditReminderDialog from '../../components/EditReminderDialog';
 
 const getDynamicColor = (text) => {
   if (!text) return 'text-slate-600 bg-slate-100 border-slate-200';
@@ -19,7 +21,7 @@ const getDynamicColor = (text) => {
   return colors[Math.abs(hash) % colors.length];
 };
 
-const getCategoryStyle = (category) => {
+export const getCategoryStyle = (category) => {
   if (!category) return 'text-slate-600 bg-slate-100 border-slate-200';
   switch (category.toLowerCase()) {
     case 'exam / quiz': return 'text-rose-700 bg-rose-50 border-rose-200';
@@ -32,81 +34,38 @@ const getCategoryStyle = (category) => {
   }
 };
 
-export default function TaskCard({ task, refreshTasks, isPrevious }) {
+export default function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious }) {
   const [showConfirm, setShowConfirm] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
   const [localStatus, setLocalStatus] = useState(task.status);
   const [isUpdating, setIsUpdating] = useState(false);
-
-  const timeoutRef = useRef(null);
-  const cancelBtnRef = useRef(null);
+  const [justChecked, setJustChecked] = useState(false);
 
   useEffect(() => {
     setLocalStatus(task.status);
   }, [task.status]);
 
-  // Clean up any pending refresh timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, []);
-
-  // Modal: close on Escape, focus the safe button, lock background scroll
-  useEffect(() => {
-    if (!showConfirm) return;
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && !isDeleting) setShowConfirm(false);
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    cancelBtnRef.current?.focus();
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = prevOverflow;
-    };
-  }, [showConfirm, isDeleting]);
-
-  const handleStatusChange = async () => {
+  // Tap: the check animates and the sound / vibration fire at once; the list updates a beat later
+  // (the change itself is saved locally first, so this works with no connection).
+  const handleStatusChange = async (e) => {
+    e.stopPropagation();
     if (isUpdating) return;
+    const next = localStatus === 'pending' ? 'completed' : 'pending';
     setIsUpdating(true);
+    setLocalStatus(next);
+    setJustChecked(next === 'completed');
+    if (next === 'completed') feedback.completed();
+    else feedback.updated();
 
-    const newStatus = localStatus === 'pending' ? 'completed' : 'pending';
-
+    await new Promise((r) => setTimeout(r, 380)); // let the checkmark play
     try {
-      setLocalStatus(newStatus); // optimistic update
-      const { data } = await api.patch(`/tasks/${task.id}`, { status: newStatus });
-
-      // Let the checkmark animation play before the card moves
-      timeoutRef.current = setTimeout(() => {
-        let message = newStatus === 'completed' ? 'Task marked complete!' : 'Task moved back to pending';
-        if (data?.recurring && newStatus === 'completed') {
-          message = data.next_due
-            ? `Done! Next reminder: ${formatDueIst(data.next_due)} IST`
-            : 'Done! That was the last reminder in this series.';
-        }
-        refreshTasks(message);
-        setIsUpdating(false);
-      }, 500);
-    } catch (error) {
-      console.error('Failed to update status', error);
-      setLocalStatus(task.status); // revert
+      const result = await onToggle(task);
+      setLocalStatus(result?.task?.status ?? next);
+    } catch {
+      setLocalStatus(task.status); // storage failed: revert
+    } finally {
       setIsUpdating(false);
-      refreshTasks('Could not update the reminder. Please try again.', 'error');
-    }
-  };
-
-  const confirmDelete = async () => {
-    setIsDeleting(true);
-    try {
-      await api.delete(`/tasks/${task.id}`);
-      refreshTasks('Reminder deleted.');
-    } catch (error) {
-      console.error('Failed to delete task', error);
-      setIsDeleting(false);
-      setShowConfirm(false);
-      refreshTasks('Could not delete the reminder. Please try again.', 'error');
+      setJustChecked(false);
     }
   };
 
@@ -126,7 +85,7 @@ export default function TaskCard({ task, refreshTasks, isPrevious }) {
   return (
     <>
       <div
-        className={`p-4 sm:p-5 rounded-[24px] border transition-all duration-500 ease-out motion-reduce:transition-none group relative overflow-hidden ${accent} ${
+        className={`rm-card-in p-4 sm:p-5 rounded-[24px] border transition-all duration-300 ease-out motion-reduce:transition-none group relative overflow-hidden ${accent} ${
           isCompleted || isPrevious
             ? 'bg-slate-50/60 border-slate-100 opacity-75 scale-[0.99] shadow-none'
             : 'bg-white border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.02)] hover:shadow-md hover:border-blue-100'
@@ -141,11 +100,11 @@ export default function TaskCard({ task, refreshTasks, isPrevious }) {
             disabled={isUpdating}
             className="-m-2 p-2 mt-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 shrink-0 transition-transform active:scale-90"
           >
-            {isUpdating ? (
+            {isUpdating && !isCompleted ? (
               <Loader2 className="text-blue-500 animate-spin" size={24} strokeWidth={2.5} />
             ) : isCompleted ? (
               <CheckCircle2
-                className="text-emerald-500 transition-all duration-500 scale-110 drop-shadow-sm"
+                className={`text-emerald-500 drop-shadow-sm ${justChecked ? 'rm-pop' : 'scale-110'}`}
                 size={24}
                 strokeWidth={2.5}
               />
@@ -192,6 +151,16 @@ export default function TaskCard({ task, refreshTasks, isPrevious }) {
                   <span className="min-w-0 break-words">{relativeTimeString} · {formatDueIst(task.due_date)} IST</span>
                 </span>
               )}
+
+              {task.needsSync && (
+                <span
+                  title="Saved on this device. It will upload when you're online."
+                  className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600"
+                >
+                  <CloudOff size={11} strokeWidth={2.5} aria-hidden="true" />
+                  Not synced
+                </span>
+              )}
             </div>
 
             <h3
@@ -213,66 +182,42 @@ export default function TaskCard({ task, refreshTasks, isPrevious }) {
             )}
           </div>
 
-          {/* Delete: always visible so it works on touch devices too */}
-          <button
-            aria-label={`Delete task: ${task.title}`}
-            onClick={() => setShowConfirm(true)}
-            className="text-slate-300 hover:text-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400 p-2.5 -mr-1 -mt-1 rounded-xl hover:bg-red-50 transition-all shrink-0"
-          >
-            <Trash2 size={18} strokeWidth={2.5} />
-          </button>
+          {/* Edit + Delete: always visible so they work on touch devices too */}
+          <div className="flex shrink-0 items-center -mr-1 -mt-1">
+            {onEdit && !isCompleted && (
+              <button
+                aria-label={`Edit task: ${task.title}`}
+                title="Edit"
+                onClick={() => setShowEdit(true)}
+                className="text-slate-300 hover:text-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 p-2.5 rounded-xl hover:bg-blue-50 transition-all"
+              >
+                <Pencil size={17} strokeWidth={2.5} />
+              </button>
+            )}
+            <button
+              aria-label={`Delete task: ${task.title}`}
+              title="Delete"
+              onClick={() => setShowConfirm(true)}
+              className="text-slate-300 hover:text-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400 p-2.5 rounded-xl hover:bg-red-50 transition-all"
+            >
+              <Trash2 size={18} strokeWidth={2.5} />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* DELETE CONFIRMATION MODAL */}
+      {showEdit && <EditReminderDialog task={task} onClose={() => setShowEdit(false)} onSave={onEdit} />}
+
       {showConfirm && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-slate-900/30 backdrop-blur-sm"
-          onClick={() => !isDeleting && setShowConfirm(false)}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={`delete-title-${task.id}`}
-            aria-describedby={`delete-desc-${task.id}`}
-            className="bg-white rounded-[28px] shadow-2xl w-full max-w-sm p-6 sm:p-8 animate-in zoom-in-95 duration-200 motion-reduce:animate-none text-center"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
-              <AlertTriangle className="text-red-600" size={26} strokeWidth={2.5} />
-            </div>
-
-            <h3 id={`delete-title-${task.id}`} className="text-xl font-bold text-slate-900 mb-2">
-              Delete reminder?
-            </h3>
-            <p
-              id={`delete-desc-${task.id}`}
-              className="text-sm text-slate-500 font-medium leading-relaxed mb-6"
-            >
-              "<span className="font-semibold text-slate-700 break-words">{task.title}</span>" will be deleted
-              permanently{isRecurring ? ', and all of its future reminders will stop' : ''}.
-            </p>
-
-            <div className="flex gap-3">
-              <button
-                ref={cancelBtnRef}
-                onClick={() => setShowConfirm(false)}
-                disabled={isDeleting}
-                className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDelete}
-                disabled={isDeleting}
-                className="flex-1 py-3 px-4 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm disabled:opacity-50 flex justify-center items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2"
-              >
-                {isDeleting && <Loader2 className="animate-spin" size={16} strokeWidth={3} />}
-                {isDeleting ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDeleteDialog
+          task={task}
+          isRecurring={isRecurring}
+          onCancel={() => setShowConfirm(false)}
+          onConfirm={async () => {
+            await onDelete(task);
+            setShowConfirm(false);
+          }}
+        />
       )}
     </>
   );

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, CheckCircle2, AlertCircle, Loader2, MessageCircle } from 'lucide-react';
+import { Send, CheckCircle2, AlertCircle, Loader2, MessageCircle } from 'lucide-react';
 import api from '../../utils/api';
 import notify from '../../utils/notify';
 import usePageMeta from '../../utils/usePageMeta';
-import ThemeToggle from '../../components/ThemeToggle';
+import AppPage from '../../components/AppPage';
 
 export default function TelegramSetup() {
   const navigate = useNavigate();
@@ -155,29 +155,8 @@ export default function TelegramSetup() {
   }
 
   return (
-    <div className="min-h-screen bg-[color:var(--rm-page)] pb-12 antialiased font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Text','SF_Pro_Display','Helvetica_Neue',sans-serif]">
-      
-      {/* iOS-Style Header */}
-      <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-gray-200/50 px-4 py-3">
-        <div className="max-w-2xl mx-auto flex items-center gap-3 relative">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            aria-label="Back"
-            className="absolute left-0 p-2 -ml-2 text-blue-500 hover:opacity-70 transition-opacity flex items-center gap-1"
-          >
-            <ArrowLeft size={22} strokeWidth={2.5} />
-          </button>
-          <h1 className="w-full text-center text-[17px] font-semibold text-gray-900 tracking-tight">
-            Telegram Alerts
-          </h1>
-          <div className="absolute right-0"><ThemeToggle /></div>
-        </div>
-      </nav>
-
-      <main className="max-w-xl mx-auto px-4 mt-8">
-        
-        {/* Header Section */}
+    <AppPage title="Telegram alerts" subtitle="Get reminders as Telegram messages." backTo="/notifications" backLabel="Notifications" width="narrow">
+        {/* Intro */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-[#0088cc]/10 text-[#0088cc] rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-sm">
             <Send size={32} strokeWidth={2.2} className="ml-1" />
@@ -302,7 +281,6 @@ export default function TelegramSetup() {
           </div>
         </div>
 
-      </main>
-    </div>
+    </AppPage>
   );
 }

@@ -19,6 +19,7 @@ export const notify = {
     const message = typeof errOrMessage === "string" ? errOrMessage : getErrorMessage(errOrMessage, fallback);
     return toast.error(message, { ...base, duration: 5000, ...opts });
   },
+  loading: (message, opts = {}) => toast.loading(message, { ...base, ...opts }),
   dismiss: (id) => toast.dismiss(id),
 };
 

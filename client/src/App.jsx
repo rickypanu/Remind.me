@@ -12,9 +12,13 @@ import CreateTask from "./pages/user/CreateTask";
 import Profile from "./pages/user/profile";
 import NotFound from "./pages/public/NotFound";
 import AppToaster from "./components/AppToaster";
+import ConnectionStatus from "./components/ConnectionStatus";
+import OfflineBootstrap from "./components/OfflineBootstrap";
 import UpdatesPage from "./pages/user/UpdatePage";
 import About from "./pages/public/About";
 import TelegramSetup from "./pages/user/TelegramSetup";
+import Notifications from "./pages/user/Notifications";
+import ScrollToTop from "./components/ScrollToTop";
 import Terms from "./pages/public/Terms";
 import FAQ from "./pages/public/Faqs";
 import notify from "./utils/notify";
@@ -49,7 +53,10 @@ function App() {
       <BrowserRouter>
         <div className="min-h-screen bg-background text-gray-900 font-sans">
           <AppToaster />
+          <OfflineBootstrap />
+          <ConnectionStatus />
           <AuthWatcher />
+          <ScrollToTop />
           <Routes>
                         <Route path="/" element={<PublicOnlyRoute><Home /></PublicOnlyRoute>} />
             <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
@@ -93,6 +100,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <TelegramSetup />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notifications"
+              element={
+                <ProtectedRoute>
+                  <Notifications />
                 </ProtectedRoute>
               }
             />

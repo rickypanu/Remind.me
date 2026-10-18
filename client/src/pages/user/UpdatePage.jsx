@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   AlertCircle,
-  ArrowLeft,
   ArrowUp,
   Loader2,
   Trash2,
@@ -15,7 +13,7 @@ import api from "../../utils/api";
 import notify from "../../utils/notify";
 import { getErrorMessage } from "../../utils/errors";
 import usePageMeta from "../../utils/usePageMeta";
-import ThemeToggle from "../../components/ThemeToggle";
+import AppPage from "../../components/AppPage";
 
 // Helper to check if a date string is from today
 const isToday = (dateString) => {
@@ -87,7 +85,6 @@ function Entry({ update, isPreview = false, isLatest = false, canDelete = false,
 }
 
 export default function UpdatesPage() {
-  const navigate = useNavigate();
   usePageMeta({ title: 'Product updates', description: 'New features, improvements and fixes in RemindMe.', noindex: true });
   const [currentUser, setCurrentUser] = useState(null);
   const [updates, setUpdates] = useState([]);
@@ -204,7 +201,20 @@ export default function UpdatesPage() {
   const canPublish = newUpdate.title.trim() && newUpdate.content.trim();
 
   return (
-    <div className="min-h-screen bg-[color:var(--rm-page)] text-slate-900 antialiased font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Text','SF_Pro_Display','Helvetica_Neue',sans-serif]">
+    <AppPage
+      title="What's new"
+      subtitle="Product announcements and release notes, newest first."
+      backTo="/dashboard"
+      backLabel="Dashboard"
+      actions={
+        !isLoading && (
+          <div className="hidden sm:block text-right">
+            <div className="text-2xl font-bold tabular-nums tracking-tight text-slate-900">{updates.length}</div>
+            <div className="text-xs text-slate-400 font-medium">{updates.length === 1 ? "update" : "updates"}</div>
+          </div>
+        )
+      }
+    >
       {/* Delete confirmation */}
       {deleteModalTarget && (
         <div
@@ -237,38 +247,6 @@ export default function UpdatesPage() {
           </div>
         </div>
       )}
-
-      <div className="max-w-3xl mx-auto px-5 sm:px-8 pt-10 pb-24">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-2 min-h-10 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 rounded-md"
-          >
-            <ArrowLeft size={16} /> Back
-          </button>
-          <ThemeToggle />
-        </div>
-
-        <header className="mt-10 mb-14 flex items-end justify-between gap-6">
-          <div>
-            <h1 className="text-5xl sm:text-6xl font-semibold tracking-[-0.04em] leading-[0.95] text-slate-900">
-              What's new
-            </h1>
-            <p className="mt-4 text-base text-slate-500 max-w-md leading-relaxed">
-              Product announcements and release notes, newest first.
-            </p>
-          </div>
-          {!isLoading && (
-            <div className="hidden sm:block text-right shrink-0 pb-1">
-              <div className="text-3xl font-semibold tabular-nums tracking-tight">{updates.length}</div>
-              <div className="text-xs text-slate-400 font-medium">
-                {updates.length === 1 ? "update" : "updates"}
-              </div>
-            </div>
-          )}
-        </header>
 
         {error && (
           <div
@@ -408,7 +386,6 @@ export default function UpdatesPage() {
             </p>
           </div>
         )}
-      </div>
-    </div>
+    </AppPage>
   );
 }

@@ -72,3 +72,45 @@ export function getRelativeTime(value) {
   if (diffMins < 0) return `Overdue by ${Math.abs(diffMins)} min`;
   return 'Due now';
 }
+
+// ---------------------------------------------------------------------------
+// Offline helpers: the server normally works these out, but while offline the
+// app must show a sensible due date / label immediately (the server's values
+// replace them after the next sync).
+// ---------------------------------------------------------------------------
+const WEEKDAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+/** Next daily/weekly occurrence (UTC ISO string) strictly after `afterMs`, or null if the series has ended. */
+export function nextOccurrenceIso(type, timeOfDay, weekdays = [], afterMs = Date.now(), endsOn = null) {
+  const [h, m] = String(timeOfDay || '09:00').split(':').map(Number);
+  const todayStart = getIstDayRange(afterMs).start; // IST midnight of the day containing afterMs
+  for (let i = 0; i <= 8; i++) {
+    const dayStart = todayStart + i * DAY_MS;
+    const candidate = dayStart + (h * 60 + m) * 60000;
+    if (candidate <= afterMs) continue;
+    const shifted = new Date(dayStart + IST_OFFSET_MS);
+    if (type === 'weekly') {
+      const weekday = (shifted.getUTCDay() + 6) % 7; // 0 = Monday ... 6 = Sunday (same as the API)
+      if (!weekdays.includes(weekday)) continue;
+    }
+    if (endsOn && shifted.toISOString().slice(0, 10) > endsOn) return null;
+    return new Date(candidate).toISOString();
+  }
+  return null;
+}
+
+/** Same wording as the server's describe_schedule(), e.g. "Every Mon, Wed at 6:30 PM". */
+export function describeScheduleLocal(type, timeOfDay, weekdays = []) {
+  if ((type !== 'daily' && type !== 'weekly') || !timeOfDay) return 'One time';
+  const [h, m] = timeOfDay.split(':').map(Number);
+  const stamp = `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+  const days = [...new Set(weekdays)].sort();
+  if (type === 'daily' || days.length === 7) return `Every day at ${stamp}`;
+  return `Every ${days.map((d) => WEEKDAY_SHORT[d]).join(', ')} at ${stamp}`;
+}
+
+/** UTC ISO / Date string -> "YYYY-MM-DDTHH:mm" in IST, for <input type="datetime-local">. */
+export function utcToIstInput(value) {
+  const date = parseDueDate(value);
+  return date ? new Date(date.getTime() + IST_OFFSET_MS).toISOString().slice(0, 16) : '';
+}

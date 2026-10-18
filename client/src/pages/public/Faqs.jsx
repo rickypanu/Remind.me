@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
-  ArrowLeft,
   ArrowRight,
   ChevronDown,
   Search,
@@ -12,11 +11,13 @@ import {
   ListTodo,
   BellRing,
   UserCog,
+  SlidersHorizontal,
   ThumbsUp,
   ThumbsDown,
   LayoutGrid,
 } from 'lucide-react';
 import PublicLayout from '../../components/PublicLayout';
+import PageHeader from '../../components/PageHeader';
 import usePageMeta from '../../utils/usePageMeta';
 import { mailto } from '../../config/site';
 
@@ -58,7 +59,7 @@ const faqData = [
     category: 'Getting Started',
     question: 'Will my schedule sync across my phone and laptop?',
     answer:
-      'Yes. Your tasks live in your account, not on one device. Add a task on your laptop during class and tick it off from your phone later, just log in with the same account.',
+      'Yes. Your tasks live in your account, not on one device. Add a task on your laptop during class and tick it off from your phone later, just log in with the same account. Changes made while you are offline are kept on your device and sync automatically when the connection returns.',
   },
 
   // ---------------- Tasks ----------------
@@ -67,7 +68,7 @@ const faqData = [
     category: 'Tasks',
     question: 'How do I add a task?',
     answer:
-      'There are two ways. Use the "New reminder" button to fill in the title, notes, category and schedule yourself, or use Magic Add on the dashboard to just type or speak a sentence.',
+      'There are two ways. Use the "New reminder" button (the + button on a phone) to fill in the title, notes, category and schedule yourself, or use Magic Add on the dashboard to just type or speak a sentence. The Magic Add box grows as you type or speak, so you can always read the whole sentence before you send it with Enter.',
     link: { to: '/create-task', label: 'Create a task' },
   },
   {
@@ -111,7 +112,7 @@ const faqData = [
     category: 'Tasks',
     question: 'How do I complete, undo or delete a task?',
     answer:
-      'Tap the circle on a task card to mark it complete. Tap it again to move it back to pending. For a daily or weekly reminder, ticking it off finishes only that occurrence and schedules the next one. Use the delete option on the card to remove it (and stop the whole series), and confirm when asked.',
+      'Tap the circle on a task card to mark it complete. Tap it again to move it back to pending. For a daily or weekly reminder, ticking it off finishes only that occurrence and schedules the next one. Use the pencil icon on a card to edit it, and the bin icon to delete it (for a repeating reminder this stops the whole series). Both ask you to confirm or save in a pop-up.',
   },
   {
     id: 11,
@@ -142,7 +143,7 @@ const faqData = [
     question: 'How do I connect Telegram?',
     answer: 'It takes less than a minute.',
     steps: [
-      'Open your Profile and choose "Connect Telegram".',
+      'Open your Profile, choose "Notifications", then "Telegram alerts".',
       'Tap "Connect Telegram". This opens our official bot in Telegram.',
       'Press Start in the chat. Your account is linked instantly.',
       'Optional but recommended: share your phone number when the bot asks.',
@@ -154,7 +155,8 @@ const faqData = [
     category: 'Notifications',
     question: 'How do I turn on browser notifications?',
     answer:
-      'Click "Turn on alerts" in the top bar (or in the menu on mobile) and press Allow when your browser asks. The button changes to "Alerts on". This is set up per device, so enable it on each phone or laptop where you want alerts.',
+      'Open Profile, then Notifications, and press "Turn on alerts on this device" (the "Turn on alerts" button in the top bar does the same). Press Allow when your browser asks. This is set up per device, so enable it on each phone or laptop where you want alerts.',
+    link: { to: '/notifications', label: 'Open Notifications' },
   },
   {
     id: 16,
@@ -165,7 +167,7 @@ const faqData = [
       'Make sure notifications are Allowed for this site in your browser or phone settings (not Blocked).',
       'Check that Do Not Disturb, Focus mode or battery saver is not silencing your browser.',
       'On a laptop, your browser needs to be running in the background to receive alerts.',
-      'Turn alerts off and on again from the top bar to refresh the connection.',
+      'Turn alerts off and on again from the Notifications page to refresh the connection.',
       'On iPhone, notifications only work once the site is added to your Home Screen (see the next question).',
     ],
   },
@@ -201,8 +203,59 @@ const faqData = [
     category: 'Notifications',
     question: 'How do I stop notifications?',
     answer:
-      'For browser alerts, click "Alerts on" in the top bar (or in the mobile menu) to turn them off. This only turns off alerts for the device you are using. For Telegram, open the Telegram setup page and disconnect.',
-    link: { to: '/telegram-setup', label: 'Telegram settings' },
+      'For browser alerts, open Profile, then Notifications, and turn alerts off (or click "Alerts on" in the top bar). This only turns off alerts for the device you are using. For Telegram, open Telegram alerts from the same page and disconnect.',
+    link: { to: '/notifications', label: 'Notification settings' },
+  },
+
+  // ---------------- Settings & Offline ----------------
+  {
+    id: 29,
+    category: 'Tasks',
+    question: 'How do I edit a reminder?',
+    answer: 'You can change the title, notes, category and time of any pending reminder.',
+    steps: [
+      'Find the reminder on your dashboard.',
+      'Tap the pencil icon on its card. A pop-up opens.',
+      'Change what you need and press \"Save changes\".',
+    ],
+  },
+  {
+    id: 30,
+    category: 'Settings & Offline',
+    question: 'Does RemindMe work without internet?',
+    answer:
+      'Yes. After you have opened RemindMe once while online, the app loads and every page works offline. You can add, edit, complete and delete reminders; they are saved on your device first and a small "Not synced" label shows until they are uploaded. When you are back online the app syncs automatically and shows "Changes saved to cloud". Magic Add, Telegram and browser alerts need a connection, because they are handled by our server.',
+  },
+  {
+    id: 31,
+    category: 'Settings & Offline',
+    question: 'What happens to offline changes if I log out?',
+    answer:
+      'If some changes have not been uploaded yet, RemindMe tries to upload them first and warns you before logging you out. Logging out clears the copy stored on that device, so reconnect and let the sync finish before you log out.',
+  },
+  {
+    id: 32,
+    category: 'Settings & Offline',
+    question: 'How do I change the sound and vibration?',
+    answer:
+      'Open Profile, then Notifications. You can turn sound effects and haptic vibration on or off, pick one of five built-in alert sounds, or keep your device default. Vibration depends on your browser: it works on most Android phones but is not available on iPhone or iPad.',
+    link: { to: '/notifications', label: 'Sound and vibration' },
+  },
+  {
+    id: 33,
+    category: 'Settings & Offline',
+    question: 'Can I use my own notification sound?',
+    answer:
+      'Yes. On the Notifications page choose "Upload your own" and pick an .mp3 or .wav file (up to 2 MB and 30 seconds). Your sound plays when an alert arrives while RemindMe is open. When the app is closed, browsers only allow your device\'s own notification sound, so you will hear that one instead.',
+    link: { to: '/notifications', label: 'Choose a sound' },
+  },
+  {
+    id: 34,
+    category: 'Settings & Offline',
+    question: 'How do I change the theme and colours?',
+    answer:
+      'Open Profile and look at Appearance. Turn Dark mode on or off, and choose an accent colour: Blue, Indigo, Violet, Pink, Orange, Green or Teal. Choosing Black switches to the Minimalism theme, a flat black-and-white look. Your choice is saved on that device.',
+    link: { to: '/profile', label: 'Open Appearance' },
   },
 
   // ---------------- Account & Privacy ----------------
@@ -268,6 +321,7 @@ const CATEGORY_ICONS = {
   'Getting Started': Rocket,
   Tasks: ListTodo,
   Notifications: BellRing,
+  'Settings & Offline': SlidersHorizontal,
   'Account & Privacy': UserCog,
 };
 
@@ -296,7 +350,6 @@ function Highlight({ text, query }) {
 }
 
 export default function FAQ() {
-  const navigate = useNavigate();
   usePageMeta({
     title: 'FAQs & Help',
     description:
@@ -330,37 +383,13 @@ export default function FAQ() {
 
   return (
     <PublicLayout>
-    <div className="py-8 px-4 sm:px-6 lg:px-8 font-sans selection:bg-indigo-100 selection:text-indigo-900">
+    <div className="pt-6 sm:pt-8 pb-16 px-4 sm:px-6 font-sans selection:bg-indigo-100 selection:text-indigo-900">
       <div className="max-w-3xl mx-auto space-y-8">
-        {/* Top Navigation */}
-        <div>
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors w-fit"
-          >
-            <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm hover:bg-slate-50 transition-colors">
-              <ArrowLeft className="w-4 h-4" />
-            </div>
-            Back
-          </button>
-        </div>
-
-        {/* Header Section */}
-        <div className="flex items-start gap-4">
-          <div className="hidden sm:flex w-14 h-14 shrink-0 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-600 text-white items-center justify-center shadow-lg shadow-indigo-500/20">
-            <MessageCircleQuestion className="w-7 h-7" />
-          </div>
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-2 tracking-tight">
-              How can we help?
-            </h1>
-            <p className="text-slate-500 font-medium">
-              Answers about reminders, Magic Add, Telegram and browser alerts,
-              and your account.
-            </p>
-          </div>
-        </div>
+        <PageHeader
+          backTo
+          title="How can we help?"
+          subtitle="Answers about reminders, offline use, notifications, themes and your account."
+        />
 
         {/* Search Bar */}
         <div className="relative group">

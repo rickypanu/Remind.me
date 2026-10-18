@@ -25,3 +25,22 @@ input, select, textarea, button { max-width: 100%; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+
+/* ---- Micro-interactions (all disabled by the prefers-reduced-motion rule above) ---- */
+@keyframes rm-pill-in { from { opacity: 0; transform: translateY(10px) scale(.96); } to { opacity: 1; transform: none; } }
+.rm-pill-in { animation: rm-pill-in .28s cubic-bezier(.2,.8,.2,1) both; }
+
+@keyframes rm-card-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.rm-card-in { animation: rm-card-in .32s cubic-bezier(.2,.8,.2,1) both; }
+
+@keyframes rm-modal-in { from { opacity: 0; transform: scale(.95) translateY(8px); } to { opacity: 1; transform: none; } }
+.rm-modal-in { animation: rm-modal-in .22s cubic-bezier(.2,.8,.2,1) both; }
+
+@keyframes rm-pop { 0% { transform: scale(.55); } 55% { transform: scale(1.32); } 100% { transform: scale(1.1); } }
+.rm-pop { animation: rm-pop .42s cubic-bezier(.3,1.4,.5,1) both; }
+
+/* Tap feedback on every button and link that is not already animated */
+button:not(:disabled), a[role="button"] { -webkit-tap-highlight-color: transparent; }
+
+/* Tablet / desktop: the detail column and sticky header measure against the safe area */
+@media (min-width: 1024px) { html { scroll-padding-top: 6rem; } }

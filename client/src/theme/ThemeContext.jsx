@@ -10,6 +10,19 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
  */
 export const COLOR_MODE_KEY = "remindme-color-mode";
 export const THEME_STYLE_KEY = "remindme-theme-style";
+export const ACCENT_KEY = "remindme-accent";
+
+/** Accent colours offered in Profile. "black" is not an accent: it switches on the Minimalism theme. */
+export const ACCENTS = [
+  { id: "blue", label: "Blue", swatch: "#2563eb" },
+  { id: "indigo", label: "Indigo", swatch: "#4f46e5" },
+  { id: "violet", label: "Violet", swatch: "#7c3aed" },
+  { id: "pink", label: "Pink", swatch: "#db2777" },
+  { id: "orange", label: "Orange", swatch: "#ea580c" },
+  { id: "green", label: "Green", swatch: "#059669" },
+  { id: "teal", label: "Teal", swatch: "#0d9488" },
+];
+const ACCENT_IDS = ACCENTS.map((a) => a.id);
 
 const META_COLORS = {
   "classic-light": "#ffffff",
@@ -43,10 +56,16 @@ const getInitialColorMode = () => {
 
 const getInitialThemeStyle = () => (read(THEME_STYLE_KEY) === "minimal" ? "minimal" : "classic");
 
-const applyToDocument = (colorMode, themeStyle) => {
+const getInitialAccent = () => {
+  const saved = read(ACCENT_KEY);
+  return ACCENT_IDS.includes(saved) ? saved : "blue";
+};
+
+const applyToDocument = (colorMode, themeStyle, accent) => {
   const root = document.documentElement;
   root.classList.toggle("dark", colorMode === "dark");
   root.dataset.theme = themeStyle;
+  root.dataset.accent = accent;
 
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", META_COLORS[`${themeStyle}-${colorMode}`]);
@@ -57,10 +76,11 @@ const ThemeContext = createContext(null);
 export function ThemeProvider({ children }) {
   const [colorMode, setColorMode] = useState(getInitialColorMode);
   const [themeStyle, setThemeStyle] = useState(getInitialThemeStyle);
+  const [accent, setAccentState] = useState(getInitialAccent);
 
   useEffect(() => {
-    applyToDocument(colorMode, themeStyle);
-  }, [colorMode, themeStyle]);
+    applyToDocument(colorMode, themeStyle, accent);
+  }, [colorMode, themeStyle, accent]);
 
   // Keep other open tabs in sync.
   useEffect(() => {
@@ -70,6 +90,9 @@ export function ThemeProvider({ children }) {
       }
       if (e.key === THEME_STYLE_KEY) {
         setThemeStyle(e.newValue === "minimal" ? "minimal" : "classic");
+      }
+      if (e.key === ACCENT_KEY) {
+        setAccentState(ACCENT_IDS.includes(e.newValue) ? e.newValue : "blue");
       }
     };
     window.addEventListener("storage", onStorage);
@@ -100,10 +123,31 @@ export function ThemeProvider({ children }) {
     [withTransition],
   );
 
+  /** id = an accent colour (also leaves Minimalism) or "black" (turns Minimalism on). */
+  const selectAccent = useCallback(
+    (id) => {
+      if (id === "black") {
+        write(THEME_STYLE_KEY, "minimal");
+        withTransition(() => setThemeStyle("minimal"));
+        return;
+      }
+      if (!ACCENT_IDS.includes(id)) return;
+      write(ACCENT_KEY, id);
+      write(THEME_STYLE_KEY, "classic");
+      withTransition(() => {
+        setAccentState(id);
+        setThemeStyle("classic");
+      });
+    },
+    [withTransition],
+  );
+
   const value = useMemo(
     () => ({
       colorMode,
       themeStyle,
+      accent,
+      selectAccent,
       isDark: colorMode === "dark",
       isMinimal: themeStyle === "minimal",
       setColorMode: setMode,
@@ -111,7 +155,7 @@ export function ThemeProvider({ children }) {
       toggleColorMode: () => setMode(colorMode === "dark" ? "light" : "dark"),
       toggleThemeStyle: () => setStyle(themeStyle === "minimal" ? "classic" : "minimal"),
     }),
-    [colorMode, themeStyle, setMode, setStyle],
+    [colorMode, themeStyle, accent, selectAccent, setMode, setStyle],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

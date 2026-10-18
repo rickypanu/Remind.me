@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import PublicLayout from "../../components/PublicLayout";
+import PageHeader from "../../components/PageHeader";
 import Logo from "../../components/Logo";
 import usePageMeta from "../../utils/usePageMeta";
 import { SITE, mailto } from "../../config/site";
@@ -22,7 +23,7 @@ import {
   Shield,
 } from "lucide-react";
 
-const APP_VERSION = "v4.0.0";
+const APP_VERSION = "v5.0.0";
 const REPO_URL = SITE.repoUrl;
 const API_BASE = (
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
@@ -175,7 +176,6 @@ const supportLinks = [
 ];
 
 export default function About() {
-  const navigate = useNavigate();
   const status = useServiceStatus();
   const ui = STATUS_UI[status];
   const isLoggedIn = !!localStorage.getItem("token");
@@ -200,9 +200,10 @@ export default function About() {
 
   return (
     <PublicLayout>
-      <div className="pb-12 text-slate-800">
+      <div className="pb-16 text-slate-800">
         {/* Main Content */}
-        <main className="max-w-2xl mx-auto px-4 pt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8">
+          <PageHeader backTo />
           {/* Header Hero Card */}
           <div className="relative overflow-hidden bg-white p-8 rounded-3xl border border-gray-200 shadow-sm mb-6 text-center group transition-colors">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-400"></div>
@@ -380,7 +381,7 @@ export default function About() {
               © {new Date().getFullYear()} GetRemindMe • All rights reserved.
             </p>
           </div>
-        </main>
+        </div>
       </div>
     </PublicLayout>
   );

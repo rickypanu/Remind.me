@@ -1,50 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Bell, BellOff, BellRing, Plus, CircleUser, Loader2, Menu, X,
-  LayoutDashboard, Newspaper, Send, Info, HelpCircle, Home as HomeIcon, LogIn, UserPlus,
+  LayoutDashboard, Newspaper, Info, HelpCircle, Home as HomeIcon, LogIn, UserPlus,
 } from 'lucide-react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import api from '../../utils/api';
-import notify from '../../utils/notify';
+import usePush from '../../utils/usePush';
 import Logo from '../../components/Logo';
 import ThemeToggle from '../../components/ThemeToggle';
-
-const PUBLIC_VAPID_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
-
-// Converts the VAPID key string into a format the browser accepts
-function urlBase64ToUint8Array(base64String) {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-}
-
-// The service worker is registered by vite-plugin-pwa (registerSW.js).
-// `ready` never resolves if no service worker is registered (e.g. `vite dev`),
-// so we race it against a timeout instead of hanging on "Updating...".
-function getActiveRegistration(timeoutMs = 8000) {
-  let timer;
-  const timeout = new Promise((_, reject) => {
-    timer = setTimeout(
-      () =>
-        reject(
-          new Error(
-            'Service worker is not active. Test push on a production build (npm run build && npm run preview) or the deployed site.'
-          )
-        ),
-      timeoutMs
-    );
-  });
-  return Promise.race([navigator.serviceWorker.ready, timeout]).finally(() => clearTimeout(timer));
-}
-
-const pushSupported = () =>
-  'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 
 // Links shown in the menu. Only pages that exist and are useful for that visitor.
 const VISITOR_LINKS = [
@@ -55,129 +17,10 @@ const VISITOR_LINKS = [
 const MEMBER_LINKS = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/updates', label: 'Updates', icon: Newspaper },
-  { to: '/telegram-setup', label: 'Telegram', icon: Send },
+  { to: '/notifications', label: 'Notifications', icon: Bell },
   { to: '/about', label: 'About', icon: Info },
   { to: '/faqs', label: 'FAQs', icon: HelpCircle },
 ];
-
-/** Push notification on/off logic, shared by the desktop button and the mobile menu button. */
-function usePush(isLoggedIn) {
-  const [avatarUrl, setAvatarUrl] = useState(null);
-  const [userId, setUserId] = useState(null);
-  const [pushStatus, setPushStatus] = useState('idle'); // 'idle' | 'loading' | 'subscribed'
-
-  useEffect(() => {
-    if (!isLoggedIn) return;
-
-    // Subscription state is per DEVICE, so the browser is the source of truth.
-    // If this browser is already subscribed, re-send it to the backend
-    // (idempotent via $addToSet) so a lost DB record heals itself.
-    const syncLocalSubscription = async (uid) => {
-      if (!pushSupported()) return;
-      try {
-        const registration = await getActiveRegistration();
-        const existing = await registration.pushManager.getSubscription();
-        if (existing) {
-          setPushStatus('subscribed');
-          if (uid) {
-            await api.post('/webpush/subscribe', { subscription: existing.toJSON(), userId: uid });
-          }
-        }
-      } catch (error) {
-        console.error('Error checking local push subscription:', error);
-      }
-    };
-
-    api
-      .get('/user/me')
-      .then(({ data }) => {
-        if (data?.avatar_url) setAvatarUrl(data.avatar_url);
-        const uid = data?._id || data?.id;
-        if (uid) setUserId(uid);
-        syncLocalSubscription(uid);
-      })
-      .catch((error) => console.error('Failed to fetch user data for header', error));
-  }, [isLoggedIn]);
-
-  const handleSubscribe = async () => {
-    if (pushStatus === 'subscribed' || !userId) return;
-
-    if (!pushSupported()) {
-      notify.error('Push is not supported here. On iPhone, add the site to your Home Screen first.');
-      return;
-    }
-    if (!PUBLIC_VAPID_KEY) {
-      console.error('VAPID key is missing! Check your .env file.');
-      notify.error('Push alerts are not configured on this site yet.');
-      return;
-    }
-
-    try {
-      setPushStatus('loading');
-
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        notify.error('Notifications are blocked. Allow them in your browser or site settings and try again.');
-        setPushStatus('idle');
-        return;
-      }
-
-      const registration = await getActiveRegistration();
-
-      let subscription = await registration.pushManager.getSubscription();
-      if (!subscription) {
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY),
-        });
-      }
-
-      await api.post('/webpush/subscribe', { subscription: subscription.toJSON(), userId });
-
-      setPushStatus('subscribed');
-      notify.success('Alerts are on for this device.');
-    } catch (error) {
-      console.error('Failed to subscribe to push notifications:', error);
-      notify.error(error, 'Could not enable alerts. Please try again.');
-      setPushStatus('idle');
-    }
-  };
-
-  const handleUnsubscribe = async () => {
-    if (!userId) return;
-
-    try {
-      setPushStatus('loading');
-
-      const registration = await getActiveRegistration();
-      const subscription = await registration.pushManager.getSubscription();
-
-      if (subscription) {
-        const subJSON = subscription.toJSON();
-
-        // 1. Remove ONLY this device's subscription from the backend ($pull)
-        await api.delete(`/webpush/unsubscribe/${userId}`, { data: { subscription: subJSON, userId } });
-
-        // 2. Then revoke it locally in the browser
-        await subscription.unsubscribe();
-      }
-
-      setPushStatus('idle');
-      notify.success('Alerts are off for this device.');
-    } catch (error) {
-      console.error('Failed to unsubscribe:', error);
-      notify.error(error, 'Could not turn off alerts. Please try again.');
-      setPushStatus('subscribed'); // revert if the API call fails
-    }
-  };
-
-  const toggle = () => {
-    if (pushStatus === 'subscribed') handleUnsubscribe();
-    else if (pushStatus === 'idle') handleSubscribe();
-  };
-
-  return { avatarUrl, pushStatus, toggle };
-}
 
 function PushButton({ pushStatus, onClick, fullWidth = false }) {
   const base =
@@ -351,6 +194,16 @@ const Header = () => {
 
         {/* Mobile actions: theme toggle + hamburger */}
         <div className="flex md:hidden items-center gap-2 shrink-0">
+          {/* Quick action: phones only (md and up already show "New reminder") */}
+          {isLoggedIn && (
+            <Link
+              to="/create-task"
+              aria-label="Add reminder"
+              className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white shadow-md shadow-blue-500/25 hover:bg-blue-700 active:scale-90 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            >
+              <Plus size={22} strokeWidth={2.75} />
+            </Link>
+          )}
           <ThemeToggle />
           <button
             ref={menuButtonRef}
