@@ -243,7 +243,8 @@ export default function Profile() {
   }
 
   return (
-    <AppPage title="Profile" subtitle="Your account and preferences." backTo="/dashboard" backLabel="Dashboard" width="narrow">
+    // <AppPage title="Profile" subtitle="Your account and preferences." backTo="/dashboard" backLabel="Dashboard" width="narrow">
+    <AppPage title="Profile" subtitle="Your account and preferences." backTo="/dashboard" backLabel="Dashboard" width="narrow" centerHeader>
         {/* User Avatar & Info Header */}
         <div className="flex flex-col items-center text-center mb-10">
           <button
