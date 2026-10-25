@@ -1,9 +1,9 @@
-import api from '../utils/api';
+import { tasksApi } from '../api/tasks';
 import { getToken } from '../utils/auth';
 import { getErrorMessage } from '../utils/errors';
 import notify from '../utils/notify';
 import {
-  getAllTasks, getDB, setMeta, removeTask, putTask, countPending, emitTasksChanged, subscribeTasks, idAliases,
+  getAllTasks, getDB, getMeta, setMeta, removeTask, putTask, countPending, emitTasksChanged, subscribeTasks, idAliases,
 } from './db';
 import { fromServer, isLocalId, toCreatePayload, toUpdatePayload } from './taskModel';
 
@@ -16,7 +16,6 @@ import { fromServer, isLocalId, toCreatePayload, toUpdatePayload } from './taskM
  *  - Safe to retry: creates carry a client_id (the API ignores repeats); a local change made while
  *    a request is in flight bumps `rev`, so the flag is kept instead of being cleared by mistake.
  */
-const REQ = { timeout: 20000 };
 const BG_SYNC_TAG = 'remindme-sync';
 
 // ---- observable state (for useSyncStatus / the connection indicator) -------------------------
@@ -109,7 +108,7 @@ async function pushRecord(t) {
   if (t.syncAction === 'delete') {
     if (!isLocalId(t.id)) {
       try {
-        await api.delete(`/tasks/${t.id}`, REQ);
+        await tasksApi.remove(t.id);
       } catch (err) {
         if (err.response?.status !== 404) throw err; // already gone = success
       }
@@ -121,16 +120,15 @@ async function pushRecord(t) {
   let serverId = t.id;
   let serverRecord = null;
   if (t.syncAction === 'create') {
-    const { data } = await api.post('/tasks/', toCreatePayload(t), REQ);
+    const data = await tasksApi.create(toCreatePayload(t));
     serverId = data.id;
     serverRecord = data;
   } else if (t.fieldsDirty) {
-    const { data } = await api.put(`/tasks/${t.id}`, toUpdatePayload(t), REQ);
-    serverRecord = data;
+    serverRecord = await tasksApi.update(t.id, toUpdatePayload(t));
   }
 
   const queue = t.statusQueue || [];
-  for (const status of queue) await api.patch(`/tasks/${serverId}`, { status }, REQ);
+  for (const status of queue) await tasksApi.setStatus(serverId, status);
 
   await finalize(t.id, serverId, serverRecord, t.rev, queue.length);
 }
@@ -170,29 +168,77 @@ async function syncOne(t) {
 }
 
 // ---- pull ---------------------------------------------------------------------------------------
-export async function pullFromServer() {
-  const { data } = await api.get('/tasks/', REQ);
-  const server = Array.isArray(data) ? data : [];
+const CURSOR_KEY = 'syncCursor';
+const PAGE_SIZE = 200;
+const MAX_PAGES = 200; // safety net against a server that never says "no more"
 
+/** Apply one page of server changes to the local store. Never overwrites a change that is still waiting to upload. */
+async function applyPage(page, seen) {
   const db = await getDB();
   const tx = db.transaction('tasks', 'readwrite');
   const store = tx.objectStore('tasks');
   const local = await store.getAll();
   const byId = new Map(local.map((t) => [t.id, t]));
   const pendingClientIds = new Set(local.filter((t) => t.needsSync && isLocalId(t.id)).map((t) => t.clientId));
-  const serverIds = new Set();
 
-  for (const s of server) {
-    serverIds.add(s.id);
+  for (const s of page.items || []) {
+    seen?.add(s.id);
     const mine = byId.get(s.id);
     if (mine?.needsSync) continue; // never overwrite a change that hasn't been uploaded yet
     if (s.client_id && pendingClientIds.has(s.client_id)) continue; // our own create, mid-retry
     await store.put(fromServer(s, mine?.rev || 1));
   }
-  for (const t of local) {
-    if (!t.needsSync && !serverIds.has(t.id)) await store.delete(t.id); // deleted on another device
+  for (const gone of page.deleted || []) {
+    const mine = byId.get(gone.id);
+    if (mine && !mine.needsSync) await store.delete(gone.id); // deleted on another device
   }
   await tx.done;
+}
+
+/** Drop synced local reminders that a full snapshot did not mention (deleted while this device was away). */
+async function pruneAfterSnapshot(seen) {
+  const db = await getDB();
+  const tx = db.transaction('tasks', 'readwrite');
+  const store = tx.objectStore('tasks');
+  for (const t of await store.getAll()) {
+    if (!t.needsSync && !seen.has(t.id)) await store.delete(t.id);
+  }
+  await tx.done;
+}
+
+/**
+ * Delta sync. The first pull (no stored cursor) downloads a snapshot; later pulls only fetch what changed
+ * since the cursor, including tombstones for deletes. The cursor is stored only after a page is applied, so
+ * a crash mid-pull just repeats work (idempotent). A 410 means the cursor is older than the server keeps
+ * tombstones for: forget it and download a snapshot again.
+ */
+export async function pullFromServer({ full = false } = {}) {
+  let cursor = full ? null : (await getMeta(CURSOR_KEY)) || null;
+  const seen = new Set();
+  let snapshot = !cursor;
+
+  try {
+    for (let i = 0; i < MAX_PAGES; i++) {
+      const params = { limit: PAGE_SIZE };
+      if (cursor) params.cursor = cursor;
+      const data = await tasksApi.changes(params);
+      snapshot = snapshot && !!data.snapshot;
+      await applyPage(data, snapshot ? seen : null);
+      cursor = data.next_cursor;
+      if (!data.has_more) {
+        if (data.snapshot) await pruneAfterSnapshot(seen);
+        await setMeta(CURSOR_KEY, cursor);
+        break;
+      }
+      if (!data.snapshot) await setMeta(CURSOR_KEY, cursor); // deltas can be resumed page by page
+    }
+  } catch (err) {
+    if (err.response?.status === 410 && !full) {
+      await setMeta(CURSOR_KEY, null);
+      return pullFromServer({ full: true });
+    }
+    throw err;
+  }
 
   lastPullAt = Date.now();
   await setMeta('lastPullAt', lastPullAt);
@@ -254,6 +300,25 @@ export async function syncNow({ force = false } = {}) {
   } catch (err) {
     if (isNetworkError(err)) setState({ reachable: false });
   }
+}
+
+/** Tests only: forget timers, in-flight markers and cached state so each test starts from a clean engine. */
+export function resetSyncEngine() {
+  clearTimeout(retryTimer);
+  clearTimeout(debounce);
+  retryDelay = 5000;
+  lastPullAt = 0;
+  flushing = null;
+  inFlight.clear();
+  idAliases.clear();
+  state = {
+    netOnline: true,
+    reachable: true,
+    online: true,
+    syncing: false,
+    pending: 0,
+    lastResult: null,
+  };
 }
 
 // ---- Background Sync API -------------------------------------------------------------------------

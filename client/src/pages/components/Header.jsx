@@ -5,6 +5,8 @@ import {
 } from 'lucide-react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import usePush from '../../utils/usePush';
+import { resolveAvatarSrc } from '../../utils/avatar';
+import { isLoggedIn as hasSession } from '../../utils/auth';
 import Logo from '../../components/Logo';
 import ThemeToggle from '../../components/ThemeToggle';
 
@@ -29,7 +31,7 @@ function PushButton({ pushStatus, onClick, fullWidth = false }) {
     pushStatus === 'subscribed'
       ? 'bg-emerald-50 text-emerald-700 hover:bg-rose-50 hover:text-rose-600 border border-emerald-200/60 hover:border-rose-200/60'
       : pushStatus === 'loading'
-      ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-transparent'
+      ? 'bg-slate-100 text-slate-500 cursor-not-allowed border border-transparent'
       : 'bg-white text-slate-700 border border-slate-200 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700';
 
   return (
@@ -68,7 +70,7 @@ function PushButton({ pushStatus, onClick, fullWidth = false }) {
 }
 
 const Header = () => {
-  const isLoggedIn = !!localStorage.getItem('token');
+  const isLoggedIn = hasSession();
   const { avatarUrl, pushStatus, toggle } = usePush(isLoggedIn);
   const [menuOpen, setMenuOpen] = useState(false);
   const { pathname } = useLocation();
@@ -106,10 +108,7 @@ const Header = () => {
     };
   }, [menuOpen, closeMenu]);
 
-  const getAvatarSrc = () =>
-    avatarUrl?.startsWith('/uploads')
-      ? `${import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '')}${avatarUrl}`
-      : avatarUrl;
+  const getAvatarSrc = () => resolveAvatarSrc(avatarUrl);
 
   const links = isLoggedIn ? MEMBER_LINKS : VISITOR_LINKS;
   const desktopLinkClass = ({ isActive }) =>
@@ -172,7 +171,7 @@ const Header = () => {
               <Link
                 to="/profile"
                 aria-label="Your profile"
-                className="flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 flex-shrink-0"
+                className="flex items-center justify-center rounded-full text-slate-500 hover:text-slate-700 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 flex-shrink-0"
               >
                 {avatarUrl ? (
                   <img

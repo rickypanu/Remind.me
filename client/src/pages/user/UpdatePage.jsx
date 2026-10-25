@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   AlertCircle,
   ArrowUp,
@@ -9,7 +9,10 @@ import {
   Edit3,
   Megaphone,
 } from "lucide-react";
-import api from "../../utils/api";
+import Modal from "../../components/Modal";
+import useMe from "../../hooks/useMe";
+import { useCreateUpdate, useDeleteUpdate, useUpdates } from "../../hooks/useUpdates";
+import { setSeenUpdatesCount } from "../../utils/auth";
 import notify from "../../utils/notify";
 import { getErrorMessage } from "../../utils/errors";
 import usePageMeta from "../../utils/usePageMeta";
@@ -44,7 +47,7 @@ function Entry({ update, isPreview = false, isLatest = false, canDelete = false,
         <div className="text-[15px] font-semibold text-slate-900 tabular-nums">
           {date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
         </div>
-        <div className="text-xs text-slate-400 font-medium sm:mt-0.5">
+        <div className="text-xs text-slate-500 font-medium sm:mt-0.5">
           {today ? (isPreview ? "Preview" : "Today") : date.getFullYear()}
         </div>
       </div>
@@ -68,7 +71,7 @@ function Entry({ update, isPreview = false, isLatest = false, canDelete = false,
           {canDelete && (
             <button
               onClick={() => onDelete(update)}
-              className="shrink-0 -mt-1 p-2 rounded-lg text-slate-300 hover:text-red-600 hover:bg-red-50 transition-colors sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
+              className="shrink-0 -mt-1 p-2 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
               aria-label="Delete update"
               title="Delete update"
             >
@@ -86,46 +89,26 @@ function Entry({ update, isPreview = false, isLatest = false, canDelete = false,
 
 export default function UpdatesPage() {
   usePageMeta({ title: 'Product updates', description: 'New features, improvements and fixes in RemindMe.', noindex: true });
-  const [currentUser, setCurrentUser] = useState(null);
-  const [updates, setUpdates] = useState([]);
-  const [newUpdate, setNewUpdate] = useState({ title: "", content: "" });
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+  const me = useMe();
+  const currentUser = me.data;
+  const updatesQuery = useUpdates();
+  const createUpdate = useCreateUpdate();
+  const deleteUpdate = useDeleteUpdate();
+  const updates = updatesQuery.data ?? [];
+  const isLoading = updatesQuery.isPending;
 
-  const [isPosting, setIsPosting] = useState(false);
+  const [newUpdate, setNewUpdate] = useState({ title: "", content: "" });
+  const [error, setError] = useState("");
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [deleteModalTarget, setDeleteModalTarget] = useState(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const isPosting = createUpdate.isPending;
+  const isDeleting = deleteUpdate.isPending;
+  const keepRef = useRef(null);
 
+  // Opening this page counts as having read everything that is published.
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const [profileRes, updatesRes] = await Promise.allSettled([
-          api.get("/user/me"),
-          api.get("/user/updates"),
-        ]);
-
-        if (profileRes.status === "fulfilled") {
-          setCurrentUser(profileRes.value.data);
-        }
-
-        if (updatesRes.status === "fulfilled") {
-          const fetchedUpdates = updatesRes.value.data;
-          setUpdates(fetchedUpdates);
-
-          localStorage.setItem("seenUpdatesCount", fetchedUpdates.length.toString());
-          window.dispatchEvent(new Event("updatesRead"));
-        }
-      } catch (error) {
-        console.error("Failed to fetch page data:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+    if (updatesQuery.data) setSeenUpdatesCount(updatesQuery.data.length);
+  }, [updatesQuery.data]);
 
   const handleReviewClick = (e) => {
     e.preventDefault();
@@ -139,53 +122,29 @@ export default function UpdatesPage() {
 
   const handlePostUpdate = async () => {
     setError("");
-    setIsPosting(true);
-
     try {
-      await api.post("/user/updates", newUpdate);
-
+      await createUpdate.mutateAsync(newUpdate);
       setNewUpdate({ title: "", content: "" });
       setIsPreviewMode(false);
-
-      const res = await api.get("/user/updates");
-      const newUpdatesList = res.data;
-      setUpdates(newUpdatesList);
-
-      localStorage.setItem("seenUpdatesCount", newUpdatesList.length.toString());
-      window.dispatchEvent(new Event("updatesRead"));
       notify.success("Update published.");
-    } catch (error) {
-      console.error("Failed to post update:", error);
-      setError(getErrorMessage(error, "Couldn't publish your update. Try again."));
+    } catch (err) {
+      console.error("Failed to post update:", err);
+      setError(getErrorMessage(err, "Couldn't publish your update. Try again."));
       setIsPreviewMode(false);
-    } finally {
-      setIsPosting(false);
     }
   };
 
   const executeDelete = async () => {
     if (!deleteModalTarget) return;
-
-    setIsDeleting(true);
     setError("");
-    const updateId = deleteModalTarget.id || deleteModalTarget._id;
-
     try {
-      await api.delete(`/user/updates/${updateId}`);
-
-      const filteredUpdates = updates.filter((u) => (u.id || u._id) !== updateId);
-      setUpdates(filteredUpdates);
-
-      localStorage.setItem("seenUpdatesCount", filteredUpdates.length.toString());
-      window.dispatchEvent(new Event("updatesRead"));
-      setDeleteModalTarget(null);
+      await deleteUpdate.mutateAsync(deleteModalTarget);
       notify.success("Update deleted.");
-    } catch (error) {
-      console.error("Failed to delete update:", error);
-      notify.error(error, "Couldn't delete the update. Try again.");
-      setDeleteModalTarget(null);
+    } catch (err) {
+      console.error("Failed to delete update:", err);
+      notify.error(err, "Couldn't delete the update. Try again.");
     } finally {
-      setIsDeleting(false);
+      setDeleteModalTarget(null);
     }
   };
 
@@ -210,26 +169,31 @@ export default function UpdatesPage() {
         !isLoading && (
           <div className="hidden sm:block text-right">
             <div className="text-2xl font-bold tabular-nums tracking-tight text-slate-900">{updates.length}</div>
-            <div className="text-xs text-slate-400 font-medium">{updates.length === 1 ? "update" : "updates"}</div>
+            <div className="text-xs text-slate-500 font-medium">{updates.length === 1 ? "update" : "updates"}</div>
           </div>
         )
       }
     >
       {/* Delete confirmation */}
       {deleteModalTarget && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200"
+        <Modal
+          role="alertdialog"
+          onClose={() => setDeleteModalTarget(null)}
+          busy={isDeleting}
+          labelledBy="delete-update-title"
+          describedBy="delete-update-desc"
+          initialFocusRef={keepRef}
         >
-          <div className="bg-white rounded-2xl p-7 max-w-sm w-full shadow-[0_24px_60px_-12px_rgba(15,23,42,0.35)] ring-1 ring-slate-900/5 animate-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-semibold tracking-tight">Delete this update?</h3>
-            <p className="mt-2 text-sm leading-relaxed text-slate-500">
+          <div className="rm-modal-in bg-white rounded-2xl p-7 max-w-sm w-full shadow-[0_24px_60px_-12px_rgba(15,23,42,0.35)] ring-1 ring-slate-900/5">
+            <h3 id="delete-update-title" className="text-lg font-semibold tracking-tight">Delete this update?</h3>
+            <p id="delete-update-desc" className="mt-2 text-sm leading-relaxed text-slate-500">
               <span className="font-medium text-slate-800">{deleteModalTarget.title}</span> will be
               removed for everyone. You can't undo this.
             </p>
             <div className="mt-6 flex gap-3">
               <button
+                ref={keepRef}
+                type="button"
                 onClick={() => setDeleteModalTarget(null)}
                 disabled={isDeleting}
                 className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors disabled:opacity-50"
@@ -237,6 +201,7 @@ export default function UpdatesPage() {
                 Keep it
               </button>
               <button
+                type="button"
                 onClick={executeDelete}
                 disabled={isDeleting}
                 className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
@@ -245,7 +210,7 @@ export default function UpdatesPage() {
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
 
         {error && (
@@ -269,18 +234,18 @@ export default function UpdatesPage() {
                     placeholder="Announcement title"
                     value={newUpdate.title}
                     onChange={(e) => setNewUpdate({ ...newUpdate, title: e.target.value })}
-                    className="w-full bg-transparent text-2xl sm:text-3xl font-semibold tracking-[-0.025em] text-slate-900 placeholder:text-slate-300 outline-none"
+                    className="w-full bg-transparent text-2xl sm:text-3xl font-semibold tracking-[-0.025em] text-slate-900 placeholder:text-slate-500 outline-none"
                   />
                   <textarea
                     rows="5"
                     placeholder="Describe what changed and why it matters to people using the product."
                     value={newUpdate.content}
                     onChange={(e) => setNewUpdate({ ...newUpdate, content: e.target.value })}
-                    className="mt-4 w-full bg-transparent text-[15.5px] leading-[1.75] text-slate-700 placeholder:text-slate-300 outline-none resize-none"
+                    className="mt-4 w-full bg-transparent text-[15.5px] leading-[1.75] text-slate-700 placeholder:text-slate-500 outline-none resize-none"
                   />
                 </div>
                 <div className="flex items-center justify-between gap-4 px-7 sm:px-9 py-4 border-t border-slate-100">
-                  <span className="text-xs text-slate-400 font-medium">
+                  <span className="text-xs text-slate-500 font-medium">
                     You'll see a preview before it goes live.
                   </span>
                   <button
@@ -349,7 +314,7 @@ export default function UpdatesPage() {
 
         {/* Feed */}
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-24 text-slate-400">
+          <div className="flex flex-col items-center justify-center py-24 text-slate-500">
             <Loader2 className="w-5 h-5 animate-spin mb-3 text-indigo-500" />
             <p className="text-sm font-medium">Loading updates</p>
           </div>
@@ -357,7 +322,7 @@ export default function UpdatesPage() {
           <div>
             {groups.map((group) => (
               <section key={group.key}>
-                <h2 className="mb-8 sm:pl-[152px] text-sm font-semibold text-slate-400">
+                <h2 className="mb-8 sm:pl-[152px] text-sm font-semibold text-slate-500">
                   {group.key}
                 </h2>
                 {group.items.map((update) => {
@@ -377,7 +342,7 @@ export default function UpdatesPage() {
           </div>
         ) : (
           <div className="rounded-3xl border border-dashed border-slate-300 px-8 py-16 text-center">
-            <div className="mx-auto mb-4 h-11 w-11 rounded-full bg-white ring-1 ring-slate-200 flex items-center justify-center text-slate-400">
+            <div className="mx-auto mb-4 h-11 w-11 rounded-full bg-white ring-1 ring-slate-200 flex items-center justify-center text-slate-500">
               <Megaphone size={20} />
             </div>
             <h3 className="text-base font-semibold text-slate-900">No updates yet</h3>

@@ -1,8 +1,3 @@
+# Replaced at build time by scripts/prerender.mjs (adds the Sitemap line for your domain).
 User-agent: *
 Allow: /
-Disallow: /dashboard
-Disallow: /create-task
-Disallow: /profile
-Disallow: /telegram-setup
-Disallow: /updates
-Disallow: /reset-password

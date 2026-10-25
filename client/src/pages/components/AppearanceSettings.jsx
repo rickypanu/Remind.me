@@ -48,7 +48,7 @@ export default function AppearanceSettings() {
 
   return (
     <div>
-      <h3 className="px-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Appearance</h3>
+      <h3 className="px-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Appearance</h3>
       <div className="bg-white border border-gray-100 rounded-[24px] overflow-hidden shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
         <Row
           icon={isDark ? Moon : Sun}

@@ -1,122 +1,68 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Send, CheckCircle2, AlertCircle, Loader2, MessageCircle } from 'lucide-react';
-import api from '../../utils/api';
+import useMe, { userIdOf } from '../../hooks/useMe';
+import { useTelegramDisconnect, useTelegramLink, useTelegramStatus } from '../../hooks/useTelegram';
 import notify from '../../utils/notify';
 import usePageMeta from '../../utils/usePageMeta';
 import AppPage from '../../components/AppPage';
+
+const POLL_MS = 3000; // how often to look for the link while the user finishes in Telegram
+const GIVE_UP_MS = 60000;
 
 export default function TelegramSetup() {
   const navigate = useNavigate();
   usePageMeta({ title: 'Connect Telegram', description: 'Connect your Telegram account to receive RemindMe reminders instantly on your phone.', noindex: true });
 
-  // User & State Management
-  const [userId, setUserId] = useState(null);
-  const [isConnected, setIsConnected] = useState(false);
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [loading, setLoading] = useState(true);
+  const me = useMe();
+  const userId = userIdOf(me.data);
   const [isConnecting, setIsConnecting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  const intervalRef = useRef(null);
 
-  // 1. Fetch Current Logged-in User from /me endpoint
+  const status = useTelegramStatus({ enabled: !!userId, pollMs: isConnecting ? POLL_MS : false });
+  const createLink = useTelegramLink();
+  const disconnect = useTelegramDisconnect();
+
+  const isConnected = !!status.data?.connected;
+  const phoneNumber = status.data?.phone_number || '';
+  const loading = me.isPending || (!!userId && status.isPending);
+  const errorMsg = me.isError ? 'Authentication failed. Please log in again.' : '';
+
+  // The poll found the link: celebrate once and stop waiting.
   useEffect(() => {
-    let isMounted = true;
+    if (isConnecting && isConnected) {
+      setIsConnecting(false);
+      notify.success('Telegram connected. You will now get reminders there.');
+    }
+  }, [isConnecting, isConnected]);
 
-    const fetchCurrentUser = async () => {
-      try {
-        const response = await api.get('/user/me');
-        if (isMounted && response.data?.id) {
-          setUserId(response.data.id);
-        }
-      } catch (err) {
-        console.error('Failed to get current user:', err);
-        if (isMounted) {
-          setErrorMsg('Authentication failed. Please log in again.');
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchCurrentUser();
-
-    return () => {
-      isMounted = false;
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, []);
-
-  // 2. Fetch Telegram Connection Status once userId is available
+  // Do not wait forever.
   useEffect(() => {
-    if (!userId) return;
+    if (!isConnecting) return undefined;
+    const timer = setTimeout(() => {
+      setIsConnecting(false);
+      notify.info('Still waiting? Press Start in the Telegram chat, then come back here.');
+    }, GIVE_UP_MS);
+    return () => clearTimeout(timer);
+  }, [isConnecting]);
 
-    const fetchStatus = async () => {
-      try {
-        const res = await api.get(`/telegram/status/${userId}`);
-        setIsConnected(res.data.connected);
-        if (res.data.phone_number) {
-          setPhoneNumber(res.data.phone_number);
-        }
-      } catch (err) {
-        console.error('Failed to fetch Telegram status:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStatus();
-  }, [userId]);
-
-  // 3. Connect Handler
   const handleConnect = async () => {
     if (!userId) {
       notify.error('Your session was not found. Please log in again.');
       return;
     }
-
     try {
       setIsConnecting(true);
-      const res = await api.post('/telegram/get-link', { userId });
-      const { telegram_url } = res.data;
-
-      window.open(telegram_url, '_blank');
-
-      intervalRef.current = setInterval(async () => {
-        try {
-          const checkRes = await api.get(`/telegram/status/${userId}`);
-          if (checkRes.data.connected) {
-            setIsConnected(true);
-            setIsConnecting(false);
-            notify.success('Telegram connected. You will now get reminders there.');
-            if (checkRes.data.phone_number) {
-              setPhoneNumber(checkRes.data.phone_number);
-            }
-            clearInterval(intervalRef.current);
-          }
-        } catch (e) {
-          console.error('Polling error:', e);
-        }
-      }, 3000);
-
-      setTimeout(() => {
-        if (intervalRef.current) clearInterval(intervalRef.current);
-        setIsConnecting((still) => {
-          if (still) notify.info('Still waiting? Press Start in the Telegram chat, then come back here.');
-          return false;
-        });
-      }, 60000);
+      const { telegram_url } = await createLink.mutateAsync();
+      window.open(telegram_url, '_blank', 'noopener');
     } catch (err) {
       notify.error(err, 'Could not create the Telegram link. Please try again.');
       setIsConnecting(false);
     }
   };
 
-  // 4. Disconnect Handler
   const handleDisconnect = async () => {
     try {
-      await api.post('/telegram/disconnect', { userId });
-      setIsConnected(false);
-      setPhoneNumber('');
+      await disconnect.mutateAsync();
       notify.success('Telegram disconnected.');
     } catch (err) {
       notify.error(err, 'Could not disconnect Telegram. Please try again.');
@@ -245,7 +191,7 @@ export default function TelegramSetup() {
 
         {/* 2. Telegram Chat Mockup (MOVED DOWN AS PREVIEW) */}
         <div className="flex items-center gap-2 mb-4 px-2">
-          <MessageCircle size={18} className="text-gray-400" />
+          <MessageCircle size={18} className="text-gray-500" />
           <h3 className="text-[15px] font-semibold text-gray-500 uppercase tracking-wider">Preview</h3>
         </div>
         
@@ -263,7 +209,7 @@ export default function TelegramSetup() {
               <p className="text-[15px] text-gray-800 leading-snug">
                 Hey! Your task <span className="font-semibold">"Algorithm Final Prep"</span> is due in 30 minutes. ⏰
               </p>
-              <div className="text-[11px] text-gray-400 text-right mt-1 font-medium">
+              <div className="text-[11px] text-gray-500 text-right mt-1 font-medium">
                 10:42 AM
               </div>
             </div>
@@ -273,7 +219,7 @@ export default function TelegramSetup() {
               <p className="text-[15px] text-gray-800 leading-snug">
                 <span className="font-semibold text-red-500">Urgent:</span> "Submit Visa Application" is due today!
               </p>
-              <div className="text-[11px] text-gray-400 text-right mt-1 font-medium">
+              <div className="text-[11px] text-gray-500 text-right mt-1 font-medium">
                 2:15 PM
               </div>
             </div>

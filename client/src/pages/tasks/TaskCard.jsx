@@ -4,6 +4,7 @@ import { getRelativeTime, formatDueIst } from '../../utils/date';
 import { feedback } from '../../feedback/feedback';
 import ConfirmDeleteDialog from '../../components/ConfirmDeleteDialog';
 import EditReminderDialog from '../../components/EditReminderDialog';
+import { sameTask } from '../../utils/taskEquality';
 
 const getDynamicColor = (text) => {
   if (!text) return 'text-slate-600 bg-slate-100 border-slate-200';
@@ -34,7 +35,7 @@ export const getCategoryStyle = (category) => {
   }
 };
 
-export default function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious }) {
+function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [localStatus, setLocalStatus] = useState(task.status);
@@ -110,7 +111,7 @@ export default function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious 
               />
             ) : (
               <Circle
-                className="text-slate-300 hover:text-blue-500 hover:scale-110 transition-all duration-300"
+                className="text-slate-500 hover:text-blue-500 hover:scale-110 transition-all duration-300"
                 size={24}
                 strokeWidth={2.5}
               />
@@ -124,7 +125,7 @@ export default function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious 
                 <span
                   className={`text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-md border uppercase tracking-wider transition-colors duration-500 ${
                     isCompleted
-                      ? 'bg-slate-100 text-slate-400 border-slate-200'
+                      ? 'bg-slate-100 text-slate-500 border-slate-200'
                       : getCategoryStyle(task.category)
                   }`}
                 >
@@ -144,7 +145,7 @@ export default function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious 
               {task.due_date && relativeTimeString && (
                 <span
                   className={`flex items-center text-xs font-bold transition-colors duration-500 ${
-                    isCompleted ? 'text-slate-400' : isOverdue ? 'text-rose-500' : 'text-slate-500'
+                    isCompleted ? 'text-slate-500' : isOverdue ? 'text-rose-500' : 'text-slate-500'
                   }`}
                 >
                   <Clock size={12} className="mr-1.5 shrink-0" strokeWidth={2.5} />
@@ -165,7 +166,7 @@ export default function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious 
 
             <h3
               className={`text-base sm:text-lg font-bold leading-tight break-words transition-colors duration-500 ${
-                isCompleted ? 'text-slate-400' : 'text-slate-900'
+                isCompleted ? 'text-slate-500' : 'text-slate-900'
               }`}
             >
               {task.title}
@@ -174,7 +175,7 @@ export default function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious 
             {task.description && (
               <p
                 className={`mt-1.5 text-[13px] sm:text-sm font-medium line-clamp-2 transition-colors duration-500 ${
-                  isCompleted ? 'text-slate-400' : 'text-slate-500'
+                  isCompleted ? 'text-slate-500' : 'text-slate-500'
                 }`}
               >
                 {task.description}
@@ -189,7 +190,7 @@ export default function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious 
                 aria-label={`Edit task: ${task.title}`}
                 title="Edit"
                 onClick={() => setShowEdit(true)}
-                className="text-slate-300 hover:text-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 p-2.5 rounded-xl hover:bg-blue-50 transition-all"
+                className="text-slate-500 hover:text-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 p-2.5 rounded-xl hover:bg-blue-50 transition-all"
               >
                 <Pencil size={17} strokeWidth={2.5} />
               </button>
@@ -198,7 +199,7 @@ export default function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious 
               aria-label={`Delete task: ${task.title}`}
               title="Delete"
               onClick={() => setShowConfirm(true)}
-              className="text-slate-300 hover:text-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400 p-2.5 rounded-xl hover:bg-red-50 transition-all"
+              className="text-slate-500 hover:text-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400 p-2.5 rounded-xl hover:bg-red-50 transition-all"
             >
               <Trash2 size={18} strokeWidth={2.5} />
             </button>
@@ -222,3 +223,14 @@ export default function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious 
     </>
   );
 }
+
+// A card re-renders only when ITS reminder (or a handler) changes, not whenever any reminder in the list does.
+export default React.memo(
+  TaskCard,
+  (prev, next) =>
+    prev.onToggle === next.onToggle &&
+    prev.onDelete === next.onDelete &&
+    prev.onEdit === next.onEdit &&
+    prev.isPrevious === next.isPrevious &&
+    sameTask(prev.task, next.task)
+);

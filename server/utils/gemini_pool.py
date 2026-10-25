@@ -25,6 +25,16 @@ Configuration (server/.env) - use any of these, they are merged and de-duplicate
     GEMINI_MODELS=gemini-3.8-flash,gemini-3.5-flash-lite,gemini-2.5-flash   optional override, best/fastest first
     GEMINI_TIMEOUT_SECONDS=20               optional per-attempt timeout
 
+Prompt-injection defence (finding S15)
+--------------------------------------
+Text written by a user must never be mixed into the instructions. `generate()` therefore takes
+
+  * `system_instruction`  - TRUSTED text written by us (rules, current time). Sent as Gemini's system instruction.
+  * `user_text`           - UNTRUSTED text from a user. Sent as its own user `Content` part, never spliced into a
+                            string with the instructions, and refused if it is longer than `max_input_chars`.
+
+Whatever the model returns is still validated by the caller (JSON schema, Pydantic, moderation) before it is used.
+
 Never log full keys: only the last 4 characters are printed.
 """
 import asyncio
@@ -35,10 +45,9 @@ import os
 import re
 import time
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Type
 
 from google import genai
-from google.genai import errors, types
+from google.genai import types
 from pydantic import BaseModel
 
 log = logging.getLogger("gemini_pool")
@@ -56,18 +65,35 @@ BAD_KEY_COOLDOWN = 60 * 60      # seconds: invalid / revoked key
 OVERLOAD_COOLDOWN = 8           # seconds: 5xx / timeouts (short, usually transient)
 BAD_MODEL_COOLDOWN = 60 * 60    # seconds: model name does not exist for this key
 
+MAX_INPUT_CHARS = 2000          # hard ceiling for user text sent to the model (callers usually set a lower one)
+MAX_SYSTEM_CHARS = 8000         # our own instructions; a guard against accidentally sending something huge
+
 
 class GeminiUnavailable(RuntimeError):
     """Every key x model combination failed."""
+
+
+class PromptTooLong(ValueError):
+    """The user text is longer than the allowed boundary; nothing was sent to the provider."""
+
+
+_CONTROL_CHARS_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f\u2028\u2029\u202a-\u202e\u2066-\u2069]")
+
+
+def clean_user_text(text: str) -> str:
+    """Remove control and bidi-override characters (they hide instructions from human reviewers), trim, normalise
+    line endings. Newlines and tabs stay."""
+    text = _CONTROL_CHARS_RE.sub(" ", text.replace("\r\n", "\n").replace("\r", "\n"))
+    return text.strip()
 
 
 def _clean(key: str) -> str:
     return key.strip().strip("'\"").strip()
 
 
-def load_api_keys(environ=None) -> List[str]:
+def load_api_keys(environ=None) -> list[str]:
     env = os.environ if environ is None else environ
-    raw: List[str] = []
+    raw: list[str] = []
     for name in ("GEMINI_API_KEYS", "GEMINI_API_KEY", "GOOGLE_API_KEY"):
         raw.extend((env.get(name) or "").split(","))
     numbered = sorted(
@@ -84,7 +110,7 @@ def load_api_keys(environ=None) -> List[str]:
     return keys
 
 
-def load_models(environ=None) -> List[str]:
+def load_models(environ=None) -> list[str]:
     env = os.environ if environ is None else environ
     raw = env.get("GEMINI_MODELS", "")
     models = [m.strip() for m in raw.split(",") if m.strip()]
@@ -95,7 +121,7 @@ def _mask(key: str) -> str:
     return f"...{key[-4:]}"
 
 
-def classify_error(exc: BaseException) -> Tuple[str, int]:
+def classify_error(exc: BaseException) -> tuple[str, int]:
     """Map an exception to (kind, cooldown_seconds).
 
     kinds: rate_limit | bad_key | bad_model | overload | bad_request (not retryable) | unknown
@@ -124,13 +150,13 @@ def classify_error(exc: BaseException) -> Tuple[str, int]:
 
 @dataclass
 class GeminiPool:
-    keys: List[str]
-    models: List[str]
+    keys: list[str]
+    models: list[str]
     timeout: float = 20.0
-    _clients: Dict[str, "genai.Client"] = field(default_factory=dict, repr=False)
-    _key_blocked_until: Dict[str, float] = field(default_factory=dict, repr=False)
-    _pair_blocked_until: Dict[Tuple[str, str], float] = field(default_factory=dict, repr=False)
-    _model_blocked_until: Dict[str, float] = field(default_factory=dict, repr=False)
+    _clients: dict[str, "genai.Client"] = field(default_factory=dict, repr=False)
+    _key_blocked_until: dict[str, float] = field(default_factory=dict, repr=False)
+    _pair_blocked_until: dict[tuple[str, str], float] = field(default_factory=dict, repr=False)
+    _model_blocked_until: dict[str, float] = field(default_factory=dict, repr=False)
     _rr: itertools.count = field(default_factory=itertools.count, repr=False)
 
     def __post_init__(self):
@@ -152,12 +178,12 @@ class GeminiPool:
             and self._model_blocked_until.get(model, 0) <= now
         )
 
-    def _ordered_keys(self) -> List[str]:
+    def _ordered_keys(self) -> list[str]:
         """Round-robin start so successive requests use different keys."""
         start = next(self._rr) % len(self.keys)
         return self.keys[start:] + self.keys[:start]
 
-    def status(self) -> List[dict]:
+    def status(self) -> list[dict]:
         """Snapshot for debugging / a health endpoint. Keys are masked."""
         now = time.monotonic()
         return [
@@ -182,24 +208,36 @@ class GeminiPool:
     # -- main entry ---------------------------------------------------------
     async def generate(
         self,
-        prompt: str,
+        user_text: str,
         *,
-        schema: Optional[Type[BaseModel]] = None,
-        system_instruction: Optional[str] = None,
+        system_instruction: str,
+        schema: type[BaseModel] | None = None,
         temperature: float = 0.0,
-        max_output_tokens: Optional[int] = None,
+        max_output_tokens: int | None = None,
+        max_input_chars: int = MAX_INPUT_CHARS,
     ) -> str:
-        """Return the model's text. With `schema`, the text is JSON matching that Pydantic model."""
+        """Return the model's text. With `schema`, the text is JSON matching that Pydantic model.
+
+        `system_instruction` is trusted (ours); `user_text` is untrusted and is sent as a separate user message.
+        """
+        user_text = clean_user_text(user_text)
+        if not user_text:
+            raise PromptTooLong("Empty input")
+        if len(user_text) > min(max_input_chars, MAX_INPUT_CHARS):
+            raise PromptTooLong(f"Input is longer than {min(max_input_chars, MAX_INPUT_CHARS)} characters")
+        if not system_instruction or len(system_instruction) > MAX_SYSTEM_CHARS:
+            raise ValueError(f"system_instruction is required and must be at most {MAX_SYSTEM_CHARS} characters")
+        contents = [types.Content(role="user", parts=[types.Part(text=user_text)])]
+
         config_kwargs = {"temperature": temperature}
         if schema is not None:
             config_kwargs.update(response_mime_type="application/json", response_schema=schema)
-        if system_instruction:
-            config_kwargs["system_instruction"] = system_instruction
+        config_kwargs["system_instruction"] = system_instruction
         if max_output_tokens:
             config_kwargs["max_output_tokens"] = max_output_tokens
         config = types.GenerateContentConfig(**config_kwargs)
 
-        last_exc: Optional[BaseException] = None
+        last_exc: BaseException | None = None
         attempted = set()
         keys = self._ordered_keys()
 
@@ -219,7 +257,7 @@ class GeminiPool:
                     attempted.add(pair)
                     try:
                         response = await asyncio.wait_for(
-                            self._client(key).aio.models.generate_content(model=model, contents=prompt, config=config),
+                            self._client(key).aio.models.generate_content(model=model, contents=contents, config=config),
                             timeout=self.timeout + 5,
                         )
                         text = getattr(response, "text", None)
@@ -239,12 +277,12 @@ class GeminiPool:
             f"All {len(self.keys)} Gemini key(s) x {len(self.models)} model(s) failed after {len(attempted)} attempt(s). Last error: {last_exc}"
         )
 
-    async def generate_json(self, prompt: str, schema: Type[BaseModel], **kwargs) -> dict:
-        text = await self.generate(prompt, schema=schema, **kwargs)
+    async def generate_json(self, user_text: str, schema: type[BaseModel], *, system_instruction: str, **kwargs) -> dict:
+        text = await self.generate(user_text, schema=schema, system_instruction=system_instruction, **kwargs)
         return json.loads(text)
 
 
-_pool: Optional[GeminiPool] = None
+_pool: GeminiPool | None = None
 
 
 def get_pool() -> GeminiPool:

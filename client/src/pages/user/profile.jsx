@@ -17,10 +17,14 @@ import {
   Newspaper,
   Shield,
 } from "lucide-react";
-import api from "../../utils/api";
+import { logoutFromServer } from "../../api";
+import useMe from "../../hooks/useMe";
+import { useDeleteAccount, useRenameUser, useSetAvatarUrl, useUploadAvatar } from "../../hooks/useProfileMutations";
+import { useUnreadUpdates } from "../../hooks/useUpdates";
 import notify from "../../utils/notify";
 import usePageMeta from "../../utils/usePageMeta";
 import { clearSession } from "../../utils/auth";
+import { resolveAvatarSrc } from "../../utils/avatar";
 import MenuItem from "../components/MenuItems";
 import AvatarPickerModal from "../components/AvatarPickerModal";
 import AppearanceSettings from "../components/AppearanceSettings";
@@ -33,88 +37,39 @@ export default function Profile() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
-  // --- Core State ---
-  const [userInfo, setUserInfo] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // --- Data (see src/hooks and src/api: this page never touches axios) ---
+  const me = useMe();
+  const userInfo = me.data ?? null;
+  const loading = me.isPending;
+  const unreadUpdatesCount = useUnreadUpdates();
+  const renameUser = useRenameUser();
+  const setAvatarUrlOnServer = useSetAvatarUrl();
+  const uploadAvatar = useUploadAvatar();
+  const deleteAccount = useDeleteAccount();
 
   // --- Modals & Confirmation States ---
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteText, setDeleteText] = useState("");
   const [showAvatarModal, setShowAvatarModal] = useState(false);
 
-  // --- Profile Editing States ---
+  // --- Profile editing ---
   const [isEditingName, setIsEditingName] = useState(false);
   const [editNameValue, setEditNameValue] = useState("");
-  const [isUpdatingName, setIsUpdatingName] = useState(false);
+  const isUpdatingName = renameUser.isPending;
+  const deleteLoading = deleteAccount.isPending;
 
-  // --- Avatar States ---
-  const [avatarUrl, setAvatarUrl] = useState(null);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  // --- Avatar: a local preview shows instantly while the upload runs; `undefined` means "use the saved one" ---
+  const [avatarPreview, setAvatarPreview] = useState(undefined);
+  const avatarUrl = avatarPreview !== undefined ? avatarPreview : userInfo?.avatar_url || null;
+  const isUploadingImage = uploadAvatar.isPending || setAvatarUrlOnServer.isPending;
 
-  // --- Updates State ---
-  const [unreadUpdatesCount, setUnreadUpdatesCount] = useState(0);
-
-  // --- Data Fetching Effects ---
-
-  // Fetch User Info
+  // A failed profile load is reported once (a 401 is handled globally by the API client).
   useEffect(() => {
-    let isMounted = true;
-
-    const fetchUser = async () => {
-      try {
-        const response = await api.get("/user/me");
-        if (!isMounted) return;
-
-        const userData = response.data;
-        setUserInfo(userData);
-        setEditNameValue(userData?.username || "Student");
-        if (userData?.avatar_url) {
-          setAvatarUrl(userData.avatar_url);
-        }
-      } catch (error) {
-        console.error("Failed to fetch user data:", error);
-        // A 401 is handled globally by the API client (clears the session, goes to login).
-        if (error.response?.status !== 401) {
-          notify.error(error, "Could not load your profile. Please refresh the page.");
-        }
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-
-    fetchUser();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  // Fetch Unread Updates Counter
-  useEffect(() => {
-    const fetchUnreadCount = async () => {
-      try {
-        const res = await api.get("/user/updates");
-        const totalUpdates = res.data?.length || 0;
-        const lastSeenCount = parseInt(localStorage.getItem("seenUpdatesCount") || "0", 10);
-        
-        if (totalUpdates > lastSeenCount) {
-          setUnreadUpdatesCount(totalUpdates - lastSeenCount);
-        }
-      } catch (error) {
-        console.error("Failed to fetch updates count:", error);
-      }
-    };
-
-    fetchUnreadCount();
-
-    const handleUpdatesRead = () => setUnreadUpdatesCount(0);
-    window.addEventListener("updatesRead", handleUpdatesRead);
-
-    return () => {
-      window.removeEventListener("updatesRead", handleUpdatesRead);
-    };
-  }, []);
+    if (me.isError && me.error?.response?.status !== 401) {
+      notify.error(me.error, "Could not load your profile. Please refresh the page.");
+    }
+  }, [me.isError, me.error]);
 
   // --- Action Handlers ---
 
@@ -128,24 +83,27 @@ export default function Profile() {
       );
       if (!leave) return;
     }
+    await logoutFromServer(); // revoke this device's session on the server, then clear it locally
     clearSession();
     navigate("/", { replace: true });
   };
 
   const handleDeleteAccount = async () => {
     if (deleteText.trim().toUpperCase() !== "DELETE") return;
-    setDeleteLoading(true);
     try {
-      await api.delete("/user/me");
+      await deleteAccount.mutateAsync();
       clearSession();
       notify.success("Your account and all your data were deleted.");
       navigate("/", { replace: true });
     } catch (error) {
       console.error("Failed to delete account:", error);
       notify.error(error, "Could not delete your account. Please try again later.");
-    } finally {
-      setDeleteLoading(false);
     }
+  };
+
+  const startEditingName = () => {
+    setEditNameValue(userInfo?.username || "Student");
+    setIsEditingName(true);
   };
 
   const handleUpdateName = async () => {
@@ -154,18 +112,13 @@ export default function Profile() {
       setIsEditingName(false);
       return;
     }
-
-    setIsUpdatingName(true);
     try {
-      await api.patch("/user/me", { username: trimmedName });
-      setUserInfo((prev) => (prev ? { ...prev, username: trimmedName } : prev));
+      await renameUser.mutateAsync(trimmedName);
       setIsEditingName(false);
       notify.success("Name updated.");
     } catch (error) {
       console.error("Failed to update name:", error);
       notify.error(error, "Could not update your name. Please try again.");
-    } finally {
-      setIsUpdatingName(false);
     }
   };
 
@@ -175,59 +128,33 @@ export default function Profile() {
 
     setShowAvatarModal(false);
     const tempPreviewUrl = URL.createObjectURL(file);
-    setAvatarUrl(tempPreviewUrl);
-    setIsUploadingImage(true);
-
-    const formData = new FormData();
-    formData.append("avatar", file);
+    setAvatarPreview(tempPreviewUrl);
 
     try {
-      const response = await api.post("/user/avatar", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      if (response.data?.avatar_url) {
-        setAvatarUrl(response.data.avatar_url);
-        setUserInfo((prev) => (prev ? { ...prev, avatar_url: response.data.avatar_url } : prev));
-        notify.success("Profile picture updated.");
-      }
+      const result = await uploadAvatar.mutateAsync(file);
+      if (result?.avatar_url) notify.success("Profile picture updated.");
     } catch (error) {
       console.error("Failed to upload avatar:", error);
-      setAvatarUrl(userInfo?.avatar_url || null);
       notify.error(error, "Could not upload that image. Use a picture under 2 MB.");
     } finally {
+      setAvatarPreview(undefined); // the cached profile now carries the saved picture (or the old one on failure)
       URL.revokeObjectURL(tempPreviewUrl);
-      setIsUploadingImage(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
   const handleIllustrationSelect = async (illustrationUrl) => {
     setShowAvatarModal(false);
-    const previousUrl = avatarUrl;
-    setAvatarUrl(illustrationUrl);
-    setIsUploadingImage(true);
-
+    setAvatarPreview(illustrationUrl);
     try {
-      await api.patch("/user/me", { avatar_url: illustrationUrl });
-      setUserInfo((prev) => (prev ? { ...prev, avatar_url: illustrationUrl } : prev));
+      await setAvatarUrlOnServer.mutateAsync(illustrationUrl);
       notify.success("Profile picture updated.");
     } catch (error) {
       console.error("Failed to update avatar illustration:", error);
-      setAvatarUrl(previousUrl);
       notify.error(error, "Could not set that picture. Please try again.");
     } finally {
-      setIsUploadingImage(false);
+      setAvatarPreview(undefined);
     }
-  };
-
-  const getFormattedAvatarSrc = (url) => {
-    if (!url) return null;
-    if (url.startsWith("/uploads")) {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") || "";
-      return `${baseUrl}${url}`;
-    }
-    return url;
   };
 
   // --- Render Loading Skeleton ---
@@ -256,7 +183,7 @@ export default function Profile() {
           >
             {avatarUrl ? (
               <img
-                src={getFormattedAvatarSrc(avatarUrl)}
+                src={resolveAvatarSrc(avatarUrl)}
                 alt="Profile Avatar"
                 className="h-full w-full object-cover"
               />
@@ -320,12 +247,12 @@ export default function Profile() {
               <button
                 type="button"
                 className="flex items-center gap-2 group cursor-pointer focus:outline-none"
-                onClick={() => setIsEditingName(true)}
+                onClick={startEditingName}
               >
                 <h2 className="text-2xl font-bold text-gray-900 tracking-tight">
                   {userInfo?.username || "User"}
                 </h2>
-                <Edit2 size={15} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
+                <Edit2 size={15} className="text-gray-500 group-hover:text-blue-500 transition-colors" />
               </button>
             )}
           </div>
@@ -333,7 +260,7 @@ export default function Profile() {
           <p className="text-gray-500 font-medium text-sm">{userInfo?.email}</p>
 
           {userInfo?.created_at && (
-            <div className="flex items-center gap-1.5 mt-3 px-3.5 py-1 bg-white border border-gray-100 text-gray-400 rounded-full text-xs font-semibold shadow-sm">
+            <div className="flex items-center gap-1.5 mt-3 px-3.5 py-1 bg-white border border-gray-100 text-gray-500 rounded-full text-xs font-semibold shadow-sm">
               <CalendarDays size={13} strokeWidth={2} />
               <span>
                 Joined{" "}
@@ -350,7 +277,7 @@ export default function Profile() {
         <div className="space-y-6">
           {/* General Section */}
           <div>
-            <h3 className="px-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">General</h3>
+            <h3 className="px-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">General</h3>
             <div className="bg-white border border-gray-100 rounded-[24px] overflow-hidden shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
               <MenuItem icon={Bell} label="Notifications" subLabel="Browser alerts, Telegram, sound and vibration" to="/notifications" />
               <MenuItem icon={Newspaper} label="Updates" to="/updates" badge={unreadUpdatesCount} />
@@ -365,7 +292,7 @@ export default function Profile() {
 
           {/* Account Section */}
           <div>
-            <h3 className="px-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Account</h3>
+            <h3 className="px-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Account</h3>
             <div className="bg-white border border-gray-100 rounded-[24px] overflow-hidden shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
               
               {/* Logout Toggle */}

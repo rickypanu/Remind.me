@@ -8,7 +8,7 @@ import usePageMeta from "../../utils/usePageMeta";
 import { feedback } from "../../feedback/feedback";
 
 const card = "bg-white border border-gray-100 rounded-[24px] overflow-hidden shadow-[0_4px_20px_rgb(0,0,0,0.03)]";
-const heading = "px-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2";
+const heading = "px-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2";
 
 /** One place for everything about being notified: browser alerts, Telegram, sound and vibration. */
 export default function Notifications() {
@@ -90,7 +90,7 @@ export default function Notifications() {
                   <p className="mt-0.5 text-sm text-gray-500">Connect or manage the bot that messages you reminders.</p>
                 </div>
               </div>
-              <ChevronRight size={18} className="text-gray-400 shrink-0" />
+              <ChevronRight size={18} className="text-gray-500 shrink-0" />
             </Link>
           </div>
         </section>

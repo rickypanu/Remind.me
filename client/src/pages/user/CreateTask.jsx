@@ -38,7 +38,7 @@ const WEEKDAYS = [
 ];
 
 const fieldBase =
-  "w-full pl-10 pr-4 py-2.5 bg-slate-100/70 border border-transparent rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all font-normal min-h-[44px]";
+  "w-full pl-10 pr-4 py-2.5 bg-slate-100/70 border border-transparent rounded-xl text-sm text-slate-900 placeholder-slate-500 focus:bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all font-normal min-h-[44px]";
 
 export default function CreateTask() {
   const navigate = useNavigate();
@@ -159,7 +159,7 @@ export default function CreateTask() {
                 Title
               </label>
               <div className="relative group">
-                <Type className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={17} />
+                <Type className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-600 transition-colors" size={17} />
                 <input
                   id="title"
                   type="text"
@@ -177,10 +177,10 @@ export default function CreateTask() {
             {/* Description */}
             <div>
               <label htmlFor="description" className="block text-xs font-medium text-slate-500 mb-1.5 ml-0.5">
-                Notes <span className="text-slate-400 font-normal">(optional)</span>
+                Notes <span className="text-slate-500 font-normal">(optional)</span>
               </label>
               <div className="relative group">
-                <AlignLeft className="absolute left-3.5 top-3 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={17} />
+                <AlignLeft className="absolute left-3.5 top-3 text-slate-500 group-focus-within:text-blue-600 transition-colors" size={17} />
                 <textarea
                   id="description"
                   name="description"
@@ -229,7 +229,7 @@ export default function CreateTask() {
                   Date &amp; time (IST)
                 </label>
                 <div className="relative group w-full">
-                  <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors pointer-events-none z-10" size={17} />
+                  <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-600 transition-colors pointer-events-none z-10" size={17} />
                   <input
                     id="due_date"
                     type="datetime-local"
@@ -280,7 +280,7 @@ export default function CreateTask() {
                       Time (IST)
                     </label>
                     <div className="relative group">
-                      <Clock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors pointer-events-none" size={17} />
+                      <Clock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-600 transition-colors pointer-events-none" size={17} />
                       <input
                         id="time_of_day"
                         type="time"
@@ -294,10 +294,10 @@ export default function CreateTask() {
                   </div>
                   <div>
                     <label htmlFor="ends_on" className="block text-xs font-medium text-slate-500 mb-1.5 ml-0.5">
-                      Ends on <span className="text-slate-400 font-normal">(optional)</span>
+                      Ends on <span className="text-slate-500 font-normal">(optional)</span>
                     </label>
                     <div className="relative group">
-                      <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors pointer-events-none" size={17} />
+                      <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-600 transition-colors pointer-events-none" size={17} />
                       <input
                         id="ends_on"
                         type="date"
@@ -326,7 +326,7 @@ export default function CreateTask() {
                   Category
                 </label>
                 <div className="relative group">
-                  <Tag className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors pointer-events-none" size={17} />
+                  <Tag className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-600 transition-colors pointer-events-none" size={17} />
                   <select
                     id="category"
                     name="category"
@@ -347,7 +347,7 @@ export default function CreateTask() {
 
               {formData.category === "Other" && (
                 <div className="relative group">
-                  <PenTool className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={17} />
+                  <PenTool className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-600 transition-colors" size={17} />
                   <input
                     type="text"
                     ref={customInputRef}

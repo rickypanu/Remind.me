@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import api from './api';
+import { webpushApi } from '../api';
+import useMe, { userIdOf } from '../hooks/useMe';
 import notify from './notify';
 
 const PUBLIC_VAPID_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
@@ -17,7 +18,7 @@ function urlBase64ToUint8Array(base64String) {
   return outputArray;
 }
 
-// The service worker is registered by vite-plugin-pwa (registerSW.js).
+// The service worker is registered by components/UpdatePrompt.jsx (vite-plugin-pwa).
 // `ready` never resolves if no service worker is registered (e.g. `vite dev`),
 // so we race it against a timeout instead of hanging on "Updating...".
 function getActiveRegistration(timeoutMs = 8000) {
@@ -41,45 +42,36 @@ export const pushSupported = () =>
 
 /** Push notification on/off logic, shared by the desktop button and the mobile menu button. */
 export default function usePush(isLoggedIn) {
-  const [avatarUrl, setAvatarUrl] = useState(null);
-  const [userId, setUserId] = useState(null);
   const [pushStatus, setPushStatus] = useState('idle'); // 'idle' | 'loading' | 'subscribed'
   const [permission, setPermission] = useState(() =>
     typeof Notification === 'undefined' ? 'unsupported' : Notification.permission
   );
 
-  useEffect(() => {
-    if (!isLoggedIn) return;
+  const me = useMe({ enabled: !!isLoggedIn });
+  const avatarUrl = me.data?.avatar_url || null;
+  const userId = userIdOf(me.data);
 
-    // Subscription state is per DEVICE, so the browser is the source of truth.
-    // If this browser is already subscribed, re-send it to the backend
-    // (idempotent via $addToSet) so a lost DB record heals itself.
-    const syncLocalSubscription = async (uid) => {
-      if (!pushSupported()) return;
+  // Subscription state is per DEVICE, so the browser is the source of truth.
+  // If this browser is already subscribed, re-send it to the backend
+  // (idempotent via $addToSet) so a lost DB record heals itself.
+  useEffect(() => {
+    if (!isLoggedIn || !userId || !pushSupported()) return;
+    let cancelled = false;
+    (async () => {
       try {
         const registration = await getActiveRegistration();
         const existing = await registration.pushManager.getSubscription();
-        if (existing) {
-          setPushStatus('subscribed');
-          if (uid) {
-            await api.post('/webpush/subscribe', { subscription: existing.toJSON(), userId: uid });
-          }
-        }
+        if (!existing || cancelled) return;
+        setPushStatus('subscribed');
+        await webpushApi.subscribe(existing.toJSON());
       } catch (error) {
         console.error('Error checking local push subscription:', error);
       }
+    })();
+    return () => {
+      cancelled = true;
     };
-
-    api
-      .get('/user/me')
-      .then(({ data }) => {
-        if (data?.avatar_url) setAvatarUrl(data.avatar_url);
-        const uid = data?._id || data?.id;
-        if (uid) setUserId(uid);
-        syncLocalSubscription(uid);
-      })
-      .catch((error) => console.error('Failed to fetch user data for header', error));
-  }, [isLoggedIn]);
+  }, [isLoggedIn, userId]);
 
   const handleSubscribe = async () => {
     if (pushStatus === 'subscribed' || !userId) return;
@@ -115,7 +107,7 @@ export default function usePush(isLoggedIn) {
         });
       }
 
-      await api.post('/webpush/subscribe', { subscription: subscription.toJSON(), userId });
+      await webpushApi.subscribe(subscription.toJSON());
 
       setPushStatus('subscribed');
       notify.success('Alerts are on for this device.');
@@ -139,7 +131,7 @@ export default function usePush(isLoggedIn) {
         const subJSON = subscription.toJSON();
 
         // 1. Remove ONLY this device's subscription from the backend ($pull)
-        await api.delete(`/webpush/unsubscribe/${userId}`, { data: { subscription: subJSON, userId } });
+        await webpushApi.unsubscribe(subJSON.endpoint);
 
         // 2. Then revoke it locally in the browser
         await subscription.unsubscribe();

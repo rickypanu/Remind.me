@@ -2,11 +2,10 @@
 Run from the server folder:   python -m unittest discover -s tests -v
 (or `pytest` if you have it installed). No database, network or API keys needed.
 """
-import asyncio
 import os
 import sys
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tests import _stubs  # noqa: E402
@@ -201,6 +200,9 @@ class SchemaTests(unittest.TestCase):
         self.assertEqual((once.weekdays, once.time_of_day), ([], None))
 
 
+RULES = "Test rules: answer briefly."  # GeminiPool.generate requires our instructions separately from the user text (S15)
+
+
 class GeminiPoolTests(unittest.IsolatedAsyncioTestCase):
     def make_pool(self, behaviours, models=("m1", "m2")):
         """behaviours: {(key, model): exception | 'ok'} - missing means ok."""
@@ -235,7 +237,7 @@ class GeminiPoolTests(unittest.IsolatedAsyncioTestCase):
         rl = self.err(429, "quota exceeded", "RESOURCE_EXHAUSTED")
         gp, pool, calls = self.make_pool({("k1", "m1"): rl, ("k2", "m1"): rl})
         pool._rr = __import__("itertools").count(0)
-        out = await pool.generate("hi")
+        out = await pool.generate("hi", system_instruction=RULES)
         self.assertEqual(out, "k3:m1")           # third key rescued the request on the best model
         self.assertEqual(calls, [("k1", "m1"), ("k2", "m1"), ("k3", "m1")])
 
@@ -243,42 +245,42 @@ class GeminiPoolTests(unittest.IsolatedAsyncioTestCase):
         rl = self.err(429, "quota exceeded", "RESOURCE_EXHAUSTED")
         gp, pool, calls = self.make_pool({("k1", "m1"): rl})
         pool._rr = __import__("itertools").count(0)
-        await pool.generate("a")
+        await pool.generate("a", system_instruction=RULES)
         calls.clear()
         pool._rr = __import__("itertools").count(0)  # start at k1 again
-        await pool.generate("b")
+        await pool.generate("b", system_instruction=RULES)
         self.assertNotIn(("k1", "m1"), calls)     # cooling down: not retried
 
     async def test_bad_key_benched_long(self):
         gp, pool, calls = self.make_pool({("k1", "m1"): self.err(400, "API key not valid. Please pass a valid API key.", "INVALID_ARGUMENT")})
         pool._rr = __import__("itertools").count(0)
-        out = await pool.generate("x")
+        out = await pool.generate("x", system_instruction=RULES)
         self.assertEqual(out, "k2:m1")
         self.assertGreater(pool._key_blocked_until["k1"] - __import__("time").monotonic(), 3000)
 
     async def test_all_keys_limited_falls_to_next_model(self):
         rl = self.err(429, "quota", "RESOURCE_EXHAUSTED")
         gp, pool, calls = self.make_pool({("k1", "m1"): rl, ("k2", "m1"): rl, ("k3", "m1"): rl})
-        out = await pool.generate("x")
+        out = await pool.generate("x", system_instruction=RULES)
         self.assertTrue(out.endswith(":m2"))
 
     async def test_everything_fails_raises_unavailable(self):
         gp, pool, calls = self.make_pool({(k, m): self.err(503, "overloaded", "UNAVAILABLE") for k in ("k1", "k2", "k3") for m in ("m1", "m2")})
         with self.assertRaises(gp.GeminiUnavailable):
-            await pool.generate("x")
+            await pool.generate("x", system_instruction=RULES)
         self.assertEqual(len(calls), 6)           # every combination tried exactly once
 
     async def test_invalid_prompt_not_retried(self):
         gp, pool, calls = self.make_pool({("k1", "m1"): self.err(400, "Invalid JSON payload", "INVALID_ARGUMENT")})
         pool._rr = __import__("itertools").count(0)
         with self.assertRaises(Exception):
-            await pool.generate("x")
+            await pool.generate("x", system_instruction=RULES)
         self.assertEqual(len(calls), 1)
 
     async def test_round_robin_spreads_load(self):
         gp, pool, calls = self.make_pool({})
         for _ in range(3):
-            await pool.generate("x")
+            await pool.generate("x", system_instruction=RULES)
         self.assertEqual({c[0] for c in calls}, {"k1", "k2", "k3"})
 
     def test_key_loading(self):

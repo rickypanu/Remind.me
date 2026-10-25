@@ -4,6 +4,9 @@ import PublicLayout from "../../components/PublicLayout";
 import PageHeader from "../../components/PageHeader";
 import Logo from "../../components/Logo";
 import usePageMeta from "../../utils/usePageMeta";
+import { routeMeta } from "../../seo/routes";
+import useApiHealth from "../../hooks/useApiHealth";
+import { isLoggedIn as hasSession } from "../../utils/auth";
 import { SITE, mailto } from "../../config/site";
 import {
   ArrowRight,
@@ -25,11 +28,8 @@ import {
 
 const APP_VERSION = "v5.0.0";
 const REPO_URL = SITE.repoUrl;
-const API_BASE = (
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
-).replace(/\/$/, "");
 
-// ---- Live service status (pings the backend's /health endpoint) ----
+// ---- Live service status (useApiHealth pings the backend's /health endpoint) ----
 const STATUS_UI = {
   checking: {
     label: "Checking status…",
@@ -58,38 +58,6 @@ const STATUS_UI = {
     ping: false,
   },
 };
-
-function useServiceStatus() {
-  const [status, setStatus] = useState("checking");
-
-  useEffect(() => {
-    let cancelled = false;
-    const controller = new AbortController();
-    // Free hosting can sleep; if the first reply is slow, say the server is waking up
-    const slowTimer = setTimeout(
-      () => !cancelled && setStatus((s) => (s === "checking" ? "waking" : s)),
-      5000,
-    );
-    const abortTimer = setTimeout(() => controller.abort(), 45000);
-
-    fetch(`${API_BASE}/health`, { signal: controller.signal })
-      .then((res) => !cancelled && setStatus(res.ok ? "ok" : "down"))
-      .catch(() => !cancelled && setStatus("down"))
-      .finally(() => {
-        clearTimeout(slowTimer);
-        clearTimeout(abortTimer);
-      });
-
-    return () => {
-      cancelled = true;
-      clearTimeout(slowTimer);
-      clearTimeout(abortTimer);
-      controller.abort();
-    };
-  }, []);
-
-  return status;
-}
 
 // ---- Content ----
 const features = [
@@ -176,14 +144,10 @@ const supportLinks = [
 ];
 
 export default function About() {
-  const status = useServiceStatus();
+  const status = useApiHealth();
   const ui = STATUS_UI[status];
-  const isLoggedIn = !!localStorage.getItem("token");
-  usePageMeta({
-    title: "About",
-    description:
-      "About RemindMe: a reminder app for specific, daily and weekly reminders with Magic Add AI, Telegram and browser notifications, and encrypted private reminders.",
-  });
+  const isLoggedIn = hasSession();
+  usePageMeta(routeMeta("/about"));
   // Only show shortcuts the visitor can actually open
   const actions = isLoggedIn
     ? quickActions
@@ -247,7 +211,7 @@ export default function About() {
 
           {/* --- Quick App Navigation --- */}
           <div className="mb-3 px-1 flex items-center justify-between mt-8">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-gray-400">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500">
               Quick Actions
             </h3>
           </div>
@@ -271,7 +235,7 @@ export default function About() {
 
           {/* Features Grid */}
           <div className="mb-3 px-1 flex items-center justify-between">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-gray-400">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500">
               What&apos;s Inside
             </h3>
           </div>
@@ -323,7 +287,7 @@ export default function About() {
 
           {/* Links & Resources */}
           <div className="mb-3 px-1">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-gray-400">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500">
               Project &amp; Support
             </h3>
           </div>
@@ -349,12 +313,12 @@ export default function About() {
                       <span className="font-semibold text-gray-900 text-sm block">
                         {title}
                       </span>
-                      <span className="text-xs text-gray-400">{text}</span>
+                      <span className="text-xs text-gray-500">{text}</span>
                     </div>
                   </div>
                   <ExternalLink
                     size={18}
-                    className="text-gray-400 group-hover:text-gray-600 transition-colors"
+                    className="text-gray-500 group-hover:text-gray-600 transition-colors"
                   />
                 </a>
               ),
@@ -377,7 +341,7 @@ export default function About() {
                 </a>
               </p>
             </div>
-            <p className="text-xs text-gray-400 mt-2">
+            <p className="text-xs text-gray-500 mt-2">
               © {new Date().getFullYear()} GetRemindMe • All rights reserved.
             </p>
           </div>

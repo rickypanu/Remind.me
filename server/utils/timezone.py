@@ -36,6 +36,21 @@ def as_utc(dt: datetime) -> datetime:
     return dt.astimezone(UTC)
 
 
+def as_ist(dt: datetime) -> datetime:
+    """Any datetime -> the same instant expressed in IST (+05:30). Naive input is assumed to be UTC (as read from Mongo)."""
+    return as_utc(dt).astimezone(IST)
+
+
+def ist_day_key(dt: datetime) -> str:
+    """The IST calendar day of an instant as "YYYY-MM-DD" (the key completions are stored under)."""
+    return as_ist(dt).date().isoformat()
+
+
+def ist_now_floor_minute() -> datetime:
+    """Now in IST with seconds and microseconds dropped: what "2 hours from now" is measured from."""
+    return now_ist().replace(second=0, microsecond=0)
+
+
 def ist_day_bounds_utc(day_offset: int = 0):
     """[start, end) of an IST calendar day, expressed in UTC.
     day_offset=0 -> today, 1 -> tomorrow."""

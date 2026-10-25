@@ -1,57 +1,34 @@
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  useCallback,
-  useRef,
-  useLayoutEffect,
-} from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import {
-  Loader2,
-  AlertCircle,
-  ChevronDown,
-  Coffee,
-  Sun,
-  CalendarDays,
-  CheckCircle2,
-  Sparkles,
-  ArrowUp,
-  Mic,
-  MicOff,
-  ArrowUpDown,
-  Plus,
-} from "lucide-react";
-import api from "../../utils/api";
-import { parseDueDate, getIstDayRange, getIstHour, APP_TIMEZONE } from "../../utils/date";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Coffee, Sun, CalendarDays, X } from "lucide-react";
+import { APP_TIMEZONE, formatDueIst, formatIstDayLabel, getIstHour, istDateKey } from "../../utils/date";
 import TaskCard from "../tasks/TaskCard";
 import Header from "../components/Header";
 import notify from "../../utils/notify";
 import { isLoggedIn } from "../../utils/auth";
 import usePageMeta from "../../utils/usePageMeta";
 import useOfflineTasks from "../../offline/useOfflineTasks";
-import { getMeta, setMeta } from "../../offline/db";
-import { syncNow } from "../../offline/sync";
-import { feedback } from "../../feedback/feedback";
-import { formatDueIst } from "../../utils/date";
+import useMe, { userIdOf } from "../../hooks/useMe";
+import useDashboardTasks from "../../hooks/useDashboardTasks";
+import useTaskStats from "../../hooks/useTaskStats";
+import { filterByIstDate, greetingForHour } from "./buckets";
+import CompletedArchive from "./CompletedArchive";
+import DashboardTabs from "./DashboardTabs";
+import DateFilterButton from "./DateFilterButton";
+import EmptyState from "./EmptyState";
+import MagicAddForm from "./MagicAddForm";
+import MotivationCard from "./MotivationCard";
+import { effectiveStreak } from "./motivation";
+import TaskGroups from "./TaskGroups";
+import OverdueBanner from "./OverdueBanner";
+import TaskSkeleton from "./TaskSkeleton";
 
-// Constants
-const VOICE_LANG = "en-IN";
+const EMPTY_STATES = {
+  today: { Icon: Coffee, title: "Nothing due today", body: "You're all caught up. Enjoy your break!", cta: "Add a reminder" },
+  upcoming: { Icon: CalendarDays, title: "Nothing planned yet", body: "Add a reminder to plan ahead.", cta: "Add a reminder" },
+};
 
-// Placeholder cards shown while loading
-function TaskSkeleton() {
-  return (
-    <div className="p-5 rounded-[24px] border border-slate-100 bg-white animate-pulse flex gap-4">
-      <div className="w-6 h-6 rounded-full bg-slate-100 shrink-0" />
-      <div className="flex-1 space-y-3">
-        <div className="h-3 w-24 rounded bg-slate-100" />
-        <div className="h-4 w-3/4 rounded bg-slate-100" />
-        <div className="h-3 w-1/2 rounded bg-slate-100" />
-      </div>
-    </div>
-  );
-}
+const savedOfflineNote = () => (navigator.onLine ? "" : " Saved on this device.");
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -62,79 +39,23 @@ export default function Dashboard() {
   });
 
   const [activeTab, setActiveTab] = useState("today");
-  const [isMissedOpen, setIsMissedOpen] = useState(false);
-  const [isDoneOpen, setIsDoneOpen] = useState(false);
-
-  // Magic Add
-  const [magicText, setMagicText] = useState("");
-  const [isMagicAdding, setIsMagicAdding] = useState(false);
-  
-  // Voice Recognition
-  const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef(null);
-  const textBeforeListenRef = useRef(""); // Used to append speech to already typed text
-
-  const [completedSort, setCompletedSort] = useState("date-desc");
-
-  // The input grows with what is typed or spoken, so the whole reminder is always visible
-  const magicRef = useRef(null);
-  const fitMagicBox = useCallback(() => {
-    const el = magicRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    const max = Math.round(window.innerHeight * 0.45);
-    el.style.height = `${Math.min(el.scrollHeight, max)}px`;
-    el.style.overflowY = el.scrollHeight > max ? "auto" : "hidden";
-  }, []);
-  useLayoutEffect(fitMagicBox, [magicText, fitMagicBox]);
-  useEffect(() => {
-    window.addEventListener("resize", fitMagicBox);
-    return () => window.removeEventListener("resize", fitMagicBox);
-  }, [fitMagicBox]);
+  const [selectedDate, setSelectedDate] = useState(null); // "YYYY-MM-DD" (an IST day) or null
 
   // Auth guard (expired sessions are handled globally by the API client)
   useEffect(() => {
     if (!isLoggedIn()) navigate("/login", { replace: true });
   }, [navigate]);
 
-  // Stop the mic on unmount
-  useEffect(() => {
-    return () => {
-      recognitionRef.current?.abort?.();
-    };
-  }, []);
-
   // Profile: network first, then the copy saved on this device (so the greeting works offline)
-  const userQuery = useQuery({
-    queryKey: ["dashboardUser"],
-    networkMode: "always", // run even with no connection: the queryFn falls back to the saved copy
-    queryFn: async () => {
-      if (navigator.onLine) {
-        try {
-          const { data } = await api.get("/user/me", { timeout: 8000 });
-          await setMeta("userInfo", data);
-          return data;
-        } catch (err) {
-          if (err?.response?.status === 401) throw err; // handled globally (signs the user out)
-          // no answer / server error: use the saved copy below
-        }
-      }
-      const cached = await getMeta("userInfo");
-      if (cached) return cached;
-      throw new Error("No saved profile yet");
-    },
-    staleTime: 5 * 60 * 1000,
-    retry: (count, err) => err?.response?.status !== 401 && count < 1,
-  });
-  const userInfo = userQuery.data || null;
-  const userId = userQuery.isPending ? undefined : userInfo?._id || userInfo?.id || null;
+  const me = useMe();
+  const userInfo = me.data || null;
+  const userId = me.isPending ? undefined : userIdOf(userInfo);
 
   // Reminders: read from IndexedDB, written to IndexedDB first, uploaded in the background
   const { tasks, ready, toggleTask, editTask, removeTask } = useOfflineTasks(userId);
-  const isLoading = !ready;
   const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
-
-  const savedOfflineNote = () => (navigator.onLine ? "" : " Saved on this device.");
+  const { missed, today, upcoming, upcomingGroups, completed, doneTodayCount } = useDashboardTasks(tasks);
+  const stats = useTaskStats({ enabled: !!userId && !isOffline });
 
   const handleToggle = useCallback(
     async (task) => {
@@ -163,397 +84,132 @@ export default function Dashboard() {
     [removeTask]
   );
 
-  // --- Voice Input ---
-  const handleVoiceInput = () => {
-    if (isListening) {
-      recognitionRef.current?.stop();
-      return;
-    }
+  const cardProps = (task) => ({ task, onToggle: handleToggle, onDelete: handleDelete, onEdit: editTask });
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      notify.error("Voice input is not supported in this browser. Try Chrome, or type your reminder instead.");
-      return;
-    }
+  const greeting = useMemo(() => greetingForHour(getIstHour()), []);
+  const tabs = useMemo(
+    () => [
+      { id: "today", label: "Today", count: today.length, icon: Sun },
+      { id: "upcoming", label: "Upcoming", count: upcoming.length, icon: CalendarDays },
+    ],
+    [today.length, upcoming.length]
+  );
+  const displayedTasks = activeTab === "upcoming" ? upcoming : today;
+  const empty = EMPTY_STATES[activeTab];
 
-    const recognition = new SpeechRecognition();
-    recognition.lang = VOICE_LANG;
-    recognition.interimResults = true; // Enables real-time transcription
-    recognitionRef.current = recognition;
-
-    recognition.onstart = () => {
-      setIsListening(true);
-      // Save any existing text so we can append to it
-      textBeforeListenRef.current = magicText;
-    };
-
-    recognition.onresult = (event) => {
-      if (event.results && event.results.length > 0) {
-        // Combine all interim results into a single string
-        const transcript = Array.from(event.results)
-          .map((result) => result[0].transcript)
-          .join("");
-        
-        // Append voice text to whatever was already typed in the input
-        const prefix = textBeforeListenRef.current.trim();
-        setMagicText(prefix ? `${prefix} ${transcript}` : transcript);
-      }
-    };
-
-    recognition.onerror = (event) => {
-      if (event.error !== "no-speech" && event.error !== "aborted") {
-        notify.error("Couldn't use the microphone. Allow mic access in your browser settings and try again.");
-      }
-    };
-
-    recognition.onend = () => setIsListening(false);
-    recognition.start();
-  };
-
-  // --- Magic Add ---
-  const handleMagicAdd = async (e) => {
-    e.preventDefault();
-    if (!magicText.trim() || isMagicAdding) return;
-
-    // Smart add asks the server's AI to read the sentence, so it needs a connection.
-    if (!navigator.onLine) {
-      notify.info("Smart add needs an internet connection. Tap + to add a reminder offline.", { icon: "📴" });
-      return;
-    }
-
-    setIsMagicAdding(true);
-    try {
-      await api.post("/tasks/magic-add", { text: magicText.trim() });
-      setMagicText("");
-      await syncNow({ force: true }); // pulls the new reminder into the local database
-      feedback.added();
-      notify.success("Reminder added.");
-    } catch (err) {
-      console.error("Magic Add failed:", err);
-      // An expired session (401) is handled globally by the API client.
-      if (err.response?.status === 401) return;
-      // Shows the server's own message (content rejected, AI busy, couldn't parse, offline...)
-      notify.error(err, "Couldn't add that reminder. Try rephrasing it.");
-    } finally {
-      setIsMagicAdding(false);
-    }
-  };
-
-  const greeting = useMemo(() => {
-    const hour = getIstHour();
-    if (hour < 6) return "Late night grind";
-    if (hour < 12) return "Good morning";
-    if (hour < 18) return "Good afternoon";
-    return "Good evening";
+  // Calendar filter: every reminder due on the picked IST day, replacing the Today / Upcoming list until cleared.
+  const dateLabel = useMemo(() => (selectedDate ? formatIstDayLabel(selectedDate) : ""), [selectedDate]);
+  const dateMatches = useMemo(() => (selectedDate ? filterByIstDate(tasks, selectedDate) : []), [tasks, selectedDate]);
+  const dateGroups = useMemo(() => [{ key: "picked", label: dateLabel, tasks: dateMatches }], [dateLabel, dateMatches]);
+  const changeTab = useCallback((id) => {
+    setSelectedDate(null); // choosing Today / Upcoming leaves the date filter
+    setActiveTab(id);
   }, []);
 
-  // --- Task Categorization ---
-  const {
-    missedTasks,
-    todayTasks,
-    upcomingTasks,
-    completedTasks,
-    doneTodayCount,
-  } = useMemo(() => {
-    // "Today" = the IST calendar day (same definition the server uses for reminders)
-    const { start: startOfToday, end: endOfToday } = getIstDayRange();
-
-    const missed = [];
-    const today = [];
-    const upcoming = [];
-    const completed = [];
-    let doneToday = 0;
-
-    tasks.forEach((task) => {
-      const due = parseDueDate(task.due_date);
-      const dueMs = due ? due.getTime() : null;
-
-      if (task.status === "completed") {
-        completed.push(task);
-        if (dueMs !== null && dueMs >= startOfToday && dueMs <= endOfToday) doneToday++;
-        return;
-      }
-
-      if (dueMs === null) upcoming.push(task);
-      else if (dueMs < startOfToday) missed.push(task);
-      else if (dueMs <= endOfToday) today.push(task);
-      else upcoming.push(task);
-    });
-
+  // Motivation card inputs
+  const dayKey = istDateKey();
+  const motivation = useMemo(() => {
+    const localDone = Math.max(doneTodayCount, 0);
+    const serverToday = stats.data?.completed_today ?? 0;
     return {
-      missedTasks: missed,
-      todayTasks: today,
-      upcomingTasks: upcoming,
-      completedTasks: completed,
-      doneTodayCount: doneToday,
+      streak: effectiveStreak(stats.data, localDone),
+      bestStreak: stats.data?.best_streak ?? 0,
+      doneToday: Math.max(localDone, serverToday),
     };
-  }, [tasks]);
-
-  const totalToday = todayTasks.length + doneTodayCount;
-  const progressPct = totalToday ? Math.round((doneTodayCount / totalToday) * 100) : 0;
-
-  const sortedCompletedTasks = useMemo(() => {
-    return [...completedTasks].sort((a, b) => {
-      const dateA = parseDueDate(a.due_date)?.getTime() ?? 0;
-      const dateB = parseDueDate(b.due_date)?.getTime() ?? 0;
-      const titleA = (a.title || "").toLowerCase();
-      const titleB = (b.title || "").toLowerCase();
-
-      switch (completedSort) {
-        case "title-asc": return titleA.localeCompare(titleB);
-        case "title-desc": return titleB.localeCompare(titleA);
-        case "date-asc": return dateA - dateB;
-        case "date-desc": default: return dateB - dateA;
-      }
-    });
-  }, [completedTasks, completedSort]);
-
-  useEffect(() => {
-    if (missedTasks.length === 0) setIsMissedOpen(false);
-  }, [missedTasks.length]);
-
-  const displayedTasks = activeTab === "upcoming" ? upcomingTasks : todayTasks;
-
-  const cardProps = (task) => ({
-    task,
-    onToggle: handleToggle,
-    onDelete: handleDelete,
-    onEdit: editTask,
-  });
-
-  // Memoized layout configurations
-  const tabs = useMemo(() => [
-    { id: "today", label: "Today", count: todayTasks.length, icon: Sun },
-    { id: "upcoming", label: "Upcoming", count: upcomingTasks.length, icon: CalendarDays },
-  ], [todayTasks.length, upcomingTasks.length]);
-
-  const emptyState = useMemo(() => activeTab === "upcoming"
-    ? { Icon: CalendarDays, title: "Nothing planned yet", body: "Add a reminder to plan ahead.", cta: "Add a reminder" }
-    : { Icon: Coffee, title: "Nothing due today", body: "You're all caught up. Enjoy your break!", cta: "Add a reminder" },
-  [activeTab]);
+  }, [stats.data, doneTodayCount]);
 
   return (
     <div className="min-h-screen bg-[color:var(--rm-page)] pb-28 text-slate-900 antialiased font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Text','Helvetica_Neue',sans-serif] relative overflow-x-hidden">
-      
       <Header />
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6">
-        
-        {/* Greeting & Progress Bar */}
+      <main id="main" className="max-w-3xl mx-auto px-4 sm:px-6">
+        {/* Greeting */}
         <div className="pt-10 pb-6">
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
             {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: APP_TIMEZONE })}
           </p>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight text-balance">
             {greeting},{" "}
-            <span className="text-blue-600 font-semibold">
-              {userInfo?.username ? userInfo.username.split(" ")[0] : "there"}
-            </span>
+            <span className="text-blue-600 font-semibold">{userInfo?.username ? userInfo.username.split(" ")[0] : "there"}</span>
           </h1>
         </div>
 
-        {/* Magic Add with Voice */}
-        <form onSubmit={handleMagicAdd} className="mb-2 relative group">
-          <div className="absolute left-4 top-[18px] flex items-center pointer-events-none">
-            <Sparkles className="text-blue-400 group-focus-within:text-blue-600 transition-colors duration-200" size={20} strokeWidth={2.5} />
+        <MagicAddForm isOffline={isOffline} />
+
+        <MotivationCard
+          name={userInfo?.username}
+          userId={userId || undefined}
+          dayKey={dayKey}
+          hour={getIstHour()}
+          streak={motivation.streak}
+          bestStreak={motivation.bestStreak}
+          doneToday={motivation.doneToday}
+          pendingToday={today.length}
+          overdue={missed.length}
+        />
+
+        <OverdueBanner tasks={missed} cardProps={cardProps} />
+
+        <div className="mb-6 flex items-stretch gap-2">
+          <div className="min-w-0 flex-1">
+            <DashboardTabs tabs={tabs} active={selectedDate ? null : activeTab} onChange={changeTab} panelId="task-panel" />
           </div>
-
-          <textarea
-            ref={magicRef}
-            rows={1}
-            value={magicText}
-            onChange={(e) => setMagicText(e.target.value)}
-            onKeyDown={(e) => {
-              // Enter sends, Shift+Enter adds a new line
-              if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-                e.preventDefault();
-                e.currentTarget.form?.requestSubmit();
-              }
-            }}
-            disabled={isMagicAdding}
-            aria-label="Add a task by typing or speaking"
-            placeholder={isListening ? "Listening..." : isOffline ? "Offline: tap + to add a reminder" : "e.g. Submit report tomorrow 5pm, or Gym every Monday 7am"}
-            maxLength={500}
-            className={`block w-full resize-none bg-white text-sm sm:text-[15px] leading-6 text-slate-900 font-medium placeholder:text-slate-400 rounded-[20px] border shadow-[0_4px_20px_rgb(0,0,0,0.03)] pl-12 pr-28 py-[18px] min-h-[60px] outline-none transition-[border-color,box-shadow] duration-200 ${
-              isListening
-                ? "border-red-300 ring-4 ring-red-500/10"
-                : "border-slate-100 focus:border-blue-200 focus:ring-4 focus:ring-blue-500/10"
-            }`}
-          />
-
-          <div className="absolute bottom-2 right-2 flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={handleVoiceInput}
-              disabled={isMagicAdding}
-              aria-label={isListening ? "Stop listening" : "Speak a task"}
-              className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-                isListening
-                  ? "bg-red-500 text-white animate-pulse"
-                  : "bg-slate-100 hover:bg-slate-200 text-slate-600"
-              }`}
-            >
-              {isListening ? <MicOff size={18} strokeWidth={2.5} /> : <Mic size={18} strokeWidth={2.5} />}
-            </button>
-
-            <button
-              type="submit"
-              disabled={isMagicAdding || isListening || !magicText.trim()}
-              aria-label="Add task"
-              className="w-10 h-10 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-100 disabled:text-slate-400 text-white rounded-2xl flex items-center justify-center transition-colors duration-200 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-            >
-              {isMagicAdding ? (
-                <Loader2 className="animate-spin" size={18} strokeWidth={3} />
-              ) : (
-                <ArrowUp size={20} strokeWidth={3} />
-              )}
-            </button>
-          </div>
-        </form>
-
-        {/* Overdue Banner */}
-        {missedTasks.length > 0 && (
-          <div className="mb-6 bg-white rounded-[24px] border border-rose-100 shadow-[0_4px_20px_rgb(244,63,94,0.04)] overflow-hidden transition-all duration-200">
-            <button
-              onClick={() => setIsMissedOpen((prev) => !prev)}
-              aria-expanded={isMissedOpen}
-              className="w-full flex items-center justify-between p-4 bg-rose-50/50 hover:bg-rose-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-rose-300"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-rose-500 text-white flex items-center justify-center shadow-sm">
-                  <AlertCircle size={16} strokeWidth={2.5} />
-                </div>
-                <div className="text-left">
-                  <span className="text-xs font-bold text-rose-900 block leading-tight">Overdue tasks</span>
-                  <span className="text-[11px] text-rose-600 font-medium">
-                    {missedTasks.length} {missedTasks.length === 1 ? "item needs" : "items need"} attention
-                  </span>
-                </div>
-              </div>
-              <div className="w-6 h-6 flex items-center justify-center rounded-full bg-white text-slate-500 shadow-sm">
-                <ChevronDown size={14} strokeWidth={2.5} className={`transition-transform duration-200 ${isMissedOpen ? "rotate-180" : "rotate-0"}`} />
-              </div>
-            </button>
-
-            {isMissedOpen && (
-              <div className="p-3 pt-1 grid gap-2.5 max-h-[40vh] overflow-y-auto border-t border-rose-100/60">
-                {missedTasks.map((task) => (
-                  <TaskCard key={task.id} {...cardProps(task)} isPrevious={false} />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Tabs */}
-        <div role="tablist" className="p-1.5 bg-slate-200/60 backdrop-blur-md rounded-2xl mb-6 grid grid-cols-2 gap-1.5 shadow-inner">
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.id;
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                role="tab"
-                aria-selected={isActive}
-                onClick={() => setActiveTab(tab.id)}
-                className={`w-full py-2.5 px-3 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-                  isActive ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"
-                }`}
-              >
-                <Icon size={17} strokeWidth={isActive ? 2.5 : 2} className={isActive ? "text-blue-600 shrink-0" : "text-slate-400 shrink-0"} />
-                <span className="inline truncate">{tab.label}</span>
-                <span className={`px-1.5 py-0.5 text-[10px] rounded-full font-bold shrink-0 ${isActive ? "bg-blue-50 text-blue-600" : "bg-slate-300/40 text-slate-500"}`}>
-                  {tab.count}
-                </span>
-              </button>
-            );
-          })}
+          <DateFilterButton value={selectedDate} label={dateLabel} onChange={setSelectedDate} />
         </div>
 
-        {/* Active Task List */}
-        {isLoading ? (
-          <div className="grid gap-3 mb-8" aria-busy="true" aria-label="Loading tasks">
-            <TaskSkeleton />
-            <TaskSkeleton />
-            <TaskSkeleton />
-          </div>
-        ) : (
-          <div className="grid gap-3 mb-8">
-            {displayedTasks.length === 0 ? (
-              <div className="text-center py-14 px-6 bg-white rounded-[24px] border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.02)] flex flex-col items-center justify-center">
-                <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center mb-3">
-                  <emptyState.Icon size={22} strokeWidth={2} />
-                </div>
-                <h3 className="text-slate-900 font-bold text-base mb-1">{emptyState.title}</h3>
-                <p className="text-xs text-slate-500 font-medium max-w-xs mb-4">{emptyState.body}</p>
-                <Link
-                  to="/create-task"
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-full shadow-sm active:scale-95 transition-all"
-                >
-                  <Plus size={16} strokeWidth={2.5} />
-                  {emptyState.cta}
-                </Link>
-              </div>
-            ) : (
-              displayedTasks.map((task) => (
-                <TaskCard key={task.id} {...cardProps(task)} isPrevious={false} />
-              ))
-            )}
-          </div>
-        )}
-
-        {/* Completed Archive */}
-        {completedTasks.length > 0 && (
-          <div className="bg-white rounded-[24px] border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] overflow-hidden transition-all duration-300">
+        {selectedDate && (
+          <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-2.5">
+            <p className="min-w-0 text-xs font-semibold text-blue-900" role="status">
+              Showing reminders for <span className="font-bold">{dateLabel}</span> · {dateMatches.length}
+            </p>
             <button
-              onClick={() => setIsDoneOpen((prev) => !prev)}
-              aria-expanded={isDoneOpen}
-              className="w-full flex items-center justify-between p-4 px-5 bg-slate-50/60 hover:bg-slate-100/50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-300"
+              type="button"
+              onClick={() => setSelectedDate(null)}
+              className="inline-flex shrink-0 items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-slate-700 shadow-sm hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-sm">
-                  <CheckCircle2 size={18} strokeWidth={2.5} />
-                </div>
-                <div className="text-left">
-                  <span className="text-xs font-bold text-slate-900 block leading-tight">Completed archive</span>
-                  <span className="text-[11px] text-slate-500 font-medium">
-                    {completedTasks.length} {completedTasks.length === 1 ? "task finished" : "tasks finished"}
-                  </span>
-                </div>
-              </div>
-              <div className="w-6 h-6 flex items-center justify-center rounded-full bg-white text-slate-500 shadow-sm border border-slate-100">
-                <ChevronDown size={14} strokeWidth={2.5} className={`transition-transform duration-200 ${isDoneOpen ? "rotate-180" : "rotate-0"}`} />
-              </div>
+              <X size={12} strokeWidth={3} aria-hidden="true" />
+              Clear
             </button>
-
-            {isDoneOpen && (
-              <div className="p-3.5 pt-2 grid gap-2.5 max-h-[45vh] overflow-y-auto border-t border-slate-100">
-                <div className="flex justify-end px-1 pb-1">
-                  <div className="relative group">
-                    <select
-                      value={completedSort}
-                      onChange={(e) => setCompletedSort(e.target.value)}
-                      aria-label="Sort completed tasks"
-                      className="appearance-none bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold py-1.5 pl-3 pr-8 rounded-lg outline-none cursor-pointer border border-transparent hover:border-slate-300 focus-visible:ring-2 focus-visible:ring-blue-500 transition-all duration-200"
-                    >
-                      <option value="date-desc">Date (newest)</option>
-                      <option value="date-asc">Date (oldest)</option>
-                      <option value="title-asc">Name (A-Z)</option>
-                      <option value="title-desc">Name (Z-A)</option>
-                    </select>
-                    <ArrowUpDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 group-hover:text-slate-600 pointer-events-none transition-colors" strokeWidth={2.5} />
-                  </div>
-                </div>
-
-                {sortedCompletedTasks.map((task) => (
-                  <TaskCard key={task.id} {...cardProps(task)} isPrevious={true} />
-                ))}
-              </div>
-            )}
           </div>
         )}
-      </main>
 
+        <div
+          id="task-panel"
+          role="tabpanel"
+          {...(selectedDate ? { "aria-label": `Reminders for ${dateLabel}` } : { "aria-labelledby": `tab-${activeTab}` })}
+          tabIndex={-1}
+        >
+          {!ready ? (
+            <div className="grid gap-3 mb-8" aria-busy="true" aria-label="Loading tasks">
+              <TaskSkeleton />
+              <TaskSkeleton />
+              <TaskSkeleton />
+            </div>
+          ) : selectedDate ? (
+            <div className="mb-8">
+              {dateMatches.length === 0 ? (
+                <EmptyState Icon={CalendarDays} title={`Nothing on ${dateLabel}`} body="No reminders are set for that day." cta="Add a reminder" />
+              ) : (
+                <TaskGroups groups={dateGroups} cardProps={cardProps} />
+              )}
+            </div>
+          ) : activeTab === "upcoming" && upcomingGroups.length > 0 ? (
+            <div className="mb-8">
+              <TaskGroups groups={upcomingGroups} cardProps={cardProps} />
+            </div>
+          ) : (
+            <div className="grid gap-3 mb-8">
+              {displayedTasks.length === 0 ? (
+                <EmptyState {...empty} />
+              ) : (
+                displayedTasks.map((task) => <TaskCard key={task.id} {...cardProps(task)} isPrevious={false} />)
+              )}
+            </div>
+          )}
+        </div>
+
+        <CompletedArchive tasks={completed} cardProps={cardProps} />
+      </main>
     </div>
   );
 }

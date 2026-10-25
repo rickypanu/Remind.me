@@ -81,7 +81,8 @@ export function applyStatus(task, status, now = Date.now()) {
     });
   }
   if (task.status === status) return task;
-  return markDirty(task, { status, statusQueue: [status] });
+  // Append (never replace): the sync engine drops the first N entries it already sent, so the queue must only ever grow.
+  return markDirty(task, { status, statusQueue: [...(task.statusQueue || []), status] });
 }
 
 /** Returns null when the record can simply disappear (it never reached the server). */

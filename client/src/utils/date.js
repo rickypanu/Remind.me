@@ -46,14 +46,51 @@ export function formatDueIst(value) {
 }
 
 // One shared parser so Dashboard and TaskCard always agree on what "due" means.
-// The backend now always sends UTC with a "Z". If a legacy value arrives with no
-// timezone it is treated as UTC (that is how MongoDB stores it).
+// The backend sends IST timestamps with an explicit offset ("2026-10-24T21:30:00+05:30"); older responses carried
+// UTC with a "Z". Both are exact instants. A legacy value with no timezone at all is treated as UTC (that is how
+// MongoDB stores it).
 export function parseDueDate(value) {
   if (!value) return null;
   const str = String(value);
   const hasZone = /([zZ]|[+-]\d{2}:?\d{2})$/.test(str);
   const date = new Date(hasZone ? str : `${str}Z`);
   return isNaN(date.getTime()) ? null : date;
+}
+
+// ---------------------------------------------------------------------------
+// IST calendar days as "YYYY-MM-DD" keys (what <input type="date"> produces, and what the calendar filter and the
+// "Upcoming" groups are keyed by). Keys are plain text, so they mean the same on every device.
+// ---------------------------------------------------------------------------
+const DAY_KEY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** The IST calendar day containing `ms`, e.g. "2026-10-24". */
+export function istDateKey(ms = Date.now()) {
+  return new Date(ms + IST_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+/** [start, end] (UTC epoch ms) of the IST day named by a "YYYY-MM-DD" key, or null if the key is not a real date. */
+export function istDayRangeFromKey(key) {
+  if (!DAY_KEY.test(String(key || ''))) return null;
+  const start = Date.parse(`${key}T00:00:00+05:30`);
+  if (Number.isNaN(start) || istDateKey(start) !== key) return null; // rejects 2026-02-31 and the like
+  return { start, end: start + DAY_MS - 1 };
+}
+
+/** "Today", "Tomorrow", "Yesterday", otherwise "Mon, 26 Oct" (adds the year when it is not the current one). */
+export function formatIstDayLabel(key, nowMs = Date.now()) {
+  const range = istDayRangeFromKey(key);
+  if (!range) return '';
+  const diff = Math.round((range.start - getIstDayRange(nowMs).start) / DAY_MS);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Tomorrow';
+  if (diff === -1) return 'Yesterday';
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone: APP_TIMEZONE, weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+    }).formatToParts(new Date(range.start + 12 * 60 * 60 * 1000)).map((p) => [p.type, p.value]),
+  );
+  const sameYear = key.slice(0, 4) === istDateKey(nowMs).slice(0, 4);
+  return `${parts.weekday}, ${parts.day} ${parts.month}${sameYear ? '' : ` ${parts.year}`}`;
 }
 
 export function getRelativeTime(value) {

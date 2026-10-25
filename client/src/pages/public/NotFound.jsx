@@ -3,10 +3,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { Compass, Home, ArrowLeft, HelpCircle } from "lucide-react";
 import PublicLayout from "../../components/PublicLayout";
 import usePageMeta from "../../utils/usePageMeta";
+import { isLoggedIn as hasSession } from "../../utils/auth";
 
 export default function NotFound() {
   const navigate = useNavigate();
-  const isLoggedIn = !!localStorage.getItem("token");
+  const isLoggedIn = hasSession();
   usePageMeta({
     title: "Page not found (404)",
     description: "The page you are looking for doesn't exist or has moved. Head back to RemindMe.",

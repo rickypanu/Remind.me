@@ -53,7 +53,7 @@ export default function FeedbackSettings() {
 
   return (
     <div>
-      <h3 className="px-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Sound &amp; haptics</h3>
+      <h3 className="px-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Sound &amp; haptics</h3>
       <div className="bg-white border border-gray-100 rounded-[24px] overflow-hidden shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
         <Row
           icon={Volume2}
@@ -105,7 +105,7 @@ export default function FeedbackSettings() {
                     </button>
                   )}
                   {o.custom && (
-                    <button type="button" aria-label="Remove custom sound" onClick={removeCustomSound} className="rounded-full p-2 text-gray-400 hover:bg-white hover:text-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400">
+                    <button type="button" aria-label="Remove custom sound" onClick={removeCustomSound} className="rounded-full p-2 text-gray-500 hover:bg-white hover:text-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400">
                       <Trash2 size={16} strokeWidth={2.25} />
                     </button>
                   )}
@@ -123,7 +123,7 @@ export default function FeedbackSettings() {
           >
             <Upload size={16} strokeWidth={2.5} /> {s.customSoundName ? "Replace custom sound" : "Upload your own (.mp3 / .wav)"}
           </button>
-          <p className="mt-2 px-1 text-[11px] leading-relaxed text-gray-400">
+          <p className="mt-2 px-1 text-[11px] leading-relaxed text-gray-500">
             Up to {Math.round(MAX_CUSTOM_BYTES / 1024 / 1024)} MB and 30 seconds. When the app is closed, your device plays its own notification sound; browsers don't allow custom sounds for background notifications.
           </p>
         </div>

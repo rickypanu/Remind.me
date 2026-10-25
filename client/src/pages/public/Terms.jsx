@@ -3,6 +3,7 @@ import { Shield, FileText } from 'lucide-react';
 import PublicLayout from '../../components/PublicLayout';
 import PageHeader from '../../components/PageHeader';
 import usePageMeta from '../../utils/usePageMeta';
+import { routeMeta } from "../../seo/routes";
 import { SITE } from '../../config/site';
 
 const CONTACT_EMAIL = SITE.supportEmail;
@@ -184,11 +185,7 @@ function Block({ section }) {
 }
 
 export default function Terms() {
-  usePageMeta({
-    title: 'Terms of Service & Privacy Policy',
-    description:
-      'Read the RemindMe Terms of Service and Privacy Policy: how your reminders are encrypted, which notification channels we use, and how to delete your data.',
-  });
+  usePageMeta(routeMeta("/terms"));
 
   // Scroll to top when page loads
   useEffect(() => {

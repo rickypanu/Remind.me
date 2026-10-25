@@ -14,8 +14,8 @@ existing query (dashboard buckets, "due in 1h / 10m / 1m" windows, today / tomor
 working unchanged: when an occurrence is completed or missed, `due_date` moves forward to the
 next one and the per-occurrence "already notified" flags are cleared.
 """
+from collections.abc import Iterable
 from datetime import date, datetime, time, timedelta
-from typing import Iterable, List, Optional
 
 from .timezone import IST, UTC, as_utc
 
@@ -25,14 +25,7 @@ WEEKDAY_NAMES = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 
 # Flags written by the notification schedulers for ONE occurrence. They are cleared whenever
 # a recurring reminder rolls over to its next occurrence so the next one is announced again.
-NOTIFICATION_FLAGS = (
-    "notified_due_soon",
-    "notified_due_soon_web",
-    "notified_tomorrow_digest",
-    "last_notified_at",
-    "notified_tele_60m", "notified_tele_10m", "notified_tele_1m",
-    "notified_web_60m", "notified_web_10m", "notified_web_1m",
-)
+from app.notifications.rules import NOTIFICATION_FLAGS  # noqa: E402,F401  (derived from the offsets, finding A2)
 
 # How long after an occurrence's time we wait for the user to complete it before rolling the
 # reminder over to the next occurrence (keeps "overdue" visible for a while).
@@ -48,19 +41,19 @@ def parse_time_of_day(value: str) -> time:
             raise ValueError
         return time(h, m)
     except Exception:
-        raise ValueError("time_of_day must look like HH:MM (24-hour), e.g. 18:30")
+        raise ValueError("time_of_day must look like HH:MM (24-hour), e.g. 18:30") from None
 
 
-def parse_end_date(value: Optional[str]) -> Optional[date]:
+def parse_end_date(value: str | None) -> date | None:
     if not value:
         return None
     try:
         return date.fromisoformat(value)
     except Exception:
-        raise ValueError("ends_on must look like YYYY-MM-DD")
+        raise ValueError("ends_on must look like YYYY-MM-DD") from None
 
 
-def normalize_weekdays(days: Optional[Iterable[int]]) -> List[int]:
+def normalize_weekdays(days: Iterable[int] | None) -> list[int]:
     out = sorted({int(d) for d in (days or [])})
     if any(d < 0 or d > 6 for d in out):
         raise ValueError("weekdays must be numbers from 0 (Monday) to 6 (Sunday)")
@@ -70,10 +63,10 @@ def normalize_weekdays(days: Optional[Iterable[int]]) -> List[int]:
 def next_occurrence(
     schedule_type: str,
     time_of_day: str,
-    weekdays: Optional[Iterable[int]],
+    weekdays: Iterable[int] | None,
     after: datetime,
-    ends_on: Optional[str] = None,
-) -> Optional[datetime]:
+    ends_on: str | None = None,
+) -> datetime | None:
     """First occurrence strictly later than `after`, as a UTC datetime. None if the series has ended."""
     if schedule_type not in RECURRING_TYPES:
         return None
@@ -97,7 +90,7 @@ def next_occurrence(
     return None
 
 
-def describe_schedule(schedule_type: str, time_of_day: Optional[str], weekdays: Optional[Iterable[int]] = None) -> str:
+def describe_schedule(schedule_type: str, time_of_day: str | None, weekdays: Iterable[int] | None = None) -> str:
     """Human readable summary, e.g. 'Every day at 9:00 AM' or 'Every Mon, Wed at 6:30 PM'."""
     if schedule_type not in RECURRING_TYPES or not time_of_day:
         return "One time"
@@ -148,7 +141,7 @@ def advance_after_completion(task: dict, now: datetime) -> dict:
     }
 
 
-def advance_after_miss(task: dict, now: datetime) -> Optional[dict]:
+def advance_after_miss(task: dict, now: datetime) -> dict | None:
     """Mongo update for an occurrence nobody completed (nothing is marked done)."""
     nxt = next_occurrence(
         task.get("schedule_type", "once"), task.get("time_of_day", "00:00"),

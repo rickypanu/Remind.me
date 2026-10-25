@@ -51,7 +51,7 @@ const Footer = () => {
               </Link>
             ))}
           </nav>
-          <p className="text-slate-400 text-center sm:text-right">
+          <p className="text-slate-500 text-center sm:text-right">
             © {new Date().getFullYear()} {SITE.name}. All rights reserved.
           </p>
         </div>

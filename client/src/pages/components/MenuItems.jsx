@@ -42,7 +42,7 @@ export default function MenuItems({
           {subLabel && <span className="text-xs text-gray-500 mt-0.5">{subLabel}</span>}
         </div>
       </div>
-      {rightElement || (!onClick && !disabled && <ChevronRight size={18} className="text-gray-400" />)}
+      {rightElement || (!onClick && !disabled && <ChevronRight size={18} className="text-gray-500" />)}
     </div>
   );
 

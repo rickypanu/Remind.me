@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { X, Check, Repeat, Loader2 } from "lucide-react";
+import Modal from "./Modal";
 import { istInputToUtcIso, utcToIstInput } from "../utils/date";
 import notify from "../utils/notify";
 
 const BASE_CATEGORIES = ["Assignment", "Project", "Exam / Quiz", "Placement / Internship", "Extracurricular", "Personal"];
 
 const field =
-  "w-full px-3.5 py-2.5 bg-slate-100/70 border border-transparent rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all min-h-[44px]";
+  "w-full px-3.5 py-2.5 bg-slate-100/70 border border-transparent rounded-xl text-sm text-slate-900 placeholder-slate-500 focus:bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all min-h-[44px]";
 
 /**
  * Pop-up for editing a reminder (title, notes, category and time). Opens from the pencil button on a
@@ -26,18 +27,6 @@ export default function EditReminderDialog({ task, onClose, onSave }) {
   const [error, setError] = useState("");
   const titleRef = useRef(null);
   const notesRef = useRef(null);
-
-  useEffect(() => {
-    const onKey = (e) => e.key === "Escape" && !saving && onClose();
-    window.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    titleRef.current?.focus();
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
-    };
-  }, [saving, onClose]);
 
   // Notes box grows with the text
   useEffect(() => {
@@ -78,17 +67,10 @@ export default function EditReminderDialog({ task, onClose, onSave }) {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm sm:p-4"
-      onClick={() => !saving && onClose()}
-    >
+    <Modal onClose={onClose} busy={saving} labelledBy="edit-title" align="sheet" initialFocusRef={titleRef}>
       <form
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="edit-title"
         onSubmit={submit}
         noValidate
-        onClick={(e) => e.stopPropagation()}
         className="rm-modal-in w-full sm:max-w-lg max-h-[92dvh] overflow-y-auto overscroll-contain rounded-t-[28px] sm:rounded-[28px] bg-white p-5 sm:p-7 shadow-2xl"
         style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}
       >
@@ -101,7 +83,7 @@ export default function EditReminderDialog({ task, onClose, onSave }) {
               </p>
             )}
           </div>
-          <button type="button" onClick={onClose} disabled={saving} aria-label="Close" className="-mr-2 -mt-1 rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+          <button type="button" onClick={onClose} disabled={saving} aria-label="Close" className="-mr-2 -mt-1 rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
             <X size={20} strokeWidth={2.25} />
           </button>
         </div>
@@ -149,6 +131,6 @@ export default function EditReminderDialog({ task, onClose, onSave }) {
           </button>
         </div>
       </form>
-    </div>
+    </Modal>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { X, UploadCloud } from "lucide-react";
+import Modal from "../../components/Modal";
 
 // ---------- DiceBear styles (generated avatars) ----------
 const BG = ["b6e3f4", "c0aede", "ffdfbf", "ffd5dc"];
@@ -52,13 +53,15 @@ export default function AvatarPickerModal({ isOpen, onClose, onUploadClick, onSe
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-md rounded-3xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+    <Modal onClose={onClose} labelledBy="avatar-picker-title">
+      <div className="rm-modal-in bg-white w-full max-w-md max-h-[92dvh] overflow-y-auto rounded-3xl shadow-2xl">
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <h3 className="text-lg font-bold text-gray-900">Choose Profile Picture</h3>
+          <h3 id="avatar-picker-title" className="text-lg font-bold text-gray-900">Choose Profile Picture</h3>
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
+            aria-label="Close"
+            className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
           >
             <X size={20} />
           </button>
@@ -66,6 +69,7 @@ export default function AvatarPickerModal({ isOpen, onClose, onUploadClick, onSe
 
         <div className="p-5">
           <button
+            type="button"
             onClick={onUploadClick}
             className="w-full flex items-center justify-center gap-3 py-4 mb-6 border-2 border-dashed border-indigo-200 rounded-2xl bg-indigo-50/50 hover:bg-indigo-50 text-indigo-600 font-semibold transition-colors"
           >
@@ -75,7 +79,7 @@ export default function AvatarPickerModal({ isOpen, onClose, onUploadClick, onSe
 
           <div className="flex items-center gap-4 mb-4">
             <div className="h-px bg-gray-200 flex-1"></div>
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-widest">
               Or choose illustration
             </span>
             <div className="h-px bg-gray-200 flex-1"></div>
@@ -85,6 +89,8 @@ export default function AvatarPickerModal({ isOpen, onClose, onUploadClick, onSe
             {Object.keys(ILLUSTRATION_CATEGORIES).map((tab) => (
               <button
                 key={tab}
+                type="button"
+                aria-pressed={activeTab === tab}
                 onClick={() => setActiveTab(tab)}
                 className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                   activeTab === tab
@@ -99,17 +105,19 @@ export default function AvatarPickerModal({ isOpen, onClose, onUploadClick, onSe
 
           <div className="grid grid-cols-4 gap-3 mt-4">
             {ILLUSTRATION_CATEGORIES[activeTab].map((url, index) => (
-              <div
-                key={index}
+              <button
+                key={url}
+                type="button"
                 onClick={() => onSelectIllustration(url)}
-                className="aspect-square rounded-2xl bg-gray-50 border-2 border-transparent hover:border-indigo-500 cursor-pointer overflow-hidden transition-all hover:scale-105 active:scale-95"
+                aria-label={`Use ${activeTab} picture ${index + 1}`}
+                className="aspect-square rounded-2xl bg-gray-50 border-2 border-transparent hover:border-indigo-500 focus-visible:border-indigo-500 focus-visible:outline-none cursor-pointer overflow-hidden transition-all hover:scale-105 active:scale-95"
               >
-                <img src={url} alt="avatar option" className="w-full h-full object-cover" />
-              </div>
+                <img src={url} alt="" className="w-full h-full object-cover" />
+              </button>
             ))}
           </div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

@@ -1,22 +1,11 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { AlertTriangle, Loader2 } from "lucide-react";
+import Modal from "./Modal";
 
 /** "Delete reminder?" modal shared by the task card and the tablet detail panel. */
 export default function ConfirmDeleteDialog({ task, isRecurring, onCancel, onConfirm }) {
   const [busy, setBusy] = useState(false);
   const cancelRef = useRef(null);
-
-  useEffect(() => {
-    const onKey = (e) => e.key === "Escape" && !busy && onCancel();
-    window.addEventListener("keydown", onKey);
-    cancelRef.current?.focus();
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
-    };
-  }, [busy, onCancel]);
 
   const confirm = async () => {
     setBusy(true);
@@ -28,18 +17,15 @@ export default function ConfirmDeleteDialog({ task, isRecurring, onCancel, onCon
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-slate-900/30 backdrop-blur-sm"
-      onClick={() => !busy && onCancel()}
+    <Modal
+      role="alertdialog"
+      onClose={onCancel}
+      busy={busy}
+      labelledBy="delete-title"
+      describedBy="delete-desc"
+      initialFocusRef={cancelRef}
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="delete-title"
-        aria-describedby="delete-desc"
-        className="rm-modal-in bg-white rounded-[28px] shadow-2xl w-full max-w-sm p-6 sm:p-8 text-center"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="rm-modal-in bg-white rounded-[28px] shadow-2xl w-full max-w-sm p-6 sm:p-8 text-center">
         <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
           <AlertTriangle className="text-red-600" size={26} strokeWidth={2.5} />
         </div>
@@ -67,6 +53,6 @@ export default function ConfirmDeleteDialog({ task, isRecurring, onCancel, onCon
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

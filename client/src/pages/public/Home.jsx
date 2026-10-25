@@ -7,6 +7,7 @@ import {
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import usePageMeta from "../../utils/usePageMeta";
+import { routeMeta } from "../../seo/routes";
 
 /* ---------------------------------------------------------------
    Tiny natural-language parser, runs fully in the browser so
@@ -253,11 +254,7 @@ function PushBanner({ title = "TaskBot", body, time = "now" }) {
 
 export default function Home() {
   const navigate = useNavigate();
-  usePageMeta({
-    fullTitle: "RemindMe: Specific, Daily & Weekly Reminders",
-    description:
-      "RemindMe sends specific, daily and weekly reminders to Telegram and your browser. Type or speak a task, try it free without signing up, and never miss a deadline or habit again.",
-  });
+  usePageMeta(routeMeta("/"));
   const [mode, setMode] = useState("type");
   const [text, setText] = useState("");
   const [phIdx, setPhIdx] = useState(0);
@@ -343,19 +340,7 @@ export default function Home() {
   };
 
   return (
-    <div className="home-root min-h-screen w-full bg-[color:var(--rm-page)] text-[color:var(--rm-ink)] antialiased overflow-x-hidden flex flex-col">
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-        .home-root { font-family: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif; }
-        @keyframes wave { 0%, 100% { height: 6px; } 50% { height: 26px; } }
-        @keyframes pop { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
-        .bar { width: 4px; border-radius: 9999px; background: #229ED9; animation: wave 1s ease-in-out infinite; }
-        .pop { animation: pop .35s ease-out both; }
-        @media (prefers-reduced-motion: reduce) { .bar, .pop { animation: none; } }
-      `,
-        }}
-      />
+    <div className="rm-display min-h-screen w-full bg-[color:var(--rm-page)] text-[color:var(--rm-ink)] antialiased overflow-x-hidden flex flex-col">
 
       <Header />
 
@@ -400,7 +385,7 @@ export default function Home() {
                   onChange={(e) => setText(e.target.value)}
                   placeholder={PLACEHOLDERS[phIdx]}
                   aria-label="Type your reminder"
-                  className="w-full rounded-2xl bg-[color:var(--rm-soft)] px-5 py-4 text-lg font-medium placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-sky-200"
+                  className="w-full rounded-2xl bg-[color:var(--rm-soft)] px-5 py-4 text-lg font-medium placeholder:text-slate-500 focus:outline-none focus:ring-4 focus:ring-sky-200"
                 />
                 {!text && (
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -436,7 +421,7 @@ export default function Home() {
                 {listening ? (
                   <div className="flex items-center gap-1 h-7" aria-hidden="true">
                     {[0, 0.15, 0.3, 0.1, 0.25, 0.05, 0.2, 0.35, 0.12].map((d, i) => (
-                      <span key={i} className="bar" style={{ animationDelay: `${d}s` }} />
+                      <span key={i} className="rm-bar" style={{ animationDelay: `${d}s` }} />
                     ))}
                   </div>
                 ) : (
@@ -457,7 +442,7 @@ export default function Home() {
                     value={form.task}
                     onChange={(e) => setForm({ ...form, task: e.target.value })}
                     placeholder="What should I remind you about?"
-                    className="mt-1 w-full rounded-xl bg-[color:var(--rm-soft)] px-4 py-3 text-base font-medium text-[color:var(--rm-ink)] placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-sky-200"
+                    className="mt-1 w-full rounded-xl bg-[color:var(--rm-soft)] px-4 py-3 text-base font-medium text-[color:var(--rm-ink)] placeholder:text-slate-500 focus:outline-none focus:ring-4 focus:ring-sky-200"
                   />
                 </label>
                 <label className="text-sm font-semibold text-slate-600">
@@ -493,7 +478,7 @@ export default function Home() {
 
             {/* Result */}
             {result && (
-              <div key={result.task + result.date.getTime()} className="pop mt-5" aria-live="polite">
+              <div key={result.task + result.date.getTime()} className="rm-lift mt-5" aria-live="polite">
                 <div className="flex items-center gap-4 rounded-2xl border border-slate-200 p-4">
                   <span className="w-6 h-6 rounded-full border-2 border-[#229ED9] flex-shrink-0" />
                   <div className="min-w-0">
@@ -539,7 +524,7 @@ export default function Home() {
                 </div>
 
                 {test === "done" && (
-                  <div className="pop mt-4 rounded-2xl bg-[color:var(--rm-soft-2)] p-3">
+                  <div className="rm-lift mt-4 rounded-2xl bg-[color:var(--rm-soft-2)] p-3">
                     <PushBanner body={`Time for: ${result.task}`} />
                     <p className="mt-2 px-1 text-sm text-slate-600">
                       {testNote || "That's what it looks like. Create a free account to get it at the real time."}

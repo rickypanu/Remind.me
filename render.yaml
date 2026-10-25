@@ -1,0 +1,59 @@
+# Render Blueprint - FREE plan only. Secrets (sync: false) are asked for in the Render dashboard, never stored here.
+services:
+  - type: web
+    name: getremindme-api
+    runtime: python
+    plan: free
+    region: singapore          # closest free region to India
+    rootDir: server
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 --no-access-log
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.5
+      - key: ENVIRONMENT
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: MONGODB_URL
+        sync: false
+      - key: DATABASE_NAME
+        value: remindme
+      - key: REMINDER_ENCRYPTION_KEY
+        sync: false            # generate once, NEVER change it (see DEPLOY_FREE.md step 3)
+      - key: FRONTEND_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: ALLOW_IN_MEMORY_RATE_LIMIT
+        value: "true"
+      - key: TRUSTED_PROXY_HOPS
+        value: "1"
+      - key: SCHEDULER_ENABLED
+        value: "true"
+      - key: ALLOW_PRODUCTION_WITHOUT_EMAIL
+        value: "true"          # set to false once BREVO_API_KEY + EMAIL_SENDER_ADDRESS are filled in
+      - key: BREVO_API_KEY
+        sync: false
+      - key: EMAIL_SENDER_ADDRESS
+        sync: false
+      - key: GEMINI_API_KEYS
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_EMAIL
+        sync: false
+      - key: ARGON2_TIME_COST
+        value: "2"
+      - key: ARGON2_MEMORY_KIB
+        value: "19456"
+      - key: ARGON2_PARALLELISM
+        value: "1"
+      - key: PASSWORD_HASH_CONCURRENCY
+        value: "2"
+      - key: MONGODB_MAX_POOL_SIZE
+        value: "10"

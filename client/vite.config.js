@@ -4,25 +4,33 @@ import babel from '@rolldown/plugin-babel'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
+// Service worker (finding P10). What changed and why:
+//  * One caching strategy for the app itself: everything Vite builds is PRECACHED with content hashes, so a new
+//    release replaces files exactly once. The old catch-all "app-cache" StaleWhileRevalidate rule matched the same
+//    requests a second time (double storage, and it could serve a stale script next to a fresh index.html).
+//  * registerType "prompt": a new version waits until the user agrees (see components/UpdatePrompt.jsx) instead of
+//    skipWaiting + clientsClaim swapping code under an open session, mid-edit.
+//  * No private plugin internals are touched any more (the `_pwaOptions.workbox.globStrict` deletion is gone), and
+//    the 4 MB size limit is back to the default: code splitting (P1) keeps every file small.
 const pwaPlugin = VitePWA({
-  registerType: 'autoUpdate',
-  manifest: false,
-  includeAssets: ['favicon.ico', 'favicon-*.png', 'apple-touch-icon.png', 'icon-*.png', 'robots.txt'],
+  registerType: 'prompt',
+  injectRegister: false, // registration happens in src/components/UpdatePrompt.jsx
+  manifest: false, // public/manifest.json is the single manifest
+  includeAssets: ['favicon.ico', 'favicon-*.png', 'apple-touch-icon.png', 'icon-*.png'],
   workbox: {
-    // Loads your push / notification / background-sync handlers inside the generated sw.js
+    // Loads the push / notification / background-sync handlers inside the generated sw.js
     importScripts: ['/push-sw.js'],
 
-    // 1. App shell: every built file is precached, so the app opens and navigates with no connection.
-    globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2,json}'],
-    maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+    // App shell: every built file is precached, so the app opens and navigates with no connection.
+    globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}'],
+    // The social-share card and screenshots are not needed offline; keep them out of the install download.
+    globIgnores: ['og-image.png', 'screenshot-*.png', 'app-shell.html'],
     cleanupOutdatedCaches: true,
-    clientsClaim: true,
-    skipWaiting: true,
 
     // Any page URL (/dashboard, /create-task, /profile ...) is answered with the cached index.html and
     // React Router takes over. API calls and avatar images are never answered with HTML.
     navigateFallback: '/index.html',
-    navigateFallbackDenylist: [/^\/uploads\//, /^\/api\//, /\.[a-z0-9]+$/i],
+    navigateFallbackDenylist: [/^\/uploads\//, /^\/v1\//, /^\/api\//, /\.[a-z0-9]+$/i],
 
     runtimeCaching: [
       // Google Fonts: stylesheet (revalidated) + font files (immutable)
@@ -50,36 +58,12 @@ const pwaPlugin = VitePWA({
           expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 30 },
         },
       },
-      // Everything else the app loads itself
-      {
-        urlPattern: ({ request }) =>
-          request.destination === 'document' ||
-          request.destination === 'script' ||
-          request.destination === 'style' ||
-          request.destination === 'image',
-        handler: 'StaleWhileRevalidate',
-        options: { cacheName: 'app-cache', cacheableResponse: { statuses: [0, 200] } },
-      },
-      // NOTE: /tasks, /user ... API data is deliberately NOT cached here. It lives in IndexedDB
-      // (src/offline), where it can be edited offline and synced.
+      // NOTE: /v1/** API data is deliberately NOT cached here. It lives in IndexedDB (src/offline),
+      // where it can be edited offline and synced.
     ],
   },
 })
 
-// Strip the offending globStrict key injected by the plugin
-if (Array.isArray(pwaPlugin)) {
-  pwaPlugin.forEach((p) => {
-    if (p?._pwaOptions?.workbox) delete p._pwaOptions.workbox.globStrict
-  })
-} else if (pwaPlugin?._pwaOptions?.workbox) {
-  delete pwaPlugin._pwaOptions.workbox.globStrict
-}
-
 export default defineConfig({
-  plugins: [
-    react(),
-    tailwindcss(),
-    babel({ presets: [reactCompilerPreset()] }),
-    pwaPlugin,
-  ],
+  plugins: [react(), tailwindcss(), babel({ presets: [reactCompilerPreset()] }), pwaPlugin],
 })

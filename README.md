@@ -83,3 +83,6 @@ Update the site URL and contact details in `client/src/config/site.js`.
 
 ## License
 This project is proprietary and developed by Ricky Panu.
+
+## Deploy (free)
+See [DEPLOY_FREE.md](DEPLOY_FREE.md): Vercel Hobby + Render free + MongoDB Atlas M0 + UptimeRobot, no paid service.

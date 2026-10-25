@@ -2,14 +2,16 @@
 
 /* Never allow sideways scrolling. `clip` (unlike `hidden`) keeps position: sticky working. */
 html {
-  scrollbar-width: none;      /* Firefox */
+  /* Scrollbars stay visible (finding X7): they tell people how long a page is and give mouse users a handle.
+     The gutter is reserved so opening a modal or a short page never shifts the layout sideways. */
+  scrollbar-gutter: stable;
   max-width: 100%;
   overflow-x: clip;
   -webkit-text-size-adjust: 100%;
 }
-html::-webkit-scrollbar {
-  display: none;              /* Chrome, Edge, Safari */
-}
+/* Opt-in only, for horizontal chip rows and carousels */
+.scrollbar-hide { scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
 body {
   min-width: 320px;
   max-width: 100%;
@@ -44,3 +46,54 @@ button:not(:disabled), a[role="button"] { -webkit-tap-highlight-color: transpare
 
 /* Tablet / desktop: the detail column and sticky header measure against the safe area */
 @media (min-width: 1024px) { html { scroll-padding-top: 6rem; } }
+
+/* ---- Shared page styles (were inline <style> blocks injected with dangerouslySetInnerHTML; finding Q8) ---- */
+.rm-display { font-family: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif; }
+
+@keyframes rm-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+.rm-rise { animation: rm-rise .45s ease-out both; }
+
+@keyframes rm-fill { from { width: 0; } to { width: 100%; } }
+.rm-fill { animation: rm-fill 3s linear forwards; }
+
+@keyframes rm-wave { 0%, 100% { height: 6px; } 50% { height: 26px; } }
+.rm-bar { width: 4px; border-radius: 9999px; background: #229ed9; animation: rm-wave 1s ease-in-out infinite; }
+
+@keyframes rm-lift { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+.rm-lift { animation: rm-lift .35s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rm-rise, .rm-bar, .rm-lift { animation: none; }
+  .rm-fill { animation: none; width: 100%; }
+}
+
+/* ---- Native <dialog> modals (components/Modal.jsx; finding X5) ---- */
+.rm-dialog {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  inset: 0;
+  overflow: hidden;
+}
+.rm-dialog[open] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.rm-dialog::backdrop {
+  background: rgb(15 23 42 / 0.4);
+  backdrop-filter: blur(4px);
+}
+.rm-dialog[data-align="sheet"][open] { align-items: flex-end; padding: 0; }
+@media (min-width: 640px) {
+  .rm-dialog[data-align="sheet"][open] { align-items: center; padding: 1rem; }
+}
+/* The page behind a modal must not scroll; the gutter stays so nothing shifts sideways */
+html:has(dialog[open]) { overflow: hidden; }

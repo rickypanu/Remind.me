@@ -24,8 +24,8 @@ reminders cannot be recovered.
 """
 import base64
 import os
+from collections.abc import Iterable
 from functools import lru_cache
-from typing import Iterable, List
 
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives import hashes
@@ -41,19 +41,28 @@ class EncryptionConfigError(RuntimeError):
     pass
 
 
-def _split_keys(raw: str) -> List[str]:
+def _split_keys(raw: str) -> list[str]:
     return [k.strip(" '\"") for k in (raw or "").split(",") if k.strip(" '\"")]
 
 
-def _master_keys() -> List[bytes]:
-    current = os.getenv("REMINDER_ENCRYPTION_KEY", "").strip(" '\"")
+@lru_cache(maxsize=8)
+def _parse_master_keys(current_raw: str, previous_raw: str) -> tuple[bytes, ...]:
+    current = current_raw.strip(" '\"")
     if len(current) < 32:
         raise EncryptionConfigError(
             "REMINDER_ENCRYPTION_KEY is missing or too short (min 32 chars). Generate one with: "
             'python -c "import secrets; print(secrets.token_urlsafe(48))"'
         )
-    keys = [current] + _split_keys(os.getenv("REMINDER_ENCRYPTION_KEY_PREVIOUS", ""))
-    return [k.encode("utf-8") for k in keys]
+    keys = [current] + _split_keys(previous_raw)
+    return tuple(k.encode("utf-8") for k in keys)
+
+
+def _master_keys() -> list[bytes]:
+    """The parsed keys. Parsing is cached per (current, previous) raw value, so it is not redone for every field
+    encrypted or decrypted (finding P4), yet a changed environment variable (rotation, tests) is picked up at once."""
+    return list(
+        _parse_master_keys(os.getenv("REMINDER_ENCRYPTION_KEY", ""), os.getenv("REMINDER_ENCRYPTION_KEY_PREVIOUS", ""))
+    )
 
 
 def assert_encryption_configured() -> None:
@@ -73,7 +82,7 @@ def _user_cipher(master: bytes, user_id: str) -> AESGCM:
 
 
 def _aad(user_id: str, field: str) -> bytes:
-    return f"{user_id}|{field}".encode("utf-8")
+    return f"{user_id}|{field}".encode()
 
 
 def is_encrypted(value) -> bool:

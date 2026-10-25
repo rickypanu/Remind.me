@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Lock, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
-import api from '../../utils/api';
+import { useResetPassword } from '../../hooks/useAuthMutations';
+import FormField from '../../components/forms/FormField';
 import ThemeToggle from '../../components/ThemeToggle';
 import Logo from '../../components/Logo';
 import usePageMeta from '../../utils/usePageMeta';
@@ -11,10 +12,21 @@ import { getErrorMessage } from '../../utils/errors';
 export default function ResetPassword() {
   usePageMeta({ title: 'Reset password', description: 'Choose a new password for your RemindMe account.' });
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+  // The emailed link looks like /reset-password#token=... The token is in the URL FRAGMENT, which browsers never
+  // send to any server, so it cannot end up in server logs, proxies or Referer headers. Read it once, then remove
+  // it from the address bar and history so it is not left behind for shoulder-surfers or browser sync.
+  const [token] = useState(() => {
+    const fragment = window.location.hash.replace(/^#/, '');
+    return new URLSearchParams(fragment).get('token') || '';
+  });
+  useEffect(() => {
+    if (window.location.hash) {
+      window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search);
+    }
+  }, []);
   
   const [loading, setLoading] = useState(false);
+  const resetPassword = useResetPassword();
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -33,11 +45,11 @@ export default function ResetPassword() {
     e.preventDefault();
     
     // --- NEW: Password Strength Validation ---
-    // Regex checks for: >=8 chars, 1 uppercase, 1 lowercase, 1 number
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+    // Same rules the server enforces: 8-128 chars, 1 uppercase, 1 lowercase, 1 number, 1 special character
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,128}$/;
     
     if (!passwordRegex.test(formData.password)) {
-      return setError("Password must be at least 8 characters and contain an uppercase letter, a lowercase letter, and a number.");
+      return setError("Password must be 8-128 characters and contain an uppercase letter, a lowercase letter, a number, and a special character.");
     }
 
     // --- Check if passwords match ---
@@ -47,10 +59,7 @@ export default function ResetPassword() {
 
     setLoading(true);
     try {
-      await api.post('/auth/reset-password', {
-        token: token,
-        new_password: formData.password
-      });
+      await resetPassword.mutateAsync({ token, new_password: formData.password });
       setSuccess(true);
       notify.success('Password updated. You can log in now.');
       setTimeout(() => navigate('/login'), 3000);
@@ -98,7 +107,7 @@ export default function ResetPassword() {
         </div>
 
         {error && (
-          <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-100 text-red-600 flex items-center gap-2 text-sm font-medium">
+          <div id="reset-error" role="alert" className="mb-6 p-4 rounded-xl bg-red-50 border border-red-100 text-red-700 flex items-center gap-2 text-sm font-medium">
             <AlertCircle size={18} className="shrink-0" />
             <span>{error}</span>
           </div>
@@ -113,53 +122,48 @@ export default function ResetPassword() {
             </p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-1.5">
-              <label className="block text-sm font-semibold text-gray-700">
-                New Password
-              </label>
-              <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" size={20} />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  placeholder="••••••••"
-                  className="w-full pl-12 pr-12 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
-                />
+          <form onSubmit={handleSubmit} noValidate aria-label="Set a new password" className="space-y-5">
+            <FormField
+              id="new-password"
+              name="password"
+              label="New password"
+              icon={Lock}
+              type={showPassword ? "text" : "password"}
+              autoComplete="new-password"
+              placeholder="••••••••"
+              required
+              value={formData.password}
+              onChange={handleChange}
+              state={error ? "bad" : "neutral"}
+              describedBy={error ? "reset-error" : undefined}
+              hint="Must be at least 8 characters with 1 uppercase, 1 lowercase, 1 number, and 1 special character."
+              trailing={
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 focus:outline-none"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-blue-600 focus:outline-none focus-visible:text-blue-600"
                 >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  {showPassword ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}
                 </button>
-              </div>
-              {/* Optional: Helpful hint text below the input */}
-              <p className="text-xs text-gray-500 mt-1">
-                Must be at least 8 characters with 1 uppercase, 1 lowercase, and 1 number.
-              </p>
-            </div>
+              }
+            />
 
-            <div className="space-y-1.5">
-              <label className="block text-sm font-semibold text-gray-700">
-                Confirm Password
-              </label>
-              <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" size={20} />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  required
-                  placeholder="••••••••"
-                  className="w-full pl-12 pr-12 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
-                />
-              </div>
-            </div>
+            <FormField
+              id="confirm-new-password"
+              name="confirmPassword"
+              label="Confirm password"
+              icon={Lock}
+              type={showPassword ? "text" : "password"}
+              autoComplete="new-password"
+              placeholder="••••••••"
+              required
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              state={error ? "bad" : "neutral"}
+              describedBy={error ? "reset-error" : undefined}
+            />
 
             <button
               type="submit"
