@@ -3,7 +3,7 @@
 import json
 import logging
 import unittest
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 
 from tests import auth_stubs  # noqa: F401  (must stay first: it prepares the test environment)
 
@@ -16,10 +16,9 @@ from app.core.timing import TimingMiddleware  # noqa: E402
 from app.repositories import CompletionRepository  # noqa: E402
 from app.services.users import UserService  # noqa: E402
 from schemas.task import TaskResponse, TaskStatsResponse, TaskStatusUpdate, TaskSyncPage  # noqa: E402
-from tests.helpers import T0, Clock, new_world, task_payload  # noqa: E402
+from tests.helpers import T0, new_world, task_payload  # noqa: E402
 from utils.streak import best_streak, current_streak  # noqa: E402
-from utils.task_store import shape_response  # noqa: E402
-from utils.timezone import IST, UTC  # noqa: E402
+from utils.timezone import UTC  # noqa: E402
 
 DONE = TaskStatusUpdate(status="completed")
 OPEN = TaskStatusUpdate(status="pending")

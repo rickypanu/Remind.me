@@ -33,7 +33,6 @@ os.environ.update(
         "RATE_LIMIT_ENABLED": "false",
     }
 )
-os.environ.pop("REDIS_URL", None)
 os.environ.pop("BREVO_API_KEY", None)
 
 

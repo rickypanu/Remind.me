@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import babel from '@rolldown/plugin-babel'
 import tailwindcss from '@tailwindcss/vite'
@@ -64,6 +64,20 @@ const pwaPlugin = VitePWA({
   },
 })
 
-export default defineConfig({
-  plugins: [react(), tailwindcss(), babel({ presets: [reactCompilerPreset()] }), pwaPlugin],
+export default defineConfig(({ mode }) => {
+  // A production build WITHOUT VITE_API_BASE_URL silently points the app at http://localhost:8000, which the browser
+  // blocks on a deployed https site (CSP + mixed content): login, sign-up and every list then fail. Stop the build
+  // instead, with a message that says what to set.
+  if (mode === 'production') {
+    const env = loadEnv(mode, process.cwd(), 'VITE_')
+    const api = (env.VITE_API_BASE_URL || '').trim()
+    if (!/^https:\/\/[^/\s]+/i.test(api) && !process.env.ALLOW_LOCAL_API_BUILD) {
+      throw new Error(
+        'VITE_API_BASE_URL must be set to your deployed API (https://<name>.onrender.com, no trailing slash) for a ' +
+          'production build. On Vercel: Project > Settings > Environment Variables, then redeploy. ' +
+          'For a local production preview set ALLOW_LOCAL_API_BUILD=1.',
+      )
+    }
+  }
+  return { plugins: [react(), tailwindcss(), babel({ presets: [reactCompilerPreset()] }), pwaPlugin] }
 })

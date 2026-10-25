@@ -30,7 +30,6 @@ cryptography>=44.0.1,<50             # the old "<42" pin is gone; field encrypti
 
 # --- rate limiting -------------------------------------------------------------
 slowapi>=0.1.9,<0.2
-redis>=5.2,<8                        # Redis storage backend for slowapi / limits
 
 # --- background jobs, HTTP, integrations -----------------------------------
 apscheduler>=3.10,<4                 # 4.x is a different, pre-release API

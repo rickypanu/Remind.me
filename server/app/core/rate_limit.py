@@ -1,7 +1,7 @@
 """Rate limiting with slowapi (finding S5).
 
-One shared ``Limiter``. Storage is Redis when REDIS_URL is set, so limits are shared between workers and survive
-restarts; otherwise memory (development, or a single production instance with ALLOW_IN_MEMORY_RATE_LIMIT).
+One shared ``Limiter`` with in-process memory storage (no Redis or other paid service). Counters reset when the
+server restarts and are not shared between workers, so run a single worker.
 
 Keys
     * Requests that carry a valid access token are counted per USER, so a whole campus behind one NAT address is

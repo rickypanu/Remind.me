@@ -21,9 +21,13 @@ async function main() {
   const dist = resolve(process.argv[2] || "dist");
   // Vercel (free Hobby) exposes the production hostname without a scheme; use it when no custom domain is set.
   const vercelHost = process.env.VERCEL_PROJECT_PRODUCTION_URL;
-  const siteUrl = normalizeSiteUrl(
-    process.env.VITE_SITE_URL || process.env.SITE_URL || (vercelHost ? `https://${vercelHost}` : undefined),
-  );
+  let rawSiteUrl = process.env.VITE_SITE_URL || process.env.SITE_URL || (vercelHost ? `https://${vercelHost}` : undefined);
+  if (!rawSiteUrl && !process.env.VERCEL && !process.env.CI) {
+    // Building on your own computer: canonical links only matter for crawlers, so do not make the build fail.
+    rawSiteUrl = "http://localhost:4173";
+    console.warn("VITE_SITE_URL is not set: using http://localhost:4173 for canonical links. Set it for a real deploy.");
+  }
+  const siteUrl = normalizeSiteUrl(rawSiteUrl);
   const base = await readFile(join(dist, "index.html"), "utf8");
 
   // The untouched shell (noindex) first: private routes fall back to it (see vercel.json).

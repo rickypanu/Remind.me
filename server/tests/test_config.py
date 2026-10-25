@@ -29,7 +29,6 @@ PROD = {
     "MONGODB_URL": "mongodb+srv://app:pw@cluster0.abcde.mongodb.net/?retryWrites=true",
     "CORS_ORIGINS": "https://remindme.app,https://www.remindme.app/",
     "FRONTEND_URL": "https://remindme.app",
-    "REDIS_URL": "rediss://default:pw@redis.remindme.app:6380/0",
     "BREVO_API_KEY": "xkeysib-0123456789abcdef",
     "EMAIL_SENDER_ADDRESS": "noreply@remindme.app",
 }
@@ -94,8 +93,7 @@ class RequiredSecretsTests(unittest.TestCase):
         self.assertEqual(s.reminder_encryption_key.get_secret_value(), ENC_KEY)
 
     def test_empty_optional_values_mean_not_set(self):
-        s = load({**DEV, "REDIS_URL": "", "TELEGRAM_BOT_TOKEN": "", "ACCESS_TOKEN_EXPIRE_MINUTES": ""})
-        self.assertIsNone(s.redis_url)
+        s = load({**DEV, "TELEGRAM_BOT_TOKEN": "", "ACCESS_TOKEN_EXPIRE_MINUTES": ""})
         self.assertIsNone(s.telegram_bot_token)
         self.assertEqual(s.access_token_expire_minutes, 15)
 
@@ -162,7 +160,7 @@ class ProductionTests(unittest.TestCase):
         self.assertTrue(s.is_production)
         self.assertFalse(s.docs_enabled)
         self.assertEqual(s.cors_origins, ["https://remindme.app", "https://www.remindme.app"])
-        self.assertEqual(s.rate_limit_storage_uri, PROD["REDIS_URL"])
+        self.assertEqual(s.rate_limit_storage_uri, "memory://")
         self.assertTrue(s.email_enabled)
 
     def test_production_rejects_http_and_localhost_origins(self):
@@ -177,11 +175,9 @@ class ProductionTests(unittest.TestCase):
         for url in ("mongodb://localhost:27017", "mongodb://u:p@127.0.0.1/db", "mongodb://u:p@db1.example.org,localhost:27017/x"):
             self.assertIn("MONGODB_URL points at localhost", error_text({**PROD, "MONGODB_URL": url}), url)
 
-    def test_production_requires_redis_unless_explicitly_waived(self):
-        env = {k: v for k, v in PROD.items() if k != "REDIS_URL"}
-        self.assertIn("REDIS_URL is required", error_text(env))
-        self.assertEqual(load({**env, "ALLOW_IN_MEMORY_RATE_LIMIT": "true"}).rate_limit_storage_uri, "memory://")
-        load({**env, "RATE_LIMIT_ENABLED": "false"})
+    def test_production_needs_no_redis(self):
+        self.assertEqual(load(PROD).rate_limit_storage_uri, "memory://")
+        load({**PROD, "RATE_LIMIT_ENABLED": "false"})
 
     def test_production_requires_email(self):
         env = {k: v for k, v in PROD.items() if k not in ("BREVO_API_KEY", "EMAIL_SENDER_ADDRESS")}
@@ -259,8 +255,7 @@ class IntegrationGroupTests(unittest.TestCase):
         error_text({**DEV, "RATE_LIMIT_LOGIN": "five per minute"})
         error_text({**DEV, "RATE_LIMIT_LOGIN": "0/minute"})
 
-    def test_redis_and_mongodb_schemes_are_validated(self):
-        error_text({**DEV, "REDIS_URL": "http://localhost:6379"})
+    def test_mongodb_scheme_and_database_name_are_validated(self):
         error_text({**DEV, "MONGODB_URL": "postgres://localhost/db"})
         error_text({**DEV, "DATABASE_NAME": "bad name/with:chars"})
 

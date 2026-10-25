@@ -200,14 +200,57 @@ async def _explain(db: Any, spec: IndexSpec, exc: OperationFailure) -> IndexSetu
     return IndexSetupError(f"Could not create index {target}: {exc}")
 
 
+async def _drop_conflicting(db: Any, spec: IndexSpec) -> list[str]:
+    """Drop the existing index/indexes that block ``spec``: same name, or the same keys under another name.
+
+    An index holds no data of its own: MongoDB rebuilds it from the documents, and a unique index re-checks the
+    data while it is rebuilt (duplicates then produce the explained error from ``_explain``). ``_id_`` is never touched.
+    Returns the names that were dropped.
+    """
+    collection = db[spec.collection]
+    existing = await (await collection.list_indexes()).to_list(length=None)
+    wanted_keys = [(name, int(direction)) for name, direction in spec.keys]
+    dropped: list[str] = []
+    for info in existing:
+        name = info.get("name")
+        if not name or name == "_id_":
+            continue
+        keys = [(k, int(v)) for k, v in dict(info.get("key", {})).items()]
+        if name == spec.name or keys == wanted_keys:
+            await collection.drop_index(name)
+            dropped.append(name)
+    return dropped
+
+
 async def ensure_indexes(db: Any, specs: Sequence[IndexSpec] = INDEX_SPECS) -> list[str]:
-    """Create every index in ``specs`` (idempotent). Returns the ``collection.index`` names ensured."""
+    """Create every index in ``specs`` (idempotent). Returns the ``collection.index`` names ensured.
+
+    A database created by an OLDER version of the app may hold the same index with different options (for example
+    ``users.uq_users_email`` that used to be ``sparse``). MongoDB refuses to change an index in place and the server
+    used to stop at start-up with "IndexKeySpecsConflict". Now the outdated index is dropped and created again from the
+    definition above; only if that fails too is the error raised.
+    """
     ensured: list[str] = []
     for spec in specs:
+        collection = db[spec.collection]
         try:
-            await db[spec.collection].create_index(list(spec.keys), name=spec.name, **spec.options)
+            await collection.create_index(list(spec.keys), name=spec.name, **spec.options)
         except OperationFailure as exc:
-            raise await _explain(db, spec, exc) from exc
+            if exc.code not in (_INDEX_OPTIONS_CONFLICT, _INDEX_KEY_SPECS_CONFLICT):
+                raise await _explain(db, spec, exc) from exc
+            dropped = await _drop_conflicting(db, spec)
+            if not dropped:
+                raise await _explain(db, spec, exc) from exc
+            log.warning(
+                "Index %s.%s had outdated options; dropped %s and creating it again",
+                spec.collection,
+                spec.name,
+                ", ".join(dropped),
+            )
+            try:
+                await collection.create_index(list(spec.keys), name=spec.name, **spec.options)
+            except OperationFailure as retry_exc:
+                raise await _explain(db, spec, retry_exc) from retry_exc
         ensured.append(f"{spec.collection}.{spec.name}")
         log.debug("Index ready: %s.%s", spec.collection, spec.name)
     log.info("MongoDB indexes verified (%d)", len(ensured))

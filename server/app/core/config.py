@@ -16,7 +16,7 @@ Design rules
   serves a single request.
 * All problems are reported together, so one boot attempt shows everything to fix.
 * ``ENVIRONMENT=production`` switches on the strict checks (https, no localhost,
-  Redis for rate limiting, email configured).
+  email configured).
 * Variable names match the ones the legacy code already reads with ``os.getenv``,
   so migrating modules one by one is safe.
 """
@@ -177,8 +177,6 @@ class Settings(BaseSettings):
     frontend_url: str = "http://localhost:5173"
 
     # ---- rate limiting -------------------------------------------------------------------
-    redis_url: SecretStr | None = None
-    allow_in_memory_rate_limit: bool = False
     rate_limit_enabled: bool = True
     rate_limit_default: str = "120/minute"
     rate_limit_login: str = "5/minute"
@@ -317,13 +315,6 @@ class Settings(BaseSettings):
             raise ValueError("use scheme://host[:port] with no path")
         return url
 
-    @field_validator("redis_url")
-    @classmethod
-    def _check_redis_url(cls, value: SecretStr | None) -> SecretStr | None:
-        if value is not None and not value.get_secret_value().lower().startswith(("redis://", "rediss://", "unix://")):
-            raise ValueError("must start with redis://, rediss:// or unix://")
-        return value
-
     @field_validator(*_RATE_LIMIT_FIELDS)
     @classmethod
     def _check_rate_limit(cls, value: str) -> str:
@@ -420,11 +411,6 @@ class Settings(BaseSettings):
                     problems.append(f"CORS_ORIGINS entry {origin!r} must be a public https origin in production")
             if _mongodb_url_is_local(self.mongodb_url.get_secret_value()):
                 problems.append("MONGODB_URL points at localhost in production")
-            if self.rate_limit_enabled and self.redis_url is None and not self.allow_in_memory_rate_limit:
-                problems.append(
-                    "REDIS_URL is required in production so rate limits are shared between workers "
-                    "(or set ALLOW_IN_MEMORY_RATE_LIMIT=true for a single instance)"
-                )
 
         if problems:
             raise ValueError("Invalid configuration:\n" + "\n".join(f"  - {problem}" for problem in problems))
@@ -453,7 +439,7 @@ class Settings(BaseSettings):
 
     @property
     def rate_limit_storage_uri(self) -> str:
-        return self.redis_url.get_secret_value() if self.redis_url is not None else "memory://"
+        return "memory://"  # in-process counters: no extra service; run ONE worker (the free Render setup does)
 
     @property
     def gemini_keys(self) -> list[str]:
@@ -489,9 +475,7 @@ class Settings(BaseSettings):
             "environment": self.environment,
             "database": self.database_name,
             "cors_origins": self.cors_origins,
-            "rate_limiting": (
-                ("redis" if self.redis_url is not None else "in-memory") if self.rate_limit_enabled else "off"
-            ),
+            "rate_limiting": "in-memory" if self.rate_limit_enabled else "off",
             "telegram": self.telegram_enabled,
             "web_push": self.push_enabled,
             "email": self.email_enabled,

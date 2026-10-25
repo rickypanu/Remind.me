@@ -32,11 +32,28 @@ class FakeCollection:
         self.duplicates: list[dict[str, Any]] = []
         self.pipelines: list[list[dict[str, Any]]] = []
 
+        # indexes that already exist in the database (as list_indexes() reports them), e.g. from an older app version
+        self.existing: list[dict[str, Any]] = []
+        self.dropped: list[str] = []
+
     async def create_index(self, keys: list[tuple[str, int]], **options: Any) -> str:
         if self.fail_with is not None:
             raise self.fail_with
+        for info in self.existing:  # MongoDB: same name + different options -> IndexKeySpecsConflict (86)
+            same_options = bool(info.get("sparse")) == bool(options.get("sparse")) and bool(info.get("unique")) == bool(
+                options.get("unique")
+            )
+            if info["name"] == options["name"] and not same_options:
+                raise OperationFailure("An existing index has the same name as the requested index", code=86)
         self.created.append((keys, options))
         return str(options["name"])
+
+    async def list_indexes(self) -> FakeCursor:
+        return FakeCursor([{"name": "_id_", "key": {"_id": 1}}, *self.existing])
+
+    async def drop_index(self, name: str) -> None:
+        self.dropped.append(name)
+        self.existing = [info for info in self.existing if info["name"] != name]
 
     async def aggregate(self, pipeline: list[dict[str, Any]]) -> FakeCursor:
         self.pipelines.append(pipeline)
@@ -128,7 +145,38 @@ class EnsureIndexesTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("users.uq_users_email", message)
         self.assertIn("ana@example.org x2", message)
 
-    async def test_conflicting_existing_index_gives_an_actionable_error(self):
+    async def test_outdated_index_from_an_older_version_is_dropped_and_recreated(self):
+        # The exact start-up failure seen on a developer machine: users.uq_users_email existed as a SPARSE index.
+        db = FakeDB()
+        db["users"].existing = [
+            {"name": "uq_users_email", "key": {"email": 1}, "unique": True, "sparse": True},
+            {"name": "some_other_index", "key": {"username": 1}},
+        ]
+        ensured = await ensure_indexes(db)
+        self.assertEqual(len(ensured), len(INDEX_SPECS))
+        self.assertEqual(db["users"].dropped, ["uq_users_email"])  # only the conflicting one; others are left alone
+        keys, opts = only(db, "users", "uq_users_email")
+        self.assertEqual(keys, [("email", 1)])
+        self.assertNotIn("sparse", opts)
+
+    async def test_same_keys_under_another_name_is_replaced(self):
+        db = FakeDB()
+        db["users"].existing = [{"name": "email_1", "key": {"email": 1}, "unique": True}]
+        db["users"].fail_with = None
+        original = db["users"].create_index
+        calls = {"n": 0}
+
+        async def create_index(keys, **options):
+            if options["name"] == "uq_users_email" and calls["n"] == 0:
+                calls["n"] += 1
+                raise OperationFailure("Index already exists with a different name: email_1", code=85)
+            return await original(keys, **options)
+
+        db["users"].create_index = create_index  # type: ignore[method-assign]
+        await ensure_indexes(db)
+        self.assertEqual(db["users"].dropped, ["email_1"])
+
+    async def test_conflict_that_cannot_be_healed_gives_an_actionable_error(self):
         db = FakeDB()
         db["tasks"].fail_with = OperationFailure("Index already exists with different options", code=85)
         with self.assertRaises(IndexSetupError) as ctx:
