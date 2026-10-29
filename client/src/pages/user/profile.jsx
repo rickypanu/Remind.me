@@ -16,6 +16,9 @@ import {
   X,
   Newspaper,
   Shield,
+  Download,
+  Smartphone,
+  ChevronDown,
 } from "lucide-react";
 import { logoutFromServer } from "../../api";
 import useMe from "../../hooks/useMe";
@@ -31,6 +34,101 @@ import AppearanceSettings from "../components/AppearanceSettings";
 import AppPage from "../../components/AppPage";
 import { flushPending } from "../../offline/sync";
 import { countPending } from "../../offline/db";
+
+// Direct link to the newest Android build (GitHub Release). Keep the file name `remindme.apk` on every release.
+const APK_URL = "https://github.com/rickypanu/Remind.me/releases/latest/download/remindme.apk";
+
+const INSTALL_STEPS = [
+  "Tap Download app. Your browser may say the file \"can harm your device\": tap Download anyway. It is the normal warning for apps outside the Play Store.",
+  "Open the downloaded RemindMe.apk from the notification or your Downloads folder.",
+  "If Android asks, tap Settings, switch on Allow from this source, then go back and tap Install.",
+  "Open RemindMe, log in with the same account, and allow notifications so your reminders can ring.",
+  "For alarms that never get late: allow exact alarms and set the app's battery use to Unrestricted.",
+];
+
+/** Download button for the Android app, with a QR code for people on a computer and step-by-step install help. */
+function InstallAppCard() {
+  const [showSteps, setShowSteps] = useState(false);
+  const isAndroid = typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
+  const isIphone = typeof navigator !== "undefined" && /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const pageUrl = typeof window !== "undefined" ? window.location.origin : "";
+
+  return (
+    <div>
+      <h3 className="px-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Get the app</h3>
+      <div className="bg-white border border-gray-100 rounded-[24px] overflow-hidden shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
+        <div className="p-5 flex items-center gap-4">
+          <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+            <Smartphone size={22} strokeWidth={2} />
+          </div>
+          <div className="min-w-0">
+            <p className="font-bold text-gray-900 text-[15px] leading-tight">RemindMe for Android</p>
+            <p className="text-xs text-gray-500 font-medium mt-0.5">Alarms that ring on your phone, even offline. Voice quick add.</p>
+          </div>
+        </div>
+
+        <div className="px-5 pb-5">
+          {isIphone ? (
+            <p className="text-sm text-gray-600 bg-gray-50 border border-gray-100 rounded-xl p-3">
+              The app is for Android phones. On iPhone, keep using RemindMe here in your browser.
+            </p>
+          ) : (
+            <a
+              href={APK_URL}
+              download="RemindMe.apk"
+              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 active:scale-[0.99] transition shadow-sm"
+            >
+              <Download size={18} strokeWidth={2.25} />
+              Download app (Android)
+            </a>
+          )}
+
+          {!isAndroid && !isIphone && pageUrl && (
+            <div className="mt-4 flex items-center gap-4 p-3 rounded-xl bg-gray-50 border border-gray-100">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=4&data=${encodeURIComponent(pageUrl + "/profile")}`}
+                alt="QR code to open RemindMe on your phone"
+                width={80}
+                height={80}
+                loading="lazy"
+                className="rounded-lg bg-white"
+              />
+              <p className="text-xs text-gray-600 font-medium leading-relaxed">
+                On a computer? Scan this with your Android phone, log in, then open Profile and tap Download app.
+              </p>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setShowSteps((v) => !v)}
+            aria-expanded={showSteps}
+            className="mt-4 w-full flex items-center justify-between text-sm font-semibold text-gray-700 hover:text-gray-900 transition-colors"
+          >
+            How to install
+            <ChevronDown size={16} className={`transition-transform ${showSteps ? "rotate-180" : ""}`} />
+          </button>
+
+          {showSteps && (
+            <div className="mt-3">
+              <ol className="space-y-2.5">
+                {INSTALL_STEPS.map((text, i) => (
+                  <li key={text} className="flex gap-3 text-[13px] text-gray-600 leading-relaxed">
+                    <span className="h-5 w-5 shrink-0 rounded-full bg-blue-50 text-blue-600 text-[11px] font-bold flex items-center justify-center mt-0.5">{i + 1}</span>
+                    <span>{text}</span>
+                  </li>
+                ))}
+              </ol>
+              <p className="mt-3 text-xs text-gray-500 leading-relaxed">
+                To update, download the new file the same way and install it over the old app. Your reminders and login are kept.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Profile() {
   usePageMeta({ title: 'Profile & settings', description: 'Manage your RemindMe profile, appearance, notifications and account.', noindex: true });
@@ -286,6 +384,9 @@ export default function Profile() {
               <MenuItem icon={Info} label="About App" to="/about" />
             </div>
           </div>
+
+          {/* Android app download */}
+          <InstallAppCard />
 
           {/* Appearance: dark mode + Minimalism theme toggles */}
           <AppearanceSettings />
