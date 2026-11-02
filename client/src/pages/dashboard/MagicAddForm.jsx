@@ -1,19 +1,31 @@
-import React, { useRef, useState } from "react";
-import { Loader2, Sparkles, ArrowUp, Mic, MicOff } from "lucide-react";
+import React, { useMemo, useRef, useState } from "react";
+import { Sparkles, ArrowUp, Mic, MicOff, CalendarClock, Repeat } from "lucide-react";
 import useAutosizeTextarea from "../../hooks/useAutosizeTextarea";
-import useMagicAdd from "../../hooks/useMagicAdd";
+import useQuickAdd from "../../hooks/useQuickAdd";
 import useSpeechRecognition from "../../hooks/useSpeechRecognition";
 import { feedback } from "../../feedback/feedback";
 import notify from "../../utils/notify";
+import { describeScheduleLocal, formatDueIst } from "../../utils/date";
+import { parseQuick } from "../../utils/quickParse";
 
 const VOICE_LANG = "en-IN";
 const MAX_LENGTH = 500;
+const EXAMPLES = ["Gym tomorrow 7am", "Call mom in 30 min", "Revise every day 8pm", "kal sham 6 baje assignment"];
 
-/** "Type or speak a reminder" box on the dashboard (server-side AI reads the sentence). */
+/** What the reminder will say, e.g. "31 Oct, 6:00 pm" or "Every Mon, Thu at 7:00 AM". */
+function whenLabel(payload) {
+  if (payload.schedule_type === "once") return `${formatDueIst(payload.due_date)} IST`;
+  return describeScheduleLocal(payload.schedule_type, payload.time_of_day, payload.weekdays);
+}
+
+/**
+ * "Type or speak a reminder" box on the dashboard. The sentence is understood on the phone and saved at once
+ * (see hooks/useQuickAdd.js), so it works in about a second, even offline or while the server is waking up.
+ */
 export default function MagicAddForm({ isOffline }) {
   const [text, setText] = useState("");
   const inputRef = useRef(null);
-  const { submit, busy } = useMagicAdd();
+  const { add } = useQuickAdd();
   useAutosizeTextarea(inputRef, text);
 
   const { listening, toggle } = useSpeechRecognition({
@@ -25,86 +37,112 @@ export default function MagicAddForm({ isOffline }) {
     onError: () => notify.error("Couldn't use the microphone. Allow mic access in your browser settings and try again."),
   });
 
+  // Live preview of what will be saved (cheap: it is plain string work)
+  const preview = useMemo(() => (text.trim() ? parseQuick(text) : null), [text]);
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     const trimmed = text.trim();
-    if (!trimmed || busy) return;
-
-    // Smart add asks the server's AI to read the sentence, so it needs a connection.
-    if (!navigator.onLine) {
-      notify.info("Smart add needs an internet connection. Tap + to add a reminder offline.", { icon: "📴" });
-      return;
-    }
+    if (!trimmed) return;
 
     try {
-      await submit(trimmed);
-      setText("");
+      const result = await add(trimmed);
+      if (!result) return;
+      setText(""); // clear first: the reminder is already saved on this device
       feedback.added();
-      notify.success("Reminder added.");
+      notify.success(`Added · ${whenLabel(result.parsed.payload)}${navigator.onLine ? "" : " (saved offline)"}`);
+      inputRef.current?.focus({ preventScroll: true });
     } catch (err) {
-      console.error("Magic Add failed:", err);
-      // An expired session (401) is handled globally by the API client.
-      if (err.response?.status === 401) return;
-      // Shows the server's own message (content rejected, AI busy, couldn't parse, offline...)
-      notify.error(err, "Couldn't add that reminder. Try rephrasing it.");
+      console.error("Quick add failed:", err);
+      notify.error("Couldn't save that reminder on this device. Please try again.");
     }
   };
 
-  const placeholder = listening
-    ? "Listening..."
-    : isOffline
-      ? "Offline: tap + to add a reminder"
-      : "Try “Gym tomorrow 7am”";  // short on purpose: a long hint wraps to 3 lines on a phone
+  const placeholder = listening ? "Listening..." : "Try “Gym tomorrow 7am”";
 
   return (
-    <form onSubmit={handleSubmit} className="mb-2 relative group">
-      <div className="absolute left-4 top-[18px] flex items-center pointer-events-none">
-        <Sparkles className="text-blue-500 group-focus-within:text-blue-600 transition-colors duration-200" size={20} strokeWidth={2.5} aria-hidden="true" />
-      </div>
-
-      <textarea
-        ref={inputRef}
-        rows={1}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={(e) => {
-          // Enter sends, Shift+Enter adds a new line
-          if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-            e.preventDefault();
-            e.currentTarget.form?.requestSubmit();
-          }
-        }}
-        disabled={busy}
-        aria-label="Add a task by typing or speaking"
-        placeholder={placeholder}
-        maxLength={MAX_LENGTH}
-        className={`block w-full resize-none bg-white text-sm sm:text-[15px] leading-6 text-slate-900 font-medium placeholder:text-slate-500 placeholder:whitespace-nowrap placeholder:overflow-hidden placeholder:text-ellipsis rounded-[20px] border shadow-[0_4px_20px_rgb(0,0,0,0.03)] pl-12 pr-28 py-[18px] min-h-[60px] outline-none transition-[border-color,box-shadow] duration-200 ${
-          listening ? "border-red-300 ring-4 ring-red-500/10" : "border-slate-100 focus:border-blue-200 focus:ring-4 focus:ring-blue-500/10"
+    <form onSubmit={handleSubmit} className="mb-4">
+      <div
+        className={`rm-ios-card relative flex items-end gap-2 rounded-[24px] border bg-white p-2 pl-4 transition-[border-color,box-shadow] duration-200 ${
+          listening ? "border-red-300 ring-4 ring-red-500/10" : "border-slate-200 focus-within:border-blue-300 focus-within:ring-4 focus-within:ring-blue-500/10"
         }`}
-      />
+      >
+        <Sparkles className="mb-[15px] shrink-0 text-blue-600" size={20} strokeWidth={2.5} aria-hidden="true" />
 
-      <div className="absolute bottom-2 right-2 flex items-center gap-1.5">
+        <textarea
+          ref={inputRef}
+          rows={1}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => {
+            // Enter saves, Shift+Enter adds a new line
+            if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+              e.preventDefault();
+              e.currentTarget.form?.requestSubmit();
+            }
+          }}
+          aria-label="Add a reminder by typing or speaking"
+          placeholder={placeholder}
+          maxLength={MAX_LENGTH}
+          enterKeyHint="send"
+          className="min-h-[48px] min-w-0 flex-1 resize-none bg-transparent py-[11px] text-[16px] font-medium leading-6 text-slate-900 outline-none placeholder:text-slate-500"
+        />
+
         <button
           type="button"
           onClick={toggle}
-          disabled={busy}
-          aria-label={listening ? "Stop listening" : "Speak a task"}
+          aria-label={listening ? "Stop listening" : "Speak a reminder"}
           aria-pressed={listening}
-          className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-            listening ? "bg-red-500 text-white animate-pulse" : "bg-slate-100 hover:bg-slate-200 text-slate-600"
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 active:scale-90 ${
+            listening ? "animate-pulse bg-red-500 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
           }`}
         >
-          {listening ? <MicOff size={18} strokeWidth={2.5} /> : <Mic size={18} strokeWidth={2.5} />}
+          {listening ? <MicOff size={19} strokeWidth={2.4} /> : <Mic size={19} strokeWidth={2.4} />}
         </button>
 
         <button
           type="submit"
-          disabled={busy || listening || !text.trim()}
-          aria-label="Add task"
-          className="w-10 h-10 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-100 disabled:text-slate-400 text-white rounded-2xl flex items-center justify-center transition-colors duration-200 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          disabled={listening || !text.trim()}
+          aria-label="Add reminder"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white shadow-sm transition-all duration-200 hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 active:scale-90 disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none"
         >
-          {busy ? <Loader2 className="animate-spin" size={18} strokeWidth={3} /> : <ArrowUp size={20} strokeWidth={3} />}
+          <ArrowUp size={21} strokeWidth={3} />
         </button>
+      </div>
+
+      {/* Live preview, or one-tap examples while the box is empty */}
+      <div className="mt-2.5 min-h-[28px] px-1" aria-live="polite">
+        {preview ? (
+          <p className="flex min-w-0 items-center gap-2 text-[13px] font-semibold text-slate-700">
+            {preview.payload.schedule_type === "once" ? (
+              <CalendarClock size={15} strokeWidth={2.4} className="shrink-0 text-blue-600" aria-hidden="true" />
+            ) : (
+              <Repeat size={15} strokeWidth={2.4} className="shrink-0 text-blue-600" aria-hidden="true" />
+            )}
+            <span className="min-w-0 truncate">
+              <span className="text-slate-900">{preview.payload.title}</span> · {whenLabel(preview.payload)}
+            </span>
+          </p>
+        ) : (
+          <div className="scrollbar-hide -mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5">
+            {EXAMPLES.map((example) => (
+              <button
+                key={example}
+                type="button"
+                onClick={() => {
+                  setText(example);
+                  inputRef.current?.focus();
+                }}
+                className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[12.5px] font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 active:scale-95"
+              >
+                {example}
+              </button>
+            ))}
+          </div>
+        )}
+        {isOffline && !preview && (
+          <p className="mt-1.5 text-[12px] font-semibold text-amber-700">Offline: reminders are saved on this phone and upload later.</p>
+        )}
       </div>
     </form>
   );

@@ -41,7 +41,7 @@ export default function MotivationCard({ name, userId, dayKey, hour, streak, bes
             <p className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">
               <Flame size={13} strokeWidth={2.5} aria-hidden="true" />
               {streak}-day streak
-              {bestStreak > streak ? <span className="font-semibold text-amber-700/80">· best {bestStreak}</span> : null}
+              {bestStreak > streak ? <span className="font-semibold text-amber-800">· best {bestStreak}</span> : null}
             </p>
           )}
         </div>

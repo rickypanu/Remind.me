@@ -17,6 +17,7 @@ import DashboardTabs from "./DashboardTabs";
 import DateFilterButton from "./DateFilterButton";
 import EmptyState from "./EmptyState";
 import MagicAddForm from "./MagicAddForm";
+import InstallBanner from "../../components/InstallBanner";
 import MotivationCard from "./MotivationCard";
 import { effectiveStreak } from "./motivation";
 import TaskGroups from "./TaskGroups";
@@ -135,6 +136,8 @@ export default function Dashboard() {
         </div>
 
         <MagicAddForm isOffline={isOffline} />
+
+        <InstallBanner />
 
         <MotivationCard
           name={userInfo?.username}

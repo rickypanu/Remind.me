@@ -51,6 +51,13 @@ async def magic_add(request: Request, payload: MagicAddRequest, user_id: UserId,
     return await quick.add(user_id, payload.text)
 
 
+@router.post("/magic-parse")
+@limiter.limit(Limits.magic_add)
+async def magic_parse(request: Request, payload: MagicAddRequest, user_id: UserId, quick: QuickAddSvc) -> dict:
+    """Same AI reading as ``/magic-add`` but nothing is saved: the app applies the result to a reminder it already has."""
+    return await quick.parse(payload.text)
+
+
 @router.get("/stats", response_model=TaskStatsResponse)
 async def task_stats(user_id: UserId, tasks: TaskSvc) -> dict:
     """Streak and today's completions. Declared before ``/{task_id}`` so "stats" is never read as an id."""

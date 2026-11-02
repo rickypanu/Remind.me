@@ -37,6 +37,21 @@ const WEEKDAYS = [
   { n: 6, short: "Sun", long: "Sunday" },
 ];
 
+// One-tap times for a one-time reminder. Values are IST wall-clock "YYYY-MM-DDTHH:mm" (what the picker holds).
+const IST_MS = 330 * 60000;
+const istValue = (ms) => new Date(ms + IST_MS).toISOString().slice(0, 16);
+const atIstClock = (dayOffset, h, m = 0) => {
+  const start = Math.floor((Date.now() + IST_MS) / 86400000) * 86400000 - IST_MS; // IST midnight today
+  return istValue(start + dayOffset * 86400000 + (h * 60 + m) * 60000);
+};
+const TIME_PRESETS = [
+  { label: "In 1 hour", value: () => istValue(Date.now() + 3600000) },
+  { label: "Tonight 9pm", value: () => atIstClock(0, 21), onlyIfAhead: true },
+  { label: "Tomorrow 9am", value: () => atIstClock(1, 9) },
+  { label: "Tomorrow 6pm", value: () => atIstClock(1, 18) },
+  { label: "In 3 days", value: () => atIstClock(3, 9) },
+];
+
 const fieldBase =
   "w-full pl-10 pr-4 py-2.5 bg-slate-100/70 border border-transparent rounded-xl text-sm text-slate-900 placeholder-slate-500 focus:bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all font-normal min-h-[44px]";
 
@@ -240,6 +255,25 @@ export default function CreateTask() {
                     required
                     className={`${fieldBase} block pr-3 cursor-pointer appearance-none text-left`}
                   />
+                </div>
+                <div className="scrollbar-hide -mx-1 mt-2.5 flex gap-2 overflow-x-auto px-1 pb-0.5">
+                  {TIME_PRESETS.filter((p) => !p.onlyIfAhead || p.value() > now).map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => {
+                        setFormData((f) => ({ ...f, due_date: preset.value() }));
+                        setError("");
+                      }}
+                      className={`shrink-0 rounded-full border px-3 py-1.5 text-[12.5px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 active:scale-95 ${
+                        formData.due_date === preset.value()
+                          ? "border-blue-600 bg-blue-600 text-white"
+                          : "border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:text-blue-700"
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}

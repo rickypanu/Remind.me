@@ -19,6 +19,8 @@ import {
   Download,
   Smartphone,
   ChevronDown,
+  Share,
+  CheckCircle2,
 } from "lucide-react";
 import { logoutFromServer } from "../../api";
 import useMe from "../../hooks/useMe";
@@ -32,6 +34,8 @@ import MenuItem from "../components/MenuItems";
 import AvatarPickerModal from "../components/AvatarPickerModal";
 import AppearanceSettings from "../components/AppearanceSettings";
 import AppPage from "../../components/AppPage";
+import InstallSheet from "../../components/InstallSheet";
+import useInstall, { promptInstall } from "../../utils/install";
 import { flushPending } from "../../offline/sync";
 import { countPending } from "../../offline/db";
 
@@ -46,45 +50,95 @@ const INSTALL_STEPS = [
   "For alarms that never get late: allow exact alarms and set the app's battery use to Unrestricted.",
 ];
 
-/** Download button for the Android app, with a QR code for people on a computer and step-by-step install help. */
+/**
+ * "Get the app": install RemindMe on the Home screen (works on iPhone, Android and desktop), plus the Android APK for
+ * people who want the native alarm app. Hidden parts follow what the device can actually do.
+ */
 function InstallAppCard() {
   const [showSteps, setShowSteps] = useState(false);
-  const isAndroid = typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
-  const isIphone = typeof navigator !== "undefined" && /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const [sheet, setSheet] = useState(false);
+  const install = useInstall();
   const pageUrl = typeof window !== "undefined" ? window.location.origin : "";
+  const isMobile = install.ios || install.android;
+
+  const onInstall = async () => {
+    if (install.canPrompt) {
+      if (await promptInstall()) notify.success("Installing RemindMe…");
+    } else {
+      setSheet(true);
+    }
+  };
+
+  const primaryClass =
+    "flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-blue-600 text-white text-[15px] font-bold hover:bg-blue-700 active:scale-[0.99] transition shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2";
+  const secondaryClass =
+    "flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-slate-100 text-slate-900 text-[15px] font-bold hover:bg-slate-200 active:scale-[0.99] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500";
 
   return (
     <div>
-      <h3 className="px-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Get the app</h3>
-      <div className="bg-white border border-gray-100 rounded-[24px] overflow-hidden shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
+      <h3 className="px-3 text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-2">Get the app</h3>
+      <div className="rm-ios-card bg-white border border-gray-100 rounded-[24px] overflow-hidden">
         <div className="p-5 flex items-center gap-4">
-          <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
-            <Smartphone size={22} strokeWidth={2} />
-          </div>
+          <img src="/icon-192x192.png" alt="" width="52" height="52" className="h-[52px] w-[52px] shrink-0 rounded-[14px] shadow-sm" />
           <div className="min-w-0">
-            <p className="font-bold text-gray-900 text-[15px] leading-tight">RemindMe for Android</p>
-            <p className="text-xs text-gray-500 font-medium mt-0.5">Alarms that ring on your phone, even offline. Voice quick add.</p>
+            <p className="font-bold text-gray-900 text-[16px] leading-tight">RemindMe on your Home Screen</p>
+            <p className="text-[13px] text-gray-600 font-medium mt-0.5">Opens in one tap, full screen, works offline.</p>
           </div>
         </div>
 
-        <div className="px-5 pb-5">
-          {isIphone ? (
-            <p className="text-sm text-gray-600 bg-gray-50 border border-gray-100 rounded-xl p-3">
-              The app is for Android phones. On iPhone, keep using RemindMe here in your browser.
+        <div className="px-5 pb-5 space-y-3">
+          {install.standalone ? (
+            <p className="flex items-center gap-2 rounded-2xl bg-emerald-50 border border-emerald-200 p-3.5 text-sm font-semibold text-emerald-800">
+              <CheckCircle2 size={18} strokeWidth={2.5} aria-hidden="true" />
+              You are using the installed app.
             </p>
+          ) : install.ios || install.canPrompt ? (
+            <button type="button" onClick={onInstall} className={primaryClass}>
+              {install.ios ? <Share size={18} strokeWidth={2.5} /> : <Download size={18} strokeWidth={2.5} />}
+              {install.ios ? "Add to Home Screen" : "Install app"}
+            </button>
           ) : (
-            <a
-              href={APK_URL}
-              download="RemindMe.apk"
-              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 active:scale-[0.99] transition shadow-sm"
-            >
-              <Download size={18} strokeWidth={2.25} />
-              Download app (Android)
-            </a>
+            <p className="text-[13px] text-gray-700 bg-gray-50 border border-gray-100 rounded-2xl p-3.5 leading-relaxed">
+              Open your browser menu (⋮ or the install icon in the address bar) and choose <strong>Install app</strong> or{" "}
+              <strong>Add to Home screen</strong>.
+            </p>
           )}
 
-          {!isAndroid && !isIphone && pageUrl && (
-            <div className="mt-4 flex items-center gap-4 p-3 rounded-xl bg-gray-50 border border-gray-100">
+          {install.android && !install.standalone && (
+            <>
+              <a href={APK_URL} download="RemindMe.apk" className={secondaryClass}>
+                <Smartphone size={18} strokeWidth={2.5} />
+                Android app with alarms (APK)
+              </a>
+              <button
+                type="button"
+                onClick={() => setShowSteps((v) => !v)}
+                aria-expanded={showSteps}
+                className="w-full flex items-center justify-between text-sm font-semibold text-gray-700 hover:text-gray-900 transition-colors pt-1"
+              >
+                How to install the APK
+                <ChevronDown size={16} className={`transition-transform ${showSteps ? "rotate-180" : ""}`} />
+              </button>
+              {showSteps && (
+                <div>
+                  <ol className="space-y-2.5">
+                    {INSTALL_STEPS.map((text, i) => (
+                      <li key={text} className="flex gap-3 text-[13px] text-gray-700 leading-relaxed">
+                        <span className="h-5 w-5 shrink-0 rounded-full bg-blue-100 text-blue-800 text-[11px] font-bold flex items-center justify-center mt-0.5">{i + 1}</span>
+                        <span>{text}</span>
+                      </li>
+                    ))}
+                  </ol>
+                  <p className="mt-3 text-xs text-gray-600 leading-relaxed">
+                    To update, download the new file the same way and install it over the old app. Your reminders and login are kept.
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+
+          {!isMobile && !install.standalone && pageUrl && (
+            <div className="flex items-center gap-4 p-3 rounded-2xl bg-gray-50 border border-gray-100">
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=4&data=${encodeURIComponent(pageUrl + "/profile")}`}
                 alt="QR code to open RemindMe on your phone"
@@ -93,39 +147,14 @@ function InstallAppCard() {
                 loading="lazy"
                 className="rounded-lg bg-white"
               />
-              <p className="text-xs text-gray-600 font-medium leading-relaxed">
-                On a computer? Scan this with your Android phone, log in, then open Profile and tap Download app.
-              </p>
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={() => setShowSteps((v) => !v)}
-            aria-expanded={showSteps}
-            className="mt-4 w-full flex items-center justify-between text-sm font-semibold text-gray-700 hover:text-gray-900 transition-colors"
-          >
-            How to install
-            <ChevronDown size={16} className={`transition-transform ${showSteps ? "rotate-180" : ""}`} />
-          </button>
-
-          {showSteps && (
-            <div className="mt-3">
-              <ol className="space-y-2.5">
-                {INSTALL_STEPS.map((text, i) => (
-                  <li key={text} className="flex gap-3 text-[13px] text-gray-600 leading-relaxed">
-                    <span className="h-5 w-5 shrink-0 rounded-full bg-blue-50 text-blue-600 text-[11px] font-bold flex items-center justify-center mt-0.5">{i + 1}</span>
-                    <span>{text}</span>
-                  </li>
-                ))}
-              </ol>
-              <p className="mt-3 text-xs text-gray-500 leading-relaxed">
-                To update, download the new file the same way and install it over the old app. Your reminders and login are kept.
+              <p className="text-xs text-gray-700 font-medium leading-relaxed">
+                On a computer? Scan this with your phone, log in, then open Profile and tap Add to Home Screen or Install app.
               </p>
             </div>
           )}
         </div>
       </div>
+      {sheet && <InstallSheet iosSafari={install.iosSafari} onClose={() => setSheet(false)} />}
     </div>
   );
 }
@@ -385,7 +414,7 @@ export default function Profile() {
             </div>
           </div>
 
-          {/* Android app download */}
+          {/* Install on the Home screen (iPhone, Android, desktop) + Android APK */}
           <InstallAppCard />
 
           {/* Appearance: dark mode + Minimalism theme toggles */}

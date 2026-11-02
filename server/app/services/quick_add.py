@@ -107,7 +107,8 @@ class QuickAddService:
     def __init__(self, tasks: TaskService) -> None:
         self.tasks = tasks
 
-    async def add(self, user_id: Any, text: str) -> dict:
+    async def _understand(self, text: str) -> TaskCreate:
+        """Moderation + AI + validation. Shared by ``add`` (creates) and ``parse`` (only reads the sentence)."""
         # 1. Block bad input before spending any AI quota
         ensure_allowed(text)
         try:
@@ -117,7 +118,7 @@ class QuickAddService:
                 reject_ai_flagged()
             task = _to_task_create(data)
             ensure_allowed(task.title, task.description, task.category)
-            return await self.tasks.create(user_id, task)
+            return task
         except AppError:
             raise  # moderation / validation messages go straight to the user
         except GeminiUnavailable as exc:
@@ -133,3 +134,16 @@ class QuickAddService:
         except Exception:  # noqa: BLE001 - the user gets a calm message, the log gets the traceback
             log.exception("Magic add error")
             raise InternalError("Something went wrong while adding your reminder. Please try again.") from None
+
+    async def add(self, user_id: Any, text: str) -> dict:
+        task = await self._understand(text)
+        return await self.tasks.create(user_id, task)
+
+    async def parse(self, text: str) -> dict:
+        """Read the sentence and return the reminder fields WITHOUT saving anything.
+
+        The app saves the reminder on the phone first (its own instant parser) and then asks for this to "polish"
+        a sentence the instant parser was unsure about, so a slow or busy AI never delays the user.
+        """
+        task = await self._understand(text)
+        return task.model_dump(mode="json", include={"title", "description", "category", "due_date", "schedule_type", "time_of_day", "weekdays"})

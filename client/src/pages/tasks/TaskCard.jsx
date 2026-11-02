@@ -88,8 +88,8 @@ function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious }) {
       <div
         className={`rm-card-in p-4 sm:p-5 rounded-[24px] border transition-all duration-300 ease-out motion-reduce:transition-none group relative overflow-hidden ${accent} ${
           isCompleted || isPrevious
-            ? 'bg-slate-50/60 border-slate-100 opacity-75 scale-[0.99] shadow-none'
-            : 'bg-white border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.02)] hover:shadow-md hover:border-blue-100'
+            ? 'bg-slate-50 border-slate-200 shadow-none'
+            : 'rm-ios-card bg-white border-slate-200 hover:border-blue-200'
         }`}
       >
         <div className="flex items-start gap-3 sm:gap-4 relative z-10">
@@ -125,7 +125,7 @@ function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious }) {
                 <span
                   className={`text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-md border uppercase tracking-wider transition-colors duration-500 ${
                     isCompleted
-                      ? 'bg-slate-100 text-slate-500 border-slate-200'
+                      ? 'bg-slate-100 text-slate-600 border-slate-200'
                       : getCategoryStyle(task.category)
                   }`}
                 >
@@ -135,7 +135,7 @@ function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious }) {
 
               {isRecurring && (
                 <span
-                  className={`inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md border bg-blue-50 border-blue-200 text-blue-700 ${isCompleted ? 'opacity-60' : ''}`}
+                  className={`inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md border bg-blue-50 border-blue-200 text-blue-700 ${''}`}
                 >
                   <Repeat size={11} strokeWidth={2.75} aria-hidden="true" />
                   {task.schedule_label || (task.schedule_type === 'daily' ? 'Every day' : 'Every week')}
@@ -145,7 +145,7 @@ function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious }) {
               {task.due_date && relativeTimeString && (
                 <span
                   className={`flex items-center text-xs font-bold transition-colors duration-500 ${
-                    isCompleted ? 'text-slate-500' : isOverdue ? 'text-rose-500' : 'text-slate-500'
+                    isCompleted ? 'text-slate-600' : isOverdue ? 'text-rose-600' : 'text-slate-600'
                   }`}
                 >
                   <Clock size={12} className="mr-1.5 shrink-0" strokeWidth={2.5} />
@@ -156,7 +156,7 @@ function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious }) {
               {task.needsSync && (
                 <span
                   title="Saved on this device. It will upload when you're online."
-                  className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600"
+                  className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700"
                 >
                   <CloudOff size={11} strokeWidth={2.5} aria-hidden="true" />
                   Not synced
@@ -166,7 +166,7 @@ function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious }) {
 
             <h3
               className={`text-base sm:text-lg font-bold leading-tight break-words transition-colors duration-500 ${
-                isCompleted ? 'text-slate-500' : 'text-slate-900'
+                isCompleted ? 'text-slate-600 line-through decoration-slate-400' : 'text-slate-900'
               }`}
             >
               {task.title}
@@ -175,7 +175,7 @@ function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious }) {
             {task.description && (
               <p
                 className={`mt-1.5 text-[13px] sm:text-sm font-medium line-clamp-2 transition-colors duration-500 ${
-                  isCompleted ? 'text-slate-500' : 'text-slate-500'
+                  'text-slate-600'
                 }`}
               >
                 {task.description}

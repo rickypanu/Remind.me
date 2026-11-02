@@ -23,7 +23,8 @@ Configuration (server/.env) - use any of these, they are merged and de-duplicate
     GEMINI_API_KEY=key1                     single key
     GEMINI_API_KEY_1=key1  GEMINI_API_KEY_2=key2 ...   numbered keys
     GEMINI_MODELS=gemini-3.8-flash,gemini-3.5-flash-lite,gemini-2.5-flash   optional override, best/fastest first
-    GEMINI_TIMEOUT_SECONDS=20               optional per-attempt timeout
+    GEMINI_TIMEOUT_SECONDS=8                optional per-attempt timeout (default 8)
+    GEMINI_TOTAL_BUDGET_SECONDS=14          optional ceiling for ONE request across every key x model (default 14)
 
 Prompt-injection defence (finding S15)
 --------------------------------------
@@ -152,7 +153,8 @@ def classify_error(exc: BaseException) -> tuple[str, int]:
 class GeminiPool:
     keys: list[str]
     models: list[str]
-    timeout: float = 20.0
+    timeout: float = 8.0
+    budget: float = 14.0  # a user is waiting: stop trying more key x model pairs after this many seconds
     _clients: dict[str, "genai.Client"] = field(default_factory=dict, repr=False)
     _key_blocked_until: dict[str, float] = field(default_factory=dict, repr=False)
     _pair_blocked_until: dict[tuple[str, str], float] = field(default_factory=dict, repr=False)
@@ -240,6 +242,7 @@ class GeminiPool:
         last_exc: BaseException | None = None
         attempted = set()
         keys = self._ordered_keys()
+        started = time.monotonic()
 
         # Pass 1 skips anything that is cooling down. Pass 2 (last resort) tries only the combinations
         # pass 1 skipped, because a cool-down is just our best guess and the provider may have recovered.
@@ -250,6 +253,8 @@ class GeminiPool:
                     now = time.monotonic()
                     if pair in attempted:
                         continue
+                    if now - started > self.budget:
+                        break  # out of time: fail fast (the app already saved the reminder from its own parser)
                     if respect_cooldown and not self._available(key, model, now):
                         continue
                     if not respect_cooldown and self._key_blocked_until.get(key, 0) > now + 600:
@@ -289,6 +294,8 @@ def get_pool() -> GeminiPool:
     """Lazily create the shared pool (so importing this module never crashes the app)."""
     global _pool
     if _pool is None:
-        _pool = GeminiPool(keys=load_api_keys(), models=load_models(), timeout=float(os.getenv("GEMINI_TIMEOUT_SECONDS", "20")))
+        _pool = GeminiPool(keys=load_api_keys(), models=load_models(), timeout=float(os.getenv("GEMINI_TIMEOUT_SECONDS", "8")),
+            budget=float(os.getenv("GEMINI_TOTAL_BUDGET_SECONDS", "14")),
+        )
         log.info("Gemini pool ready: %d key(s), models=%s", len(_pool.keys), _pool.models)
     return _pool

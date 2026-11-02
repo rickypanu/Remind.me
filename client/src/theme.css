@@ -996,3 +996,98 @@ html[data-theme="classic"][data-accent="teal"].dark {
   --rm-cta-3: color-mix(in oklab, #14b8a6 14%, #0f1117);
   --rm-hero-top: color-mix(in oklab, #14b8a6 9%, #0f1117);
 }
+
+
+/* =====================================================================
+   PREMIUM iOS LAYER  ·  glass, soft depth, AA contrast in every theme
+   Additive: everything above is untouched, so this block can be removed on its own.
+   ===================================================================== */
+
+/* ---- 1. Text contrast (WCAG AA, 4.5:1) --------------------------------------------------------------
+   Light mode: slate-400 (#94a3b8) is only 2.6:1 on white and slate-500 (#64748b) drops under 4.5:1 on tinted
+   cards. Darken both a little; dark mode and Minimalism already have their own readable values above. */
+html:not(.dark):not([data-theme="minimal"]) .text-slate-400,
+html:not(.dark):not([data-theme="minimal"]) .text-gray-400 { color: #5f6b80; }
+html:not(.dark):not([data-theme="minimal"]) .text-slate-500,
+html:not(.dark):not([data-theme="minimal"]) .text-gray-500 { color: #4d5a70; }
+html:not(.dark):not([data-theme="minimal"]) .text-slate-600,
+html:not(.dark):not([data-theme="minimal"]) .text-gray-600 { color: #3f4b61; }
+html:not(.dark):not([data-theme="minimal"]) ::placeholder { color: #5d697e; opacity: 1; }
+html:not(.dark)[data-theme="minimal"] .text-slate-400, html:not(.dark)[data-theme="minimal"] .text-gray-400 { color: #6b6b6b; }
+html:not(.dark)[data-theme="minimal"] .text-slate-500, html:not(.dark)[data-theme="minimal"] .text-gray-500 { color: #595959; }
+html:not(.dark)[data-theme="minimal"] ::placeholder { color: #6b6b6b; opacity: 1; }
+/* Status colours used as text on light cards */
+html:not(.dark) .text-rose-500, html:not(.dark) .text-red-500 { color: #be123c; }
+html:not(.dark) .text-amber-500, html:not(.dark) .text-amber-600 { color: #a16207; }
+html:not(.dark) .text-emerald-500, html:not(.dark) .text-emerald-600 { color: #047857; }
+/* Dark mode: slate-600 text was close to invisible on dark cards */
+html.dark .text-slate-600, html.dark .text-gray-600 { color: #b8c0cf; }
+html.dark .text-slate-700, html.dark .text-gray-700 { color: #d3d9e4; }
+
+/* Disabled primary buttons become a clear grey chip with readable text, instead of a washed-out blue */
+button:disabled.bg-blue-600, button:disabled.bg-indigo-600 { background-color: var(--color-slate-200); color: var(--color-slate-600); opacity: 1; box-shadow: none; }
+button:disabled { cursor: not-allowed; }
+
+/* ---- 2. Accent colours: solid buttons keep the chosen colour in dark mode and pass AA with white text ----- */
+html { --rm-solid: #2563eb; --rm-solid-hover: #1d4ed8; }
+html[data-accent="indigo"] { --rm-solid: #4f46e5; --rm-solid-hover: #4338ca; }
+html[data-accent="violet"] { --rm-solid: #7c3aed; --rm-solid-hover: #6d28d9; }
+html[data-accent="pink"] { --rm-solid: #be185d; --rm-solid-hover: #9d174d; }
+html[data-accent="orange"] { --rm-solid: #c2410c; --rm-solid-hover: #9a3412; }
+html[data-accent="green"] { --rm-solid: #047857; --rm-solid-hover: #065f46; }
+html[data-accent="teal"] { --rm-solid: #0f766e; --rm-solid-hover: #115e59; }
+/* Light: orange / green / teal 600 only reach ~3.6:1 with white text. Use the 700 shade as the 600 step. */
+html[data-theme="classic"][data-accent="orange"]:not(.dark) { --color-blue-600: #c2410c; --color-blue-700: #9a3412; --color-indigo-600: #c2410c; --color-indigo-700: #9a3412; --color-sky-600: #c2410c; --color-sky-700: #9a3412; }
+html[data-theme="classic"][data-accent="green"]:not(.dark) { --color-blue-600: #047857; --color-blue-700: #065f46; --color-indigo-600: #047857; --color-indigo-700: #065f46; --color-sky-600: #047857; --color-sky-700: #065f46; }
+html[data-theme="classic"][data-accent="teal"]:not(.dark) { --color-blue-600: #0f766e; --color-blue-700: #115e59; --color-indigo-600: #0f766e; --color-indigo-700: #115e59; --color-sky-600: #0f766e; --color-sky-700: #115e59; }
+html[data-theme="classic"][data-accent="pink"]:not(.dark) { --color-blue-600: #be185d; --color-blue-700: #9d174d; --color-indigo-600: #be185d; --color-indigo-700: #9d174d; --color-sky-600: #be185d; --color-sky-700: #9d174d; }
+/* Dark classic: the old rule forced these to blue for every accent */
+html.dark[data-theme="classic"] .bg-blue-600, html.dark[data-theme="classic"] .bg-indigo-600, html.dark[data-theme="classic"] .bg-sky-600,
+html.dark[data-theme="classic"] .hover\:bg-blue-600:hover { background-color: var(--rm-solid); }
+html.dark[data-theme="classic"] .bg-blue-700, html.dark[data-theme="classic"] .bg-indigo-700, html.dark[data-theme="classic"] .bg-sky-700,
+html.dark[data-theme="classic"] .hover\:bg-blue-700:hover, html.dark[data-theme="classic"] .hover\:bg-indigo-700:hover { background-color: var(--rm-solid-hover); }
+html.dark[data-theme="classic"] .shadow-blue-500\/20, html.dark[data-theme="classic"] .shadow-blue-500\/25, html.dark[data-theme="classic"] .shadow-blue-600\/30 { --tw-shadow-color: color-mix(in oklab, var(--rm-solid) 35%, transparent); }
+
+/* ---- 3. Depth and glass ---------------------------------------------------------------------------- */
+:root { --rm-card-shadow: 0 1px 2px rgb(16 24 40 / .05), 0 10px 28px -14px rgb(16 24 40 / .18); }
+.rm-ios-card { box-shadow: var(--rm-card-shadow); }
+html.dark .rm-ios-card { box-shadow: 0 0 0 1px rgb(255 255 255 / .06), 0 12px 28px -16px rgb(0 0 0 / .7); }
+html[data-theme="minimal"] .rm-ios-card { box-shadow: none; }
+
+/* Header: frosted glass like an iOS navigation bar (solid fallback where backdrop-filter is missing) */
+header.sticky { background-color: color-mix(in oklab, var(--rm-page) 86%, transparent); }
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  header.sticky { -webkit-backdrop-filter: saturate(180%) blur(22px); backdrop-filter: saturate(180%) blur(22px); }
+}
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  header.sticky { background-color: var(--rm-page); }
+}
+header.sticky { border-bottom-color: color-mix(in oklab, var(--color-slate-300) 55%, transparent); }
+
+/* Buttons and chips: tactile press, like UIKit */
+button:not(:disabled):active, a[role="button"]:active { transition-duration: 90ms; }
+input, textarea, select { border-radius: 14px; }
+
+/* ---- 4. Bottom tab bar (phones) ---------------------------------------------------------------------- */
+.rm-bottom-nav {
+  position: fixed; inset: auto 0 0 0; z-index: 55;
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 6px);
+  background: color-mix(in oklab, var(--rm-page) 84%, transparent);
+  border-top: 1px solid color-mix(in oklab, var(--color-slate-300) 60%, transparent);
+}
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .rm-bottom-nav { -webkit-backdrop-filter: saturate(180%) blur(22px); backdrop-filter: saturate(180%) blur(22px); }
+}
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) { .rm-bottom-nav { background: var(--rm-page); } }
+.rm-bottom-nav .rm-tab { min-height: 48px; }
+@media (max-width: 767px) { body:has(.rm-bottom-nav) { padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)); } }
+
+/* ---- 5. Sheets and dialogs ---------------------------------------------------------------------------- */
+.rm-dialog::backdrop { background: rgb(8 12 24 / .45); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.rm-dialog[data-align="sheet"][open] > * { max-height: 92dvh; overflow-y: auto; overscroll-behavior: contain; }
+
+/* ---- 6. Standalone (installed) app: no rubber-band flash, no text-selection on taps ------------------------- */
+@media (display-mode: standalone) {
+  html { overscroll-behavior-y: none; }
+  button, a, [role="tab"] { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+}

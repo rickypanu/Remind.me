@@ -7,7 +7,7 @@ services:
     region: singapore          # closest free region to India
     rootDir: server
     buildCommand: pip install --upgrade pip && pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 --no-access-log
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 --no-access-log --no-server-header
     healthCheckPath: /health
     autoDeploy: true
     envVars:
@@ -27,8 +27,6 @@ services:
         sync: false
       - key: CORS_ORIGINS
         sync: false
-      - key: ALLOW_IN_MEMORY_RATE_LIMIT
-        value: "true"
       - key: TRUSTED_PROXY_HOPS
         value: "1"
       - key: SCHEDULER_ENABLED

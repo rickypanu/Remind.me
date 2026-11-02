@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-route
 import { QueryClientProvider } from "@tanstack/react-query";
 
 import AppToaster from "./components/AppToaster";
+import BottomNav from "./components/BottomNav";
 import ConnectionStatus from "./components/ConnectionStatus";
 import OfflineBootstrap from "./components/OfflineBootstrap";
 import RouteAnnouncer from "./components/RouteAnnouncer";
@@ -93,6 +94,7 @@ function App() {
               </Routes>
             </Suspense>
           </RouteErrorBoundary>
+          <BottomNav />
         </div>
       </BrowserRouter>
     </QueryClientProvider>
