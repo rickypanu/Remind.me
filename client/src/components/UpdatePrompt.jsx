@@ -22,7 +22,7 @@ export default function UpdatePrompt() {
   return (
     <div
       role="status"
-      className="fixed inset-x-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] md:bottom-3 z-[60] mx-auto flex max-w-md items-center justify-between gap-3 rounded-2xl bg-slate-900 px-4 py-3 text-sm text-white shadow-2xl"
+      className="fixed inset-x-3 bottom-3 z-[60] mx-auto flex max-w-md items-center justify-between gap-3 rounded-2xl bg-slate-900 px-4 py-3 text-sm text-white shadow-2xl"
       style={{ marginBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
       <span className="font-medium">A new version of RemindMe is ready.</span>

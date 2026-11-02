@@ -26,7 +26,7 @@ import {
   Shield,
 } from "lucide-react";
 
-const APP_VERSION = "v5.0.0";
+const APP_VERSION = "v6.0.0";
 const REPO_URL = SITE.repoUrl;
 
 // ---- Live service status (useApiHealth pings the backend's /health endpoint) ----

@@ -25,13 +25,17 @@ export const isStandalone = () => {
 // iPadOS 13+ reports itself as a Mac with touch support
 export const isIos = () =>
   /iPhone|iPad|iPod/i.test(ua()) || (typeof navigator !== "undefined" && navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+/** Inside the Android app's own WebView (the APK): installing a web app from there is impossible, so hide those prompts. */
+export const isWebView = () => /; wv\)|\bRemindMeApp\b|Capacitor/i.test(ua());
 export const isAndroid = () => /Android/i.test(ua());
 /** Only Safari can add to the Home screen on iOS (Chrome / Firefox / in-app browsers cannot, before iOS 16.4). */
 const isIosSafari = () => isIos() && /Safari/i.test(ua()) && !/CriOS|FxiOS|EdgiOS|OPiOS|GSA|Instagram|FBAN|FBAV|Line/i.test(ua());
 
 function compute() {
-  const standalone = installed || isStandalone();
+  const webview = isWebView();
+  const standalone = installed || isStandalone() || webview;
   const next = {
+    webview,
     standalone,
     canPrompt: !standalone && !!deferred,
     ios: !standalone && isIos(),

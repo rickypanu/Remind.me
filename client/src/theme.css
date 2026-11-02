@@ -1068,25 +1068,11 @@ header.sticky { border-bottom-color: color-mix(in oklab, var(--color-slate-300) 
 button:not(:disabled):active, a[role="button"]:active { transition-duration: 90ms; }
 input, textarea, select { border-radius: 14px; }
 
-/* ---- 4. Bottom tab bar (phones) ---------------------------------------------------------------------- */
-.rm-bottom-nav {
-  position: fixed; inset: auto 0 0 0; z-index: 55;
-  padding-bottom: max(env(safe-area-inset-bottom, 0px), 6px);
-  background: color-mix(in oklab, var(--rm-page) 84%, transparent);
-  border-top: 1px solid color-mix(in oklab, var(--color-slate-300) 60%, transparent);
-}
-@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-  .rm-bottom-nav { -webkit-backdrop-filter: saturate(180%) blur(22px); backdrop-filter: saturate(180%) blur(22px); }
-}
-@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) { .rm-bottom-nav { background: var(--rm-page); } }
-.rm-bottom-nav .rm-tab { min-height: 48px; }
-@media (max-width: 767px) { body:has(.rm-bottom-nav) { padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)); } }
-
-/* ---- 5. Sheets and dialogs ---------------------------------------------------------------------------- */
+/* ---- 4. Sheets and dialogs ---------------------------------------------------------------------------- */
 .rm-dialog::backdrop { background: rgb(8 12 24 / .45); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 .rm-dialog[data-align="sheet"][open] > * { max-height: 92dvh; overflow-y: auto; overscroll-behavior: contain; }
 
-/* ---- 6. Standalone (installed) app: no rubber-band flash, no text-selection on taps ------------------------- */
+/* ---- 5. Standalone (installed) app: no rubber-band flash, no text-selection on taps ------------------------- */
 @media (display-mode: standalone) {
   html { overscroll-behavior-y: none; }
   button, a, [role="tab"] { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }

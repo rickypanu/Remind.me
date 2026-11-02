@@ -18,7 +18,7 @@ export default function MotivationCard({ name, userId, dayKey, hour, streak, bes
   const onStreak = Number.isFinite(streak) && streak >= 1;
 
   return (
-    <section aria-label="Daily motivation" className="mb-6 rounded-[24px] border border-slate-100 bg-white p-4 sm:p-5 shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
+    <section aria-label="Daily motivation" className="mb-6 rounded-[24px] bg-transparent px-1 py-2 sm:px-2">
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
           <Quote size={17} strokeWidth={2.5} aria-hidden="true" />
