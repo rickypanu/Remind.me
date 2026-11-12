@@ -9,9 +9,9 @@ export const FAQS = [
   {
     id: 1,
     category: 'Getting Started',
-    question: 'What is RemindMe?',
+    question: 'What is Deadline?',
     answer:
-      'RemindMe sends you reminders at the right time: a specific date and time, every day, or on chosen days every week. Add assignments, projects, exams, habits or routines, and we remind you through Telegram and browser notifications.',
+      'Deadline sends you reminders at the right time: a specific date and time, every day, or on chosen days every week. Add assignments, projects, exams, habits or routines, and we remind you through Telegram and browser notifications.',
   },
   {
     id: 2,
@@ -25,7 +25,7 @@ export const FAQS = [
     category: 'Getting Started',
     question: 'Can I install it like an app on my phone?',
     answer:
-      'Yes. RemindMe is a web app that you can add to your home screen, so it opens full-screen like a normal app.',
+      'Yes. Deadline is a web app that you can add to your home screen, so it opens full-screen like a normal app.',
     steps: [
       'Android (Chrome): tap the ⋮ menu, then "Install app" or "Add to Home screen".',
       'iPhone (Safari): tap the Share button, then "Add to Home Screen".',
@@ -154,11 +154,11 @@ export const FAQS = [
     category: 'Notifications',
     question: 'Do browser notifications work on iPhone?',
     answer:
-      'Yes, but only on iOS 16.4 or newer and only after you add RemindMe to your Home Screen. Open the app from that Home Screen icon, then turn on alerts. Notifications will not work from a normal Safari tab.',
+      'Yes, but only on iOS 16.4 or newer and only after you add Deadline to your Home Screen. Open the app from that Home Screen icon, then turn on alerts. Notifications will not work from a normal Safari tab.',
     steps: [
       'Open the site in Safari and tap the Share button.',
       'Choose "Add to Home Screen".',
-      'Open RemindMe from the new Home Screen icon.',
+      'Open Deadline from the new Home Screen icon.',
       'Turn on alerts and allow notifications.',
     ],
   },
@@ -167,7 +167,7 @@ export const FAQS = [
     category: 'Notifications',
     question: 'Do I need the app open to get reminders?',
     answer:
-      'No. Reminders are sent from our server, so you do not need RemindMe open. For Telegram you just need the Telegram app. Browser notifications can arrive even when the tab is closed.',
+      'No. Reminders are sent from our server, so you do not need Deadline open. For Telegram you just need the Telegram app. Browser notifications can arrive even when the tab is closed.',
   },
   {
     id: 19,
@@ -200,16 +200,16 @@ export const FAQS = [
   {
     id: 30,
     category: 'Settings & Offline',
-    question: 'Does RemindMe work without internet?',
+    question: 'Does Deadline work without internet?',
     answer:
-      'Yes. After you have opened RemindMe once while online, the app loads and every page works offline. You can add, edit, complete and delete reminders; they are saved on your device first and a small "Not synced" label shows until they are uploaded. When you are back online the app syncs automatically and shows "Changes saved to cloud". Magic Add, Telegram and browser alerts need a connection, because they are handled by our server.',
+      'Yes. After you have opened Deadline once while online, the app loads and every page works offline. You can add, edit, complete and delete reminders; they are saved on your device first and a small "Not synced" label shows until they are uploaded. When you are back online the app syncs automatically and shows "Changes saved to cloud". Magic Add, Telegram and browser alerts need a connection, because they are handled by our server.',
   },
   {
     id: 31,
     category: 'Settings & Offline',
     question: 'What happens to offline changes if I log out?',
     answer:
-      'If some changes have not been uploaded yet, RemindMe tries to upload them first and warns you before logging you out. Logging out clears the copy stored on that device, so reconnect and let the sync finish before you log out.',
+      'If some changes have not been uploaded yet, Deadline tries to upload them first and warns you before logging you out. Logging out clears the copy stored on that device, so reconnect and let the sync finish before you log out.',
   },
   {
     id: 32,
@@ -224,7 +224,7 @@ export const FAQS = [
     category: 'Settings & Offline',
     question: 'Can I use my own notification sound?',
     answer:
-      'Yes. On the Notifications page choose "Upload your own" and pick an .mp3 or .wav file (up to 2 MB and 30 seconds). Your sound plays when an alert arrives while RemindMe is open. When the app is closed, browsers only allow your device\'s own notification sound, so you will hear that one instead.',
+      'Yes. On the Notifications page choose "Upload your own" and pick an .mp3 or .wav file (up to 2 MB and 30 seconds). Your sound plays when an alert arrives while Deadline is open. When the app is closed, browsers only allow your device\'s own notification sound, so you will hear that one instead.',
     link: { to: '/notifications', label: 'Choose a sound' },
   },
   {
@@ -274,7 +274,7 @@ export const FAQS = [
     category: 'Tasks',
     question: 'Why was my reminder rejected?',
     answer:
-      'To keep RemindMe safe for everyone, reminders are screened automatically. Text containing sexual, vulgar, hateful or harmful content is not saved. Reword it and try again. If you think a normal reminder was blocked by mistake, contact support and tell us the exact wording.',
+      'To keep Deadline safe for everyone, reminders are screened automatically. Text containing sexual, vulgar, hateful or harmful content is not saved. Reword it and try again. If you think a normal reminder was blocked by mistake, contact support and tell us the exact wording.',
   },
   {
     id: 24,

@@ -98,7 +98,8 @@ def _to_task_create(data: dict, now: datetime | None = None) -> TaskCreate:
         category=data.get("category") or "Other",
         due_date=due,
         schedule_type=stype,
-        time_of_day=data.get("time_of_day"),
+        # The prompt promises 09:00 for a repeat with no time; the model sometimes leaves it null, which TaskCreate refuses.
+        time_of_day=data.get("time_of_day") or ("09:00" if stype != "once" else None),
         weekdays=data.get("weekdays") or [],
     )
 

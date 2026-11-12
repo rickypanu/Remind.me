@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { AlertCircle, ChevronDown } from "lucide-react";
 import TaskCard from "../tasks/TaskCard";
+import { useI18n } from "../../i18n/index.jsx";
 
 /** Collapsible list of reminders whose time has passed. Renders nothing when there are none. */
 export default function OverdueBanner({ tasks, cardProps }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   if (tasks.length === 0) return null;
 
@@ -21,9 +23,9 @@ export default function OverdueBanner({ tasks, cardProps }) {
             <AlertCircle size={16} strokeWidth={2.5} aria-hidden="true" />
           </div>
           <div className="text-left">
-            <span className="text-xs font-bold text-rose-900 block leading-tight">Overdue tasks</span>
+            <span className="text-xs font-bold text-rose-900 block leading-tight">{t("Overdue tasks")}</span>
             <span className="text-[11px] text-rose-700 font-medium">
-              {tasks.length} {tasks.length === 1 ? "item needs" : "items need"} attention
+              {tasks.length} {tasks.length === 1 ? t("item needs attention") : t("items need attention")}
             </span>
           </div>
         </div>

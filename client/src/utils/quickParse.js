@@ -94,7 +94,7 @@ function take(state, re) {
 function pickWeekdays(chunk) {
   const out = new Set();
   for (const m of chunk.matchAll(new RegExp(`\\b${DAY_NAME}\\b`, 'g'))) {
-    const n = WEEKDAY_WORDS[m[0]];
+    const n = WEEKDAY_WORDS[m[0]] ?? WEEKDAY_WORDS[m[0].slice(0, 3)]; // "thurday" typo still means Thursday
     if (n !== undefined) out.add(n);
   }
   return [...out].sort((a, b) => a - b);
@@ -139,6 +139,7 @@ export function parseQuick(input, nowMs = Date.now()) {
 
   // 1. "in 30 min", "after 2 hours", "30 min baad"
   let relativeMs = null;
+  let relativeInDays = false;
   {
     const m =
       take(state, /\b(?:in|after)\s+(\d+(?:\.\d+)?|an?|half an?)\s*(min(?:ute)?s?|hours?|hrs?|h|days?)\b/) ||
@@ -149,6 +150,7 @@ export function parseQuick(input, nowMs = Date.now()) {
       const unit = m[2][0] === 'm' ? MIN : m[2][0] === 'd' ? DAY : HOUR; // m(in), d(ays), h / g(hante)
       if (n > 0 && n <= 1000) {
         relativeMs = now + Math.round(n * unit);
+        relativeInDays = unit === DAY;
         found.push('relative');
       }
     }
@@ -163,6 +165,7 @@ export function parseQuick(input, nowMs = Date.now()) {
     if ((m = take(state, new RegExp(`\\b(?:every|each|har)\\s+((?:${DAY_NAME}\\b[\\s,&]*(?:and\\b|aur\\b)?[\\s,&]*)+)`)))) {
       schedule = 'weekly';
       weekdays = pickWeekdays(m[1]);
+      if (!weekdays.length) weekdays = [nowP.weekday]; // a weekly reminder with no weekday would be refused by the server
     }
     if (schedule === 'once' && take(state, /\b(?:every\s*weekdays?|weekdays|monday to friday|mon-fri)\b/)) {
       schedule = 'weekly';
@@ -204,6 +207,10 @@ export function parseQuick(input, nowMs = Date.now()) {
       dayMs = namedDate(nowP, Number(m[1]), MONTHS[m[2]], m[3]);
     } else if ((m = take(state, new RegExp(`\\b(${MONTH_NAME})\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b(?:\\s*,?\\s*(\\d{4}))?`)))) {
       dayMs = namedDate(nowP, Number(m[2]), MONTHS[m[1]], m[3]);
+    } else if ((m = take(state, /\b(\d{4})-(\d{1,2})-(\d{1,2})\b/))) {
+      // 2026-11-05 (year first). Without this the day-first rule below would read "11-05" as 11 May.
+      const month = Number(m[2]) - 1;
+      if (month >= 0 && month <= 11) dayMs = namedDate(nowP, Number(m[3]), month, m[1]);
     } else if ((m = take(state, /\b(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?\b/))) {
       // India writes day first: 5/11 is 5 November
       const day = Number(m[1]);
@@ -226,7 +233,7 @@ export function parseQuick(input, nowMs = Date.now()) {
 
     if ((m = take(state, /\b(?:at\s+|@\s*)?(\d{1,2})(?:[:.](\d{2}))?\s*(a\.?m\.?|p\.?m\.?)(?=\W|$)/))) {
       const h = Number(m[1]);
-      if (h >= 1 && h <= 12) clock = [to24(h, m[3]), Number(m[2] || 0)];
+      if (h >= 1 && h <= 12 && Number(m[2] || 0) <= 59) clock = [to24(h, m[3]), Number(m[2] || 0)];
     }
     if (!clock && (m = take(state, /\b(?:at\s+|@\s*)?([01]?\d|2[0-3]):([0-5]\d)\b/))) {
       const h = Number(m[1]);
@@ -236,11 +243,11 @@ export function parseQuick(input, nowMs = Date.now()) {
     }
     if (!clock && (m = take(state, /\b(?:at\s+|@\s*)?(\d{1,2})(?:[:.](\d{2}))?\s*(?:baje|bje|o'?clock|oclock|am|pm)\b/))) {
       const h = Number(m[1]);
-      if (h >= 0 && h <= 24) clock = [guessHour(h === 24 ? 0 : h, Number(m[2] || 0), partKey, now), Number(m[2] || 0)];
+      if (h >= 0 && h <= 24 && Number(m[2] || 0) <= 59) clock = [guessHour(h === 24 ? 0 : h, Number(m[2] || 0), partKey, now), Number(m[2] || 0)];
     }
     if (!clock && (m = take(state, /\bat\s+(\d{1,2})(?:[:.](\d{2}))?(?!\d)(?!\s*(?:min|hour|hr|day|week|%))/))) {
       const h = Number(m[1]);
-      if (h >= 0 && h <= 24) clock = [guessHour(h === 24 ? 0 : h, Number(m[2] || 0), partKey, now), Number(m[2] || 0)];
+      if (h >= 0 && h <= 24 && Number(m[2] || 0) <= 59) clock = [guessHour(h === 24 ? 0 : h, Number(m[2] || 0), partKey, now), Number(m[2] || 0)];
     }
     if (!clock && take(state, /\b(?:noon|midday|dopahar ko)\b/)) clock = [12, 0];
     if (!clock && take(state, /\b(?:midnight|aadhi raat)\b/)) clock = [0, 0];
@@ -258,7 +265,8 @@ export function parseQuick(input, nowMs = Date.now()) {
   if (schedule === 'once') {
     let due;
     if (relativeMs !== null) {
-      due = relativeMs;
+      // "in 2 days at 5pm": the day comes from the duration, the clock time from the sentence
+      due = relativeInDays && clock ? dayStart(relativeMs) + (clock[0] * 60 + clock[1]) * MIN : relativeMs;
     } else if (dayMs === null && !clock) {
       due = defaultFromNow(now);
     } else if (dayMs === null) {
@@ -269,6 +277,8 @@ export function parseQuick(input, nowMs = Date.now()) {
     } else {
       due = dayMs + (clock[0] * 60 + clock[1]) * MIN;
       if (clockFromPart && due <= now && dayMs === dayStart(now)) due = defaultFromNow(now); // "tonight" said at 23:00
+      // "aaj raat 12 baje" / "tonight at 1": the small hours of tonight are after midnight, i.e. the next calendar day
+      if (partKey === 'night' && !clockFromPart && clock[0] < 6 && due <= now && dayMs === dayStart(now)) due += DAY;
       if (barePast && due <= now) due += 7 * DAY; // "monday 9am" said on Monday evening means next Monday
     }
     payload.due_date = new Date(due).toISOString();
@@ -292,14 +302,19 @@ export function parseQuick(input, nowMs = Date.now()) {
 
 function namedDate(nowP, day, month, yearText) {
   if (month === undefined || day < 1 || day > 31) return null;
-  let year = yearText ? Number(yearText) : nowP.y;
-  let ms = fromIst(year, month, day);
-  if (!yearText && ms < fromIst(nowP.y, nowP.mo, nowP.d)) {
-    year += 1; // "5 jan" said in November means next January
-    ms = fromIst(year, month, day);
+  // A date that does not exist in that year (31 Feb, 29 Feb in a common year) is not valid: Date.UTC would roll it over.
+  const make = (year) => {
+    const ms = fromIst(year, month, day);
+    return istParts(ms).d === day ? ms : null;
+  };
+  if (yearText) return make(Number(yearText));
+  const today = fromIst(nowP.y, nowP.mo, nowP.d);
+  // "5 jan" said in November means next January; "29 feb" waits for the next leap year
+  for (let year = nowP.y; year <= nowP.y + 8; year++) {
+    const ms = make(year);
+    if (ms !== null && ms >= today) return ms;
   }
-  // Reject 31 Feb and friends (Date.UTC rolls them into the next month)
-  return istParts(ms).d === day ? ms : null;
+  return null;
 }
 
 /** Same rule as server/utils/quick_defaults.py: 2 hours from now, or 10 minutes if that would cross midnight. */

@@ -25,7 +25,7 @@ export default function UpdatePrompt() {
       className="fixed inset-x-3 bottom-3 z-[60] mx-auto flex max-w-md items-center justify-between gap-3 rounded-2xl bg-slate-900 px-4 py-3 text-sm text-white shadow-2xl"
       style={{ marginBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
-      <span className="font-medium">A new version of RemindMe is ready.</span>
+      <span className="font-medium">A new version of Deadline is ready.</span>
       <span className="flex shrink-0 gap-2">
         <button
           type="button"

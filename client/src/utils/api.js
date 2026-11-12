@@ -102,7 +102,10 @@ api.interceptors.response.use(
     if (!hadToken) return Promise.reject(error); // not logged in: nothing to renew
 
     original._retried = true;
-    const stale = getToken();
+    // The token THIS request carried, not whatever is stored now: if a refresh already finished while the 401 was on
+    // its way back, the stored token is the new one and must not be refreshed (and rotated) a second time.
+    const sent = String(original.headers?.Authorization ?? "").replace(/^Bearer\s+/i, "");
+    const stale = sent || getToken();
     try {
       refreshInFlight ??= renewSession(stale).finally(() => {
         refreshInFlight = null;

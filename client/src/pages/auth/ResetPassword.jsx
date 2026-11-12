@@ -10,7 +10,7 @@ import notify from '../../utils/notify';
 import { getErrorMessage } from '../../utils/errors';
 
 export default function ResetPassword() {
-  usePageMeta({ title: 'Reset password', description: 'Choose a new password for your RemindMe account.' });
+  usePageMeta({ title: 'Reset password', description: 'Choose a new password for your Deadline account.' });
   const navigate = useNavigate();
   // The emailed link looks like /reset-password#token=... The token is in the URL FRAGMENT, which browsers never
   // send to any server, so it cannot end up in server logs, proxies or Referer headers. Read it once, then remove

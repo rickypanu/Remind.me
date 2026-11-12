@@ -1,6 +1,7 @@
 import React from "react";
+import { LogoMark } from "../../components/Logo";
 import { useNavigate, Link } from "react-router-dom";
-import { AlertCircle, ArrowLeft, CheckCircle, Eye, EyeOff, LayoutDashboard, Loader2, Lock, Mail, User } from "lucide-react";
+import { AlertCircle, ArrowLeft, CheckCircle, Eye, EyeOff, Loader2, Lock, Mail, User } from "lucide-react";
 import FormField from "../../components/forms/FormField";
 import useRegisterForm from "../../hooks/useRegisterForm";
 import usePageMeta from "../../utils/usePageMeta";
@@ -8,8 +9,10 @@ import { routeMeta } from "../../seo/routes";
 import AuthShell from "./AuthShell";
 import PasswordChecklist from "./PasswordChecklist";
 import RegisterSuccess from "./RegisterSuccess";
+import { useI18n } from "../../i18n/index.jsx";
 
 export default function Register() {
+  const { t } = useI18n();
   usePageMeta(routeMeta("/register"));
   const navigate = useNavigate();
   const form = useRegisterForm();
@@ -28,7 +31,7 @@ export default function Register() {
       type="button"
       onClick={form.toggleShowPassword}
       className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 focus:outline-none focus-visible:text-blue-600 transition-colors"
-      aria-label={form.showPassword ? "Hide password" : "Show password"}
+      aria-label={form.showPassword ? t("Hide password") : t("Show password")}
       aria-pressed={form.showPassword}
     >
       {form.showPassword ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}
@@ -45,18 +48,16 @@ export default function Register() {
         <span className="p-1.5 rounded-lg bg-[color:var(--rm-soft)] group-hover:bg-blue-100 transition-colors">
           <ArrowLeft size={16} aria-hidden="true" />
         </span>
-        Back
+        {t("Back")}
       </button>
 
       <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-md shadow-indigo-500/25 mb-4">
-          <LayoutDashboard size={24} strokeWidth={2.5} aria-hidden="true" />
-        </div>
-        <h1 className="text-3xl font-extrabold text-[color:var(--rm-ink)] tracking-tight">Create your account</h1>
+        <LogoMark size={52} className="inline-block rounded-2xl shadow-md shadow-violet-500/25 mb-4" />
+        <h1 className="text-3xl font-extrabold text-[color:var(--rm-ink)] tracking-tight">{t("Create your account")}</h1>
         <p className="mt-2 text-slate-600 font-medium">
-          Join Remind<span className="text-blue-600">Me</span> to conquer your deadlines.
+          {t("Join Deadline and conquer your deadlines.")}
         </p>
-        <p className="mt-1 text-xs text-slate-500">Free. Takes about 30 seconds.</p>
+        <p className="mt-1 text-xs text-slate-500">{t("Free. Takes about 30 seconds.")}</p>
       </div>
 
       {form.error && (
@@ -66,15 +67,15 @@ export default function Register() {
         </div>
       )}
 
-      <form onSubmit={form.handleSubmit} noValidate aria-label="Create account" className="space-y-5">
+      <form onSubmit={form.handleSubmit} noValidate aria-label={t("Create account")} className="space-y-5">
         <FormField
           id="username"
           name="username"
-          label="Username"
+          label={t("Username")}
           icon={User}
           type="text"
           autoComplete="username"
-          placeholder="Choose a username"
+          placeholder={t("Choose a username")}
           inputRef={refs.username}
           value={formData.username}
           onChange={form.handleChange}
@@ -85,7 +86,7 @@ export default function Register() {
         <FormField
           id="email"
           name="email"
-          label="Email address"
+          label={t("Email address")}
           icon={Mail}
           type="email"
           autoComplete="email"
@@ -101,11 +102,11 @@ export default function Register() {
           <FormField
             id="password"
             name="password"
-            label="Password"
+            label={t("Password")}
             icon={Lock}
             type={form.showPassword ? "text" : "password"}
             autoComplete="new-password"
-            placeholder="Create a password"
+            placeholder={t("Create a password")}
             inputRef={refs.password}
             value={formData.password}
             onChange={form.handleChange}
@@ -127,11 +128,11 @@ export default function Register() {
           <FormField
             id="confirmPassword"
             name="confirmPassword"
-            label="Confirm password"
+            label={t("Confirm password")}
             icon={Lock}
             type={form.showPassword ? "text" : "password"}
             autoComplete="new-password"
-            placeholder="Confirm your password"
+            placeholder={t("Confirm your password")}
             inputRef={refs.confirmPassword}
             value={formData.confirmPassword}
             onChange={form.handleChange}
@@ -140,7 +141,7 @@ export default function Register() {
           />
           {form.showMatchSuccess && (
             <p role="status" className="text-emerald-700 text-xs font-medium flex items-center gap-1.5 mt-1.5">
-              <CheckCircle size={14} aria-hidden="true" /> Passwords match
+              <CheckCircle size={14} aria-hidden="true" /> {t("Passwords match")}
             </p>
           )}
         </div>
@@ -156,35 +157,35 @@ export default function Register() {
         >
           {form.loading ? (
             <>
-              <Loader2 className="animate-spin" size={20} aria-hidden="true" /> Creating account…
+              <Loader2 className="animate-spin" size={20} aria-hidden="true" /> {t("Creating account…")}
             </>
           ) : (
-            "Create account"
+            t("Create account")
           )}
         </button>
         {form.submitted && !form.isFormValid && !form.loading && (
           <p className="text-center text-xs font-medium text-rose-700" role="alert">
-            Please fix the highlighted fields to continue.
+            {t("Please fix the highlighted fields to continue.")}
           </p>
         )}
       </form>
 
       <p className="mt-4 text-center text-xs text-slate-600 leading-relaxed">
-        By clicking Create account, you agree to our{" "}
+        {t("By clicking Create account, you agree to our")}{" "}
         <Link to="/terms" className="text-blue-700 font-semibold hover:underline">
-          Terms of Service
+          {t("Terms of Service")}
         </Link>{" "}
-        and{" "}
+        {t("and")}{" "}
         <Link to="/terms" className="text-blue-700 font-semibold hover:underline">
-          Privacy Policy
+          {t("Privacy Policy")}
         </Link>
         .
       </p>
 
       <div className="mt-7 pt-6 border-t border-slate-100 text-center text-sm text-slate-600">
-        Already have an account?{" "}
+        {t("Already have an account?")}{" "}
         <Link to="/login" className="text-blue-700 font-bold hover:text-blue-800 hover:underline transition-colors">
-          Log in
+          {t("Log in")}
         </Link>
       </div>
     </AuthShell>

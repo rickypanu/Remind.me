@@ -96,6 +96,14 @@ class StatsServiceTests(unittest.IsolatedAsyncioTestCase):
         await self.svc.set_status(self.me, task["id"], DONE)
         self.assertEqual((await self.svc.stats(self.me))["completed_today"], 1)
 
+    async def test_a_replayed_completion_keeps_the_original_day(self):
+        task = await self.complete_new("replay")
+        self.clock.tick(days=1)
+        await self.svc.set_status(self.me, task["id"], DONE)  # the offline queue sends it again the next day
+        self.assertEqual(self.db["tasks"].docs[0]["completed_at"], T0)
+        await self.svc.set_status(self.me, task["id"], OPEN)
+        self.assertEqual((await self.svc.stats(self.me))["best_streak"], 0)  # the ORIGINAL day was given back
+
     async def test_a_recurring_completion_counts(self):
         task = await self.svc.create(self.me, task_payload("Gym", schedule_type="daily", time_of_day="18:00", due_date=None))
         await self.svc.set_status(self.me, task["id"], DONE)

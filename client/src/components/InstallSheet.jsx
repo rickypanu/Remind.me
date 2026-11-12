@@ -12,7 +12,7 @@ export default function InstallSheet({ onClose, iosSafari = true }) {
     ? [
         { Icon: Share, title: "Tap the Share button", body: "It is the square with an arrow at the bottom of Safari (top right on iPad)." },
         { Icon: SquarePlus, title: "Choose “Add to Home Screen”", body: "Scroll down in the share menu if you do not see it." },
-        { Icon: CheckCircle2, title: "Tap Add", body: "RemindMe now sits on your home screen and opens full screen, like a normal app." },
+        { Icon: CheckCircle2, title: "Tap Add", body: "Deadline now sits on your home screen and opens full screen, like a normal app." },
       ]
     : [
         { Icon: Compass, title: "Open this page in Safari", body: "iPhone only allows Add to Home Screen from Safari. Copy the address, open Safari and paste it." },
@@ -27,7 +27,7 @@ export default function InstallSheet({ onClose, iosSafari = true }) {
             <img src="/icon-192x192.png" alt="" width="48" height="48" className="h-12 w-12 shrink-0 rounded-[14px] shadow-sm" />
             <div className="min-w-0">
               <h2 id="install-title" className="text-lg font-extrabold leading-tight text-slate-900">
-                Add RemindMe to your Home Screen
+                Add Deadline to your Home Screen
               </h2>
               <p className="mt-0.5 text-[13px] font-medium text-slate-600">Opens instantly, works offline, no App Store.</p>
             </div>

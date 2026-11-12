@@ -33,6 +33,6 @@ describe('getErrorMessage', () => {
   })
 
   it('explains a request that never got a response', () => {
-    expect(getErrorMessage({ request: {} })).toMatch(/Can't reach the server/)
+    expect(getErrorMessage({ request: {} })).toMatch(/couldn't connect/)
   })
 })

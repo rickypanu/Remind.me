@@ -6,12 +6,12 @@
 // Plain ES module with no React and no Vite-only imports, so Node can load it.
 import { FAQS } from "../data/faqs.data.js";
 
-export const SITE_NAME = "RemindMe";
-export const OG_IMAGE = { path: "/og-image.png", width: 1200, height: 630, alt: "RemindMe: specific, daily and weekly reminders" };
+export const SITE_NAME = "Deadline";
+export const OG_IMAGE = { path: "/og-image.png", width: 1200, height: 630, alt: "Deadline: specific, daily and weekly reminders" };
 
-const HOME_TITLE = "RemindMe: Specific, Daily & Weekly Reminders";
+const HOME_TITLE = "Deadline: Specific, Daily & Weekly Reminders";
 const HOME_DESCRIPTION =
-  "RemindMe sends specific, daily and weekly reminders to Telegram and your browser. Type or speak a task, try it free without signing up, and never miss a deadline or habit again.";
+  "Deadline sends specific, daily and weekly reminders to Telegram and your browser. Type or speak a task, try it free without signing up, and never miss a deadline or habit again.";
 
 const softwareApplication = {
   "@context": "https://schema.org",
@@ -42,30 +42,30 @@ export const PUBLIC_ROUTES = {
   "/about": {
     title: "About",
     description:
-      "About RemindMe: a reminder app for specific, daily and weekly reminders with Magic Add AI, Telegram and browser notifications, and encrypted private reminders.",
+      "About Deadline: a reminder app for specific, daily and weekly reminders with Magic Add AI, Telegram and browser notifications, and encrypted private reminders.",
     priority: "0.6",
   },
   "/faqs": {
     title: "FAQs & Help",
     description:
-      "Answers about RemindMe: daily, weekly and one-time reminders, Magic Add, Telegram and browser notifications, privacy and your account.",
+      "Answers about Deadline: daily, weekly and one-time reminders, Magic Add, Telegram and browser notifications, privacy and your account.",
     jsonLd: [faqPage],
     priority: "0.7",
   },
   "/terms": {
     title: "Terms of Service & Privacy Policy",
     description:
-      "Read the RemindMe Terms of Service and Privacy Policy: how your reminders are encrypted, which notification channels we use, and how to delete your data.",
+      "Read the Deadline Terms of Service and Privacy Policy: how your reminders are encrypted, which notification channels we use, and how to delete your data.",
     priority: "0.3",
   },
   "/login": {
     title: "Log in",
-    description: "Log in to RemindMe to see your reminders and manage daily, weekly and one-time alerts.",
+    description: "Log in to Deadline to see your reminders and manage daily, weekly and one-time alerts.",
     priority: "0.5",
   },
   "/register": {
     title: "Create your free account",
-    description: "Sign up for RemindMe free and get specific, daily and weekly reminders on Telegram and in your browser.",
+    description: "Sign up for Deadline free and get specific, daily and weekly reminders on Telegram and in your browser.",
     priority: "0.8",
   },
 };

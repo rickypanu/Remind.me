@@ -5,7 +5,7 @@ import InstallSheet from "./InstallSheet";
 import notify from "../utils/notify";
 
 /**
- * Dashboard card: "Install RemindMe". Android / desktop Chrome get the real install dialog in one tap; iPhone gets
+ * Dashboard card: "Install Deadline". Android / desktop Chrome get the real install dialog in one tap; iPhone gets
  * the Add-to-Home-Screen steps. Hidden once installed, and for two weeks after "Not now".
  */
 export default function InstallBanner() {
@@ -18,7 +18,7 @@ export default function InstallBanner() {
   const onInstall = async () => {
     if (install.canPrompt) {
       const ok = await promptInstall();
-      if (ok) notify.success("Installing RemindMe…");
+      if (ok) notify.success("Installing Deadline…");
     } else {
       setSheet(true);
     }
@@ -27,12 +27,12 @@ export default function InstallBanner() {
   return (
     <>
       <section
-        aria-label="Install RemindMe"
+        aria-label="Install Deadline"
         className="rm-ios-card rm-card-in mb-4 flex items-center gap-3 rounded-[22px] border border-blue-200 bg-blue-50 p-3.5 pr-2.5"
       >
         <img src="/icon-192x192.png" alt="" width="44" height="44" className="h-11 w-11 shrink-0 rounded-[12px] shadow-sm" />
         <div className="min-w-0 flex-1">
-          <p className="text-[14.5px] font-bold leading-tight text-slate-900">Add RemindMe to your Home Screen</p>
+          <p className="text-[14.5px] font-bold leading-tight text-slate-900">Add Deadline to your Home Screen</p>
           <p className="mt-0.5 text-[12.5px] font-medium leading-snug text-slate-700">Opens in one tap and works offline.</p>
         </div>
         <button

@@ -7,6 +7,7 @@ import { feedback } from "../../feedback/feedback";
 import notify from "../../utils/notify";
 import { describeScheduleLocal, formatDueIst } from "../../utils/date";
 import { parseQuick } from "../../utils/quickParse";
+import { useI18n } from "../../i18n/index.jsx";
 
 const VOICE_LANG = "en-IN";
 const MAX_LENGTH = 500;
@@ -23,6 +24,7 @@ function whenLabel(payload) {
  * (see hooks/useQuickAdd.js), so it works in about a second, even offline or while the server is waking up.
  */
 export default function MagicAddForm({ isOffline }) {
+  const { t } = useI18n();
   const [text, setText] = useState("");
   const inputRef = useRef(null);
   const { add } = useQuickAdd();
@@ -33,8 +35,8 @@ export default function MagicAddForm({ isOffline }) {
     getBaseText: () => text,
     onText: setText,
     onUnsupported: () =>
-      notify.error("Voice input is not supported in this browser. Try Chrome, or type your reminder instead."),
-    onError: () => notify.error("Couldn't use the microphone. Allow mic access in your browser settings and try again."),
+      notify.error(t("Voice input is not supported in this browser. Try Chrome, or type your reminder instead.")),
+    onError: () => notify.error(t("Couldn't use the microphone. Allow mic access in your browser settings and try again.")),
   });
 
   // Live preview of what will be saved (cheap: it is plain string work)
@@ -50,15 +52,15 @@ export default function MagicAddForm({ isOffline }) {
       if (!result) return;
       setText(""); // clear first: the reminder is already saved on this device
       feedback.added();
-      notify.success(`Added · ${whenLabel(result.parsed.payload)}${navigator.onLine ? "" : " (saved offline)"}`);
+      notify.success(`${t("Added")} · ${whenLabel(result.parsed.payload)}${navigator.onLine ? "" : " (" + t("saved offline") + ")"}`);
       inputRef.current?.focus({ preventScroll: true });
     } catch (err) {
       console.error("Quick add failed:", err);
-      notify.error("Couldn't save that reminder on this device. Please try again.");
+      notify.error(t("Couldn't save that reminder on this device. Please try again."));
     }
   };
 
-  const placeholder = listening ? "Listening..." : "Try “Gym tomorrow 7am”";
+  const placeholder = listening ? t("Listening...") : t("Try “Gym tomorrow 7am”");
 
   return (
     <form onSubmit={handleSubmit} className="mb-4">
@@ -81,7 +83,7 @@ export default function MagicAddForm({ isOffline }) {
               e.currentTarget.form?.requestSubmit();
             }
           }}
-          aria-label="Add a reminder by typing or speaking"
+          aria-label={t("Add a reminder by typing or speaking")}
           placeholder={placeholder}
           maxLength={MAX_LENGTH}
           enterKeyHint="send"
@@ -91,7 +93,7 @@ export default function MagicAddForm({ isOffline }) {
         <button
           type="button"
           onClick={toggle}
-          aria-label={listening ? "Stop listening" : "Speak a reminder"}
+          aria-label={listening ? t("Stop listening") : t("Speak a reminder")}
           aria-pressed={listening}
           className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 active:scale-90 ${
             listening ? "animate-pulse bg-red-500 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
@@ -103,7 +105,7 @@ export default function MagicAddForm({ isOffline }) {
         <button
           type="submit"
           disabled={listening || !text.trim()}
-          aria-label="Add reminder"
+          aria-label={t("Add reminder")}
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white shadow-sm transition-all duration-200 hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 active:scale-90 disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none"
         >
           <ArrowUp size={21} strokeWidth={3} />
@@ -141,7 +143,7 @@ export default function MagicAddForm({ isOffline }) {
           </div>
         )}
         {isOffline && !preview && (
-          <p className="mt-1.5 text-[12px] font-semibold text-amber-700">Offline: reminders are saved on this phone and upload later.</p>
+          <p className="mt-1.5 text-[12px] font-semibold text-amber-700">{t("Offline: reminders are saved on this phone and upload later.")}</p>
         )}
       </div>
     </form>

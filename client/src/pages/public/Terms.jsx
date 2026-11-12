@@ -27,33 +27,33 @@ function linkify(text) {
 const termsSections = [
   {
     title: '1. Acceptance of Terms',
-    body: 'By accessing and using RemindMe, you accept and agree to be bound by these Terms and the Privacy Policy below. If you do not agree, please do not use the service.',
+    body: 'By accessing and using Deadline, you accept and agree to be bound by these Terms and the Privacy Policy below. If you do not agree, please do not use the service.',
   },
   {
     title: '2. Eligibility and Age',
     body: [
-      'You must be at least 18 years old to use RemindMe on your own. If you are at least 13 but under 18, you may use RemindMe only with the knowledge and consent of your parent or legal guardian, who is responsible for your use of the service.',
+      'You must be at least 18 years old to use Deadline on your own. If you are at least 13 but under 18, you may use Deadline only with the knowledge and consent of your parent or legal guardian, who is responsible for your use of the service.',
       'By using the service, you confirm that you meet these requirements.',
     ],
   },
   {
     title: '3. Your Account',
-    body: 'To use RemindMe you must register for an account. You agree to provide accurate, current and complete information and to keep it up to date. You are responsible for safeguarding your password and for all activity under your account. Tell us promptly if you suspect unauthorised access.',
+    body: 'To use Deadline you must register for an account. You agree to provide accurate, current and complete information and to keep it up to date. You are responsible for safeguarding your password and for all activity under your account. Tell us promptly if you suspect unauthorised access.',
   },
   {
     title: '4. Acceptable Use',
-    body: 'You agree to use RemindMe only for lawful purposes. You must not:',
+    body: 'You agree to use Deadline only for lawful purposes. You must not:',
     list: [
       'attempt to access another user\'s account or data, or probe or disrupt the service;',
       'send spam, malware or other malicious content, or misuse notification features;',
       'overload the service, including by automated or scripted requests (for example, abusing Magic Add);',
       'upload a profile picture that is unlawful, offensive, infringes someone else\'s rights, or that you do not have the right to use;',
-      'write reminders, notes or categories that contain sexual, vulgar, hateful, threatening or otherwise harmful content, or that encourage violence, self-harm or illegal activity. RemindMe automatically screens reminders and will refuse to save content that breaks this rule.',
+      'write reminders, notes or categories that contain sexual, vulgar, hateful, threatening or otherwise harmful content, or that encourage violence, self-harm or illegal activity. Deadline automatically screens reminders and will refuse to save content that breaks this rule.',
     ],
   },
   {
     title: '5. Notifications and Communications',
-    body: 'RemindMe can send you reminders (one-time, daily or weekly) through the channels you choose to enable:',
+    body: 'Deadline can send you reminders (one-time, daily or weekly) through the channels you choose to enable:',
     list: [
       'Telegram: by connecting your account to our Telegram bot, you consent to receive automated task alerts and reminders there.',
       'Browser notifications: by clicking "Enable Alerts" and allowing notifications in your browser, you consent to receive reminders on that device.',
@@ -71,7 +71,7 @@ const termsSections = [
   },
   {
     title: '7. Your Content and Profile Pictures',
-    body: 'You keep ownership of the tasks, descriptions and pictures you add. You give RemindMe a limited licence to store, process and display that content solely to operate the service for you. You confirm that you have the right to use anything you upload. Built-in illustration avatars belong to their respective creators and are provided for use inside RemindMe only.',
+    body: 'You keep ownership of the tasks, descriptions and pictures you add. You give Deadline a limited licence to store, process and display that content solely to operate the service for you. You confirm that you have the right to use anything you upload. Built-in illustration avatars belong to their respective creators and are provided for use inside Deadline only.',
   },
   {
     title: '8. Reminder Delivery and Service Availability',
@@ -82,15 +82,15 @@ const termsSections = [
   },
   {
     title: '9. Disclaimer and Limitation of Liability',
-    body: 'RemindMe is provided on an "as is" and "as available" basis. We do not guarantee that notifications will be delivered on time, that Magic Add will be accurate, or that the service will be uninterrupted or error-free. To the fullest extent permitted by law, we are not liable for any missed deadlines, exams or events, financial loss, or other damages resulting from failed or late reminders, incorrect AI output, or service downtime. Please do not rely on RemindMe as your only reminder for critical deadlines.',
+    body: 'Deadline is provided on an "as is" and "as available" basis. We do not guarantee that notifications will be delivered on time, that Magic Add will be accurate, or that the service will be uninterrupted or error-free. To the fullest extent permitted by law, we are not liable for any missed deadlines, exams or events, financial loss, or other damages resulting from failed or late reminders, incorrect AI output, or service downtime. Please do not rely on Deadline as your only reminder for critical deadlines.',
   },
   {
     title: '10. Account Termination',
-    body: 'You may stop using RemindMe and delete your account at any time from your Profile. We may suspend or terminate your account, with or without notice, for conduct that we believe violates these Terms or is harmful to other users, us or third parties.',
+    body: 'You may stop using Deadline and delete your account at any time from your Profile. We may suspend or terminate your account, with or without notice, for conduct that we believe violates these Terms or is harmful to other users, us or third parties.',
   },
   {
     title: '11. Changes to These Terms',
-    body: 'We may update these Terms from time to time. The "Last updated" date at the top shows when they last changed. If you keep using RemindMe after an update, you accept the revised Terms.',
+    body: 'We may update these Terms from time to time. The "Last updated" date at the top shows when they last changed. If you keep using Deadline after an update, you accept the revised Terms.',
   },
   {
     title: '12. Governing Law',
@@ -113,11 +113,11 @@ const privacySections = [
   },
   {
     title: '2. How We Use Your Information',
-    body: 'We use your information to provide, maintain and improve RemindMe; to send the reminders you set up; to send account emails such as password resets; and to protect RemindMe and its users. We do not sell your personal data and we do not show advertising.',
+    body: 'We use your information to provide, maintain and improve Deadline; to send the reminders you set up; to send account emails such as password resets; and to protect Deadline and its users. We do not sell your personal data and we do not show advertising.',
   },
   {
     title: '3. Third-Party Services',
-    body: 'We rely on trusted third parties, which process data only as needed to operate RemindMe:',
+    body: 'We rely on trusted third parties, which process data only as needed to operate Deadline:',
     list: [
       'Vercel (frontend hosting), Render (backend hosting) and MongoDB Atlas (database storage).',
       'Telegram, which delivers Telegram reminders and is subject to its own privacy policy.',
@@ -125,7 +125,7 @@ const privacySections = [
       'Google (Gemini API), which processes the text you enter in Magic Add to extract task details. Reminders you create with the regular form, and the text of notifications we send you, are not sent to Gemini.',
       'Your browser vendor\'s push service (for example Google, Mozilla, Apple or Microsoft), which delivers browser notifications to your device.',
       'DiceBear, which serves some illustration avatars. When such an avatar is shown, your browser requests the image from DiceBear\'s servers, which can see your IP address.',
-      'Your browser\'s speech recognition, if you use voice input. Depending on your browser, audio may be processed by the browser vendor. RemindMe does not receive or store your audio, only the resulting text.',
+      'Your browser\'s speech recognition, if you use voice input. Depending on your browser, audio may be processed by the browser vendor. Deadline does not receive or store your audio, only the resulting text.',
     ],
   },
   {
@@ -146,7 +146,7 @@ const privacySections = [
   },
   {
     title: '8. Children',
-    body: 'RemindMe is not intended for children under 13, and we do not knowingly collect their data. Users aged 13 to 17 may use RemindMe only with the consent of a parent or legal guardian. If you believe a child has used RemindMe without appropriate consent, contact us and we will delete the account.',
+    body: 'Deadline is not intended for children under 13, and we do not knowingly collect their data. Users aged 13 to 17 may use Deadline only with the consent of a parent or legal guardian. If you believe a child has used Deadline without appropriate consent, contact us and we will delete the account.',
   },
   {
     title: '9. Your Rights and Grievance Officer',
@@ -154,7 +154,7 @@ const privacySections = [
   },
   {
     title: '10. Changes to This Policy',
-    body: 'We may update this Privacy Policy as RemindMe changes. The "Last updated" date shows the latest revision, and we will make reasonable efforts to inform you of material changes.',
+    body: 'We may update this Privacy Policy as Deadline changes. The "Last updated" date shows the latest revision, and we will make reasonable efforts to inform you of material changes.',
   },
   {
     title: '11. Contact Us',

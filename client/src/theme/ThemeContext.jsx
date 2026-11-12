@@ -58,7 +58,7 @@ const getInitialThemeStyle = () => (read(THEME_STYLE_KEY) === "minimal" ? "minim
 
 const getInitialAccent = () => {
   const saved = read(ACCENT_KEY);
-  return ACCENT_IDS.includes(saved) ? saved : "blue";
+  return ACCENT_IDS.includes(saved) ? saved : "violet";
 };
 
 const applyToDocument = (colorMode, themeStyle, accent) => {

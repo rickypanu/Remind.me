@@ -44,14 +44,14 @@ const APK_URL = "https://github.com/rickypanu/Remind.me/releases/latest/download
 
 const INSTALL_STEPS = [
   "Tap Download app. Your browser may say the file \"can harm your device\": tap Download anyway. It is the normal warning for apps outside the Play Store.",
-  "Open the downloaded RemindMe.apk from the notification or your Downloads folder.",
+  "Open the downloaded Deadline.apk from the notification or your Downloads folder.",
   "If Android asks, tap Settings, switch on Allow from this source, then go back and tap Install.",
-  "Open RemindMe, log in with the same account, and allow notifications so your reminders can ring.",
+  "Open Deadline, log in with the same account, and allow notifications so your reminders can ring.",
   "For alarms that never get late: allow exact alarms and set the app's battery use to Unrestricted.",
 ];
 
 /**
- * "Get the app" shows BOTH ways to have RemindMe on a phone:
+ * "Get the app" shows BOTH ways to have Deadline on a phone:
  *   1. the web app (Add to Home Screen / Install app): iPhone, Android and desktop
  *   2. the Android app (APK) with native alarms: always offered on Android and desktop, never hidden by the web app
  */
@@ -65,7 +65,7 @@ function InstallAppCard() {
 
   const onInstall = async () => {
     if (install.canPrompt) {
-      if (await promptInstall()) notify.success("Installing RemindMe…");
+      if (await promptInstall()) notify.success("Installing Deadline…");
     } else {
       setSheet(true);
     }
@@ -116,7 +116,7 @@ function InstallAppCard() {
             <Smartphone size={24} strokeWidth={2} />
           </div>
           <div className="min-w-0">
-            <p className="font-bold text-gray-900 text-[16px] leading-tight">RemindMe for Android</p>
+            <p className="font-bold text-gray-900 text-[16px] leading-tight">Deadline for Android</p>
             <p className="text-[13px] text-gray-600 font-medium mt-0.5">Alarms that ring on your phone, even offline. Voice quick add.</p>
           </div>
         </div>
@@ -129,7 +129,7 @@ function InstallAppCard() {
           ) : (
             <a
               href={APK_URL}
-              download="RemindMe.apk"
+              download="Deadline.apk"
               className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-blue-600 text-white text-[15px] font-bold hover:bg-blue-700 active:scale-[0.99] transition shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
             >
               <Download size={18} strokeWidth={2.5} />
@@ -141,7 +141,7 @@ function InstallAppCard() {
             <div className="mt-4 flex items-center gap-4 p-3 rounded-xl bg-gray-50 border border-gray-100">
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=4&data=${encodeURIComponent(pageUrl + "/profile")}`}
-                alt="QR code to open RemindMe on your phone"
+                alt="QR code to open Deadline on your phone"
                 width={80}
                 height={80}
                 loading="lazy"
@@ -186,7 +186,7 @@ function InstallAppCard() {
 }
 
 export default function Profile() {
-  usePageMeta({ title: 'Profile & settings', description: 'Manage your RemindMe profile, appearance, notifications and account.', noindex: true });
+  usePageMeta({ title: 'Profile & settings', description: 'Manage your Deadline profile, appearance, notifications and account.', noindex: true });
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 

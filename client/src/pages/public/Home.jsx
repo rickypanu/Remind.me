@@ -347,17 +347,25 @@ export default function Home() {
       <main className="flex-grow">
         {/* Hero + live try-it */}
         <div className="bg-gradient-to-b from-[color:var(--rm-hero-top)] to-[color:var(--rm-page)]">
-        <section className="max-w-3xl mx-auto px-6 pt-14 pb-20 md:pt-20 md:pb-28 text-center">
-          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-[1.05]">
-            Tell it what to remember.
-            <br />
-            It nudges you <span className="text-[color:var(--rm-accent)]">on time.</span>
-          </h1>
-          <p className="mt-5 text-lg md:text-xl text-slate-600 max-w-xl mx-auto leading-relaxed">
-            Set a specific reminder, or repeat it every day or every week. Try it right here, no signup: type, speak or fill a form, then send yourself a real test notification.
-          </p>
+        <section className="max-w-6xl mx-auto px-6 pt-12 pb-16 md:pt-20 md:pb-24 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)] lg:gap-14 lg:items-center">
+          <div>
+            <h1 className="text-4xl md:text-5xl lg:text-[3.4rem] font-bold tracking-tight leading-[1.08]">
+              Tell it what to remember. It nudges you on time.
+            </h1>
+            <p className="mt-5 text-lg text-slate-600 max-w-lg leading-relaxed">
+              Set a one-time reminder, or repeat it every day or every week. Try it right here without signing up: type it, say it, or fill a short form, then send yourself a real test notification.
+            </p>
+            <ul className="mt-7 grid gap-2.5 text-[15px] text-slate-700">
+              {["Alerts arrive on Telegram and in your browser", "Daily and weekly repeats, set in one sentence", "Saved on your phone first, so it works offline"].map((line) => (
+                <li key={line} className="flex items-start gap-2.5">
+                  <Check size={17} className="mt-0.5 shrink-0 text-blue-600" aria-hidden="true" />
+                  <span>{line}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-          <div className="mt-10 rounded-[2rem] bg-white border border-slate-200 p-4 md:p-6 text-left shadow-[0_30px_80px_-30px_rgba(15,27,45,0.35)]">
+          <div className="mt-10 lg:mt-0 rounded-3xl bg-white border border-slate-200 p-4 md:p-6 text-left shadow-xl">
             {/* Tabs */}
             <div role="tablist" aria-label="How you add a reminder" className="grid grid-cols-3 gap-1 p-1 rounded-full bg-[color:var(--rm-soft)] mb-5">
               {MODES.map(({ id, label, icon: Icon }) => (
@@ -395,7 +403,7 @@ export default function Home() {
                         key={c}
                         type="button"
                         onClick={() => setText(c)}
-                        className="px-3.5 py-1.5 rounded-full text-sm font-semibold border border-slate-200 text-slate-700 hover:border-[#229ED9] hover:text-[color:var(--rm-ink)] transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
+                        className="px-3.5 py-1.5 rounded-full text-sm font-semibold border border-slate-200 text-slate-700 hover:border-blue-600 hover:text-[color:var(--rm-ink)] transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
                       >
                         {c}
                       </button>
@@ -413,7 +421,7 @@ export default function Home() {
                   onClick={toggleListen}
                   aria-label={listening ? "Stop listening" : "Start listening"}
                   className={`w-20 h-20 rounded-full flex items-center justify-center text-white transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-sky-300 ${
-                    listening ? "bg-[#0D9488] ring-8 ring-teal-100" : "bg-[#2563EB] hover:bg-[#1D4ED8]"
+                    listening ? "bg-[#0D9488] ring-8 ring-teal-100" : "bg-blue-600 hover:bg-blue-700"
                   }`}
                 >
                   <Mic size={28} />
@@ -480,7 +488,7 @@ export default function Home() {
             {result && (
               <div key={result.task + result.date.getTime()} className="rm-lift mt-5" aria-live="polite">
                 <div className="flex items-center gap-4 rounded-2xl border border-slate-200 p-4">
-                  <span className="w-6 h-6 rounded-full border-2 border-[#229ED9] flex-shrink-0" />
+                  <span className="w-6 h-6 rounded-full border-2 border-blue-600 flex-shrink-0" />
                   <div className="min-w-0">
                     <p className="font-bold text-lg leading-tight break-words">{result.task}</p>
                     <div className="mt-1.5 flex flex-wrap items-center gap-2">
@@ -489,7 +497,7 @@ export default function Home() {
                       </span>
                       <span className="text-sm font-medium text-slate-500">{relIn(result.date)}</span>
                       {result.repeat !== "Once" && (
-                        <span className="inline-flex items-center gap-1 text-sm font-semibold text-[#229ED9]">
+                        <span className="inline-flex items-center gap-1 text-sm font-semibold text-blue-600">
                           <Repeat size={13} /> {result.repeat}
                         </span>
                       )}
@@ -509,7 +517,7 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={saveAndSignUp}
-                    className="flex-1 bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-6 py-3.5 rounded-full font-semibold inline-flex items-center justify-center gap-2 transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3.5 rounded-full font-semibold inline-flex items-center justify-center gap-2 transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
                   >
                     <Send size={16} /> Send this to my Telegram
                   </button>
@@ -542,7 +550,7 @@ export default function Home() {
         <section className="bg-white border-y border-slate-200">
           <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-20 md:py-24 lg:grid lg:grid-cols-2 lg:gap-16 lg:items-center">
             <div className="mb-12 lg:mb-0">
-              <p className="inline-flex items-center gap-2 text-sm font-semibold text-[#229ED9]">
+              <p className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600">
                 <Sparkles size={16} /> Autonomous messages
               </p>
               <h2 className="mt-3 text-3xl md:text-4xl font-extrabold tracking-tight">It messages you first.</h2>
@@ -589,7 +597,7 @@ export default function Home() {
               <p className="font-bold text-lg mb-4">Telegram</p>
               <div className="rounded-2xl bg-[color:var(--rm-soft-2)] p-3">
                 <div className="rounded-2xl rounded-tl-sm bg-white px-3.5 py-2.5 text-[13px] shadow-sm inline-block">
-                  <span className="block text-xs font-bold text-[#229ED9] mb-0.5">TaskBot</span>
+                  <span className="block text-xs font-bold text-blue-600 mb-0.5">TaskBot</span>
                   It's 2:00 PM. Time to review those deployment logs.
                 </div>
               </div>
@@ -608,7 +616,7 @@ export default function Home() {
             <div className="mt-8 md:mt-0 flex flex-col gap-4 items-center md:items-start flex-shrink-0">
               <Link
                 to="/register"
-                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-8 py-4 rounded-full font-bold text-lg inline-flex items-center gap-2 transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-full font-bold text-lg inline-flex items-center gap-2 transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
               >
                 Create free account <ArrowRight size={18} />
               </Link>

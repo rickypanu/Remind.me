@@ -65,7 +65,7 @@ async def _warn_about_unmigrated_data(db: Any) -> None:
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()  # 1. raises ValidationError listing every configuration problem
     configure_logging(settings.log_level)  # 2.
-    log.info("Starting RemindMe API: %s", settings.safe_summary())
+    log.info("Starting Deadline API: %s", settings.safe_summary())
 
     from utils.crypto import assert_encryption_configured  # legacy module, still reads os.environ
 

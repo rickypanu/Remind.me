@@ -1,4 +1,4 @@
-"""Linking a Telegram chat to a RemindMe account (finding S1).
+"""Linking a Telegram chat to a Deadline account (finding S1).
 
 Before: ``/telegram/get-link`` took ANY user id from the request body and built ``t.me/bot?start=<userId>``; the
 webhook then trusted that id, so anyone who knew (or guessed) a user id could attach their own chat to that account

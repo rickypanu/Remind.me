@@ -9,6 +9,8 @@ import { resolveAvatarSrc } from '../../utils/avatar';
 import { isLoggedIn as hasSession } from '../../utils/auth';
 import Logo from '../../components/Logo';
 import ThemeToggle from '../../components/ThemeToggle';
+import LanguageSwitcher from '../../components/LanguageSwitcher';
+import { useI18n } from '../../i18n';
 
 // Links shown in the menu. Only pages that exist and are useful for that visitor.
 const VISITOR_LINKS = [
@@ -25,6 +27,7 @@ const MEMBER_LINKS = [
 ];
 
 function PushButton({ pushStatus, onClick, fullWidth = false }) {
+  const { t } = useI18n();
   const base =
     'group relative flex items-center justify-center gap-2 h-10 px-3 rounded-full text-sm font-semibold active:scale-95 transition-all duration-200 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
   const tone =
@@ -40,7 +43,7 @@ function PushButton({ pushStatus, onClick, fullWidth = false }) {
       onClick={onClick}
       disabled={pushStatus === 'loading'}
       aria-pressed={pushStatus === 'subscribed'}
-      aria-label={pushStatus === 'subscribed' ? 'Turn off alerts' : 'Turn on alerts'}
+      aria-label={pushStatus === 'subscribed' ? t('Turn off alerts') : t('Turn on alerts')}
       className={`${base} ${tone} ${fullWidth ? 'w-full' : 'lg:px-4'}`}
     >
       {pushStatus === 'loading' && <Loader2 size={18} strokeWidth={2.5} className="animate-spin text-blue-500" />}
@@ -55,14 +58,14 @@ function PushButton({ pushStatus, onClick, fullWidth = false }) {
       )}
       <span className={fullWidth ? 'block' : 'hidden lg:block lg:w-[100px] text-center'}>
         {pushStatus === 'loading' ? (
-          'Updating...'
+          t('Updating...')
         ) : pushStatus === 'subscribed' ? (
           <>
-            <span className="block group-hover:hidden">Alerts on</span>
-            <span className="hidden group-hover:block">Turn off</span>
+            <span className="block group-hover:hidden">{t('Alerts on')}</span>
+            <span className="hidden group-hover:block">{t('Turn off')}</span>
           </>
         ) : (
-          'Turn on alerts'
+          t('Turn on alerts')
         )}
       </span>
     </button>
@@ -70,6 +73,7 @@ function PushButton({ pushStatus, onClick, fullWidth = false }) {
 }
 
 const Header = () => {
+  const { t } = useI18n();
   const isLoggedIn = hasSession();
   const { avatarUrl, pushStatus, toggle } = usePush(isLoggedIn);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -133,13 +137,14 @@ const Header = () => {
         <nav aria-label="Main" className="hidden md:flex items-center gap-1 min-w-0">
           {(isLoggedIn ? [] : VISITOR_LINKS.filter((l) => l.to !== '/')).map(({ to, label }) => (
             <NavLink key={to} to={to} className={desktopLinkClass}>
-              {label}
+              {t(label)}
             </NavLink>
           ))}
         </nav>
 
         {/* Desktop actions */}
         <div className="hidden md:flex items-center gap-2 lg:gap-3 shrink-0">
+          <LanguageSwitcher />
           <ThemeToggle />
           {!isLoggedIn ? (
             <>
@@ -147,13 +152,13 @@ const Header = () => {
                 to="/login"
                 className="text-slate-600 hover:text-slate-900 px-4 py-2 text-sm font-semibold rounded-xl hover:bg-blue-50 transition-colors"
               >
-                Log in
+                {t('Log in')}
               </Link>
               <Link
                 to="/register"
                 className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-all active:scale-95 shadow-md shadow-blue-500/20 whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
               >
-                Get Started
+                {t('Get Started')}
               </Link>
             </>
           ) : (
@@ -162,15 +167,15 @@ const Header = () => {
               <Link
                 to="/create-task"
                 className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white w-10 h-10 lg:w-auto lg:px-4 rounded-full text-sm font-semibold shadow-md shadow-blue-500/20 active:scale-95 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                aria-label="New reminder"
+                aria-label={t('New reminder')}
               >
                 <Plus size={18} strokeWidth={2.5} />
-                <span className="hidden lg:block">New reminder</span>
+                <span className="hidden lg:block">{t('New reminder')}</span>
               </Link>
               <div className="h-6 w-px bg-slate-200 mx-0.5" aria-hidden="true"></div>
               <Link
                 to="/profile"
-                aria-label="Your profile"
+                aria-label={t('Your profile')}
                 className="flex items-center justify-center rounded-full text-slate-500 hover:text-slate-700 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 flex-shrink-0"
               >
                 {avatarUrl ? (
@@ -197,7 +202,7 @@ const Header = () => {
           {isLoggedIn && (
             <Link
               to="/create-task"
-              aria-label="Add reminder"
+              aria-label={t('Add reminder')}
               className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white shadow-md shadow-blue-500/25 hover:bg-blue-700 active:scale-90 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
             >
               <Plus size={22} strokeWidth={2.75} />
@@ -208,7 +213,7 @@ const Header = () => {
             ref={menuButtonRef}
             type="button"
             onClick={() => setMenuOpen((o) => !o)}
-            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-label={menuOpen ? t('Close menu') : t('Open menu')}
             aria-expanded={menuOpen}
             aria-controls="mobile-menu"
             className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 active:scale-95 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
@@ -227,6 +232,7 @@ const Header = () => {
             aria-label="Mobile"
             className="absolute inset-x-0 top-full z-50 max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain border-b border-sky-100 bg-[color:var(--rm-page)] px-4 pb-6 pt-3 shadow-xl"
           >
+            <div className="mb-2 px-1"><LanguageSwitcher /></div>
             <ul className="flex flex-col gap-1">
               {links.map(({ to, label, icon: Icon, end }) => (
                 <li key={to}>
@@ -240,7 +246,7 @@ const Header = () => {
                     }
                   >
                     <Icon size={19} strokeWidth={2.25} />
-                    {label}
+                    {t(label)}
                   </NavLink>
                 </li>
               ))}
@@ -253,7 +259,7 @@ const Header = () => {
                     to="/create-task"
                     className="flex items-center justify-center gap-2 rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 active:scale-[0.98] transition-all"
                   >
-                    <Plus size={18} strokeWidth={2.5} /> New reminder
+                    <Plus size={18} strokeWidth={2.5} /> {t('New reminder')}
                   </Link>
                   <PushButton pushStatus={pushStatus} onClick={toggle} fullWidth />
                   <Link
@@ -265,7 +271,7 @@ const Header = () => {
                     ) : (
                       <CircleUser size={20} />
                     )}
-                    Profile &amp; settings
+                    {t('Profile & settings')}
                   </Link>
                 </>
               ) : (
@@ -274,13 +280,13 @@ const Header = () => {
                     to="/register"
                     className="flex items-center justify-center gap-2 rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 active:scale-[0.98] transition-all"
                   >
-                    <UserPlus size={18} /> Get Started
+                    <UserPlus size={18} /> {t('Get Started')}
                   </Link>
                   <Link
                     to="/login"
                     className="flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 active:scale-[0.98] transition-all"
                   >
-                    <LogIn size={18} /> Log in
+                    <LogIn size={18} /> {t('Log in')}
                   </Link>
                 </>
               )}
@@ -293,7 +299,7 @@ const Header = () => {
     {menuOpen && (
       <button
         type="button"
-        aria-label="Close menu"
+        aria-label={t('Close menu')}
         tabIndex={-1}
         onClick={() => closeMenu(true)}
         className="md:hidden fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-[2px] cursor-default"

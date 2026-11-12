@@ -3,7 +3,7 @@ import { getToken } from '../utils/auth';
 import { getErrorMessage } from '../utils/errors';
 import notify from '../utils/notify';
 import {
-  getAllTasks, getDB, getMeta, setMeta, removeTask, putTask, countPending, emitTasksChanged, subscribeTasks, idAliases,
+  getAllTasks, getDB, getMeta, getTask, setMeta, removeTask, putTask, countPending, emitTasksChanged, subscribeTasks, idAliases,
 } from './db';
 import { fromServer, isLocalId, toCreatePayload, toUpdatePayload } from './taskModel';
 
@@ -147,6 +147,8 @@ async function handleRejected(t, err) {
     return;
   }
   // A rejected edit: stop retrying; the pull that follows restores the server's version.
+  const latest = await getTask(t.id);
+  if (latest && latest.rev !== t.rev) return; // edited again while this one was in flight: that newer change is still queued
   await putTask({ ...t, needsSync: false, syncAction: null, fieldsDirty: false, statusQueue: [] });
   notify.error(`Your change to "${t.title}" was rejected: ${message}`, undefined, { duration: 7000 });
 }
@@ -256,15 +258,20 @@ async function runFlush() {
   setState({ syncing: true });
   let synced = 0;
   try {
-    for (let pass = 0; pass < 3; pass++) {
-      const queue = (await getAllTasks()).filter((t) => t.needsSync).sort((a, b) => rank(a) - rank(b));
-      if (!queue.length) break;
-      for (const t of queue) {
-        await syncOne(t);
-        synced++;
+    // A change made while the pull below is running gets no flush of its own (this one is still "in progress"),
+    // so look again before finishing instead of leaving it for the 60 s heartbeat.
+    for (let round = 0; round < 3; round++) {
+      for (let pass = 0; pass < 3; pass++) {
+        const queue = (await getAllTasks()).filter((t) => t.needsSync).sort((a, b) => rank(a) - rank(b));
+        if (!queue.length) break;
+        for (const t of queue) {
+          await syncOne(t);
+          synced++;
+        }
       }
+      await pullFromServer();
+      if (!(await countPending())) break;
     }
-    await pullFromServer();
     resetBackoff();
     setState({ reachable: true, lastResult: { type: 'success', count: synced, at: Date.now() } });
     return { ok: true, synced };

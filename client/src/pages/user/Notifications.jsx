@@ -14,7 +14,7 @@ const heading = "px-3 text-[11px] font-bold text-gray-500 uppercase tracking-wid
 export default function Notifications() {
   usePageMeta({
     title: "Notifications",
-    description: "Choose how RemindMe alerts you: browser notifications, Telegram, sound and vibration.",
+    description: "Choose how Deadline alerts you: browser notifications, Telegram, sound and vibration.",
     noindex: true,
   });
   const { pushStatus, toggle, permission, supported } = usePush(true);
@@ -29,7 +29,7 @@ export default function Notifications() {
   else if (blocked && !on) status = { label: "Blocked by browser", tone: "bg-rose-50 text-rose-700" };
 
   return (
-    <AppPage title="Notifications" subtitle="Choose how RemindMe gets your attention." backTo="/profile" backLabel="Profile" width="narrow">
+    <AppPage title="Notifications" subtitle="Choose how Deadline gets your attention." backTo="/profile" backLabel="Profile" width="narrow">
       <div className="space-y-8">
         {/* 1. Browser alerts */}
         <section aria-labelledby="web-alerts">
@@ -45,7 +45,7 @@ export default function Notifications() {
                   <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${status.tone}`}>{status.label}</span>
                 </div>
                 <p className="mt-1 text-sm leading-relaxed text-gray-500">
-                  Get a pop-up on this device when a reminder is due, even when RemindMe isn't open. This is set per
+                  Get a pop-up on this device when a reminder is due, even when Deadline isn't open. This is set per
                   device, so turn it on for each phone or computer you use.
                 </p>
               </div>
@@ -54,7 +54,7 @@ export default function Notifications() {
             {!supported && (
               <p className="mt-4 flex gap-2 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
                 <Smartphone size={18} className="mt-0.5 shrink-0" />
-                <span>This browser can't receive push alerts. On iPhone or iPad, add RemindMe to your Home Screen first, then open it from there.</span>
+                <span>This browser can't receive push alerts. On iPhone or iPad, add Deadline to your Home Screen first, then open it from there.</span>
               </p>
             )}
             {supported && blocked && !on && (

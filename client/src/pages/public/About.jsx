@@ -26,7 +26,7 @@ import {
   Shield,
 } from "lucide-react";
 
-const APP_VERSION = "v6.0.0";
+const APP_VERSION = "v021126";
 const REPO_URL = SITE.repoUrl;
 
 // ---- Live service status (useApiHealth pings the backend's /health endpoint) ----
@@ -38,7 +38,7 @@ const STATUS_UI = {
     ping: false,
   },
   waking: {
-    label: "Waking up server…",
+    label: "Connecting…",
     wrap: "bg-amber-50 border-amber-200 text-amber-700",
     dot: "bg-amber-500",
     ping: true,
@@ -52,7 +52,7 @@ const STATUS_UI = {
     pingColor: "bg-emerald-400",
   },
   down: {
-    label: "Service Unreachable",
+    label: "Connection issue",
     wrap: "bg-red-50 border-red-200 text-red-700",
     dot: "bg-red-500",
     ping: false,
@@ -83,7 +83,7 @@ const features = [
     icon: Smartphone,
     tone: "bg-emerald-50 text-emerald-600",
     title: "Installable Web App",
-    text: "Add RemindMe to your home screen and use it like a native app on your phone or laptop, synced across devices.",
+    text: "Add Deadline to your home screen and use it like a native app on your phone or laptop, synced across devices.",
   },
 ];
 
@@ -128,14 +128,14 @@ const supportLinks = [
     text: "Explore code, architecture, & releases on GitHub",
   },
   {
-    href: mailto("Hello from the RemindMe site"),
+    href: mailto("Hello from the Deadline site"),
     icon: Mail,
     tone: "bg-blue-50 text-blue-600 group-hover:bg-blue-100",
     title: "Contact Developer",
     text: "Collaborations, inquiries, and feedback",
   },
   {
-    href: mailto("Bug Report - RemindMe App"),
+    href: mailto("Bug Report - Deadline App"),
     icon: Bug,
     tone: "bg-orange-50 text-orange-500 group-hover:bg-orange-100",
     title: "Report an Issue",
@@ -177,7 +177,7 @@ export default function About() {
             </div>
 
             <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-2">
-              About Get<span className="text-blue-600">RemindMe</span>
+              About <span className="text-blue-600">Deadline</span>
             </h1>
 
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-full mb-4 border border-blue-200/60">
@@ -203,7 +203,7 @@ export default function About() {
             </div>
 
             <p className="text-gray-600 leading-relaxed max-w-md mx-auto text-sm sm:text-base">
-              Built to remove friction from student productivity. GetRemindMe
+              Built to remove friction from student productivity. Deadline
               sends specific, daily and weekly reminders through Web Push and
               Telegram, and lets you add them just by typing or speaking.
             </p>
@@ -342,7 +342,7 @@ export default function About() {
               </p>
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              © {new Date().getFullYear()} GetRemindMe • All rights reserved.
+              © {new Date().getFullYear()} Deadline • All rights reserved.
             </p>
           </div>
         </div>

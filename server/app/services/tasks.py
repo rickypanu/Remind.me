@@ -276,6 +276,10 @@ class TaskService:
             }
 
         was_completed = task.get("status") == "completed"
+        if payload.status == "completed" and was_completed:
+            # A replayed completion (offline queue retry) changes nothing. Re-stamping completed_at would move the
+            # completion to a later day, so re-opening it later would take back the wrong day's count.
+            return {"message": "Task updated successfully", "recurring": False, "next_due": None}
         if not await self.repo.set_status(user_id, oid, payload.status):
             raise NotFound("Task not found")
         if payload.status == "completed" and not was_completed:

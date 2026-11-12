@@ -76,12 +76,12 @@ async def _handle_start(db: Any, telegram: TelegramClient, chat_id: str, text: s
     if not token:
         await telegram.send(
             chat_id,
-            "Welcome to RemindMe",
-            "To connect this chat, open <b>Settings → Telegram</b> in the RemindMe app and tap <b>Connect</b>.",
+            "Welcome to Deadline",
+            "To connect this chat, open <b>Settings → Telegram</b> in the Deadline app and tap <b>Connect</b>.",
         )
         return
     if not _TOKEN_RE.match(token):
-        await telegram.send(chat_id, "Link not valid", "Please create a new link in the RemindMe app.")
+        await telegram.send(chat_id, "Link not valid", "Please create a new link in the Deadline app.")
         return
 
     user_id = await linking.consume_link_token(db, token)
@@ -90,7 +90,7 @@ async def _handle_start(db: Any, telegram: TelegramClient, chat_id: str, text: s
         await telegram.send(
             chat_id,
             "Link expired",
-            "This link was already used or has expired. Please create a new one in the RemindMe app.",
+            "This link was already used or has expired. Please create a new one in the Deadline app.",
         )
         return
 
@@ -116,7 +116,7 @@ async def _handle_contact(db: Any, telegram: TelegramClient, message: TgMessage,
         )
         return
     if not await linking.save_phone(db, chat_id, phone):
-        await telegram.send(chat_id, "Not linked yet", "Connect this chat from the RemindMe app first.")
+        await telegram.send(chat_id, "Not linked yet", "Connect this chat from the Deadline app first.")
         return
     masked = escape(linking.mask_phone(phone) or "")
     await telegram.send(

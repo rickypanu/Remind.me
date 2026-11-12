@@ -1,4 +1,4 @@
-# RemindMe API - runtime dependencies.
+# Deadline API - runtime dependencies.
 #
 # These are compatible RANGES (lower bound = oldest release the code is written
 # against, upper bound = next major). They were written without access to PyPI, so

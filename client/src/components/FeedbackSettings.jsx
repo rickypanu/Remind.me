@@ -75,7 +75,7 @@ export default function FeedbackSettings() {
             <div className="p-2.5 rounded-xl bg-indigo-50 text-indigo-600"><Music size={20} /></div>
             <div className="text-left">
               <p className="font-medium text-gray-900">Notification sound</p>
-              <p className="text-xs text-gray-500 mt-0.5">Plays when an alert arrives while RemindMe is open</p>
+              <p className="text-xs text-gray-500 mt-0.5">Plays when an alert arrives while Deadline is open</p>
             </div>
           </div>
 

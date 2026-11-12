@@ -88,7 +88,7 @@ function Entry({ update, isPreview = false, isLatest = false, canDelete = false,
 }
 
 export default function UpdatesPage() {
-  usePageMeta({ title: 'Product updates', description: 'New features, improvements and fixes in RemindMe.', noindex: true });
+  usePageMeta({ title: 'Product updates', description: 'New features, improvements and fixes in Deadline.', noindex: true });
   const me = useMe();
   const currentUser = me.data;
   const updatesQuery = useUpdates();

@@ -60,7 +60,7 @@ async def send_success_email(to_email: str) -> bool:
         "Password Reset Successful",
         """
         <h3>Password Changed Successfully</h3>
-        <p>Your RemindMe account password has been successfully updated and you were signed out on every device.</p>
+        <p>Your Deadline account password has been successfully updated and you were signed out on every device.</p>
         <p>If you did not perform this action, please reset your password again immediately and contact support.</p>
         """,
     )

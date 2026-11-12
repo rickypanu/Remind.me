@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
+import { LogoMark } from "../../components/Logo";
 import { useNavigate, Link } from "react-router-dom";
 import {
   Mail,
   Lock,
   Loader2,
   AlertCircle,
-  LayoutDashboard,
   Eye,
   EyeOff,
   ArrowLeft,
@@ -19,9 +19,11 @@ import usePageMeta from '../../utils/usePageMeta';
 import { routeMeta } from "../../seo/routes";
 import notify from '../../utils/notify';
 import { getErrorMessage } from '../../utils/errors';
+import { useI18n } from "../../i18n/index.jsx";
 
 
 export default function Login() {
+  const { t } = useI18n();
   usePageMeta(routeMeta("/login"));
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -62,12 +64,12 @@ export default function Login() {
 
     // Send focus to the first empty field instead of a browser popup
     if (!email) {
-      setError("Enter your email to sign in.");
+      setError(t("Enter your email to sign in."));
       emailRef.current?.focus();
       return;
     }
     if (!formData.password) {
-      setError("Enter your password to sign in.");
+      setError(t("Enter your password to sign in."));
       passwordRef.current?.focus();
       return;
     }
@@ -78,7 +80,7 @@ export default function Login() {
     try {
       // Stores the short-lived access token and the rotating refresh token (the API client renews the former silently)
       await login.mutateAsync({ email, password: formData.password });
-      notify.success("Welcome back!");
+      notify.success(t("Welcome back!"));
       navigate("/dashboard");
     } catch (err) {
       setError(getErrorMessage(err));
@@ -94,7 +96,7 @@ export default function Login() {
       type="button"
       onClick={() => setShowPassword((value) => !value)}
       className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-blue-600 focus:outline-none focus-visible:text-blue-600 transition-colors"
-      aria-label={showPassword ? "Hide password" : "Show password"}
+      aria-label={showPassword ? t("Hide password") : t("Show password")}
       aria-pressed={showPassword}
     >
       {showPassword ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}
@@ -111,17 +113,14 @@ export default function Login() {
         <span className="p-1.5 rounded-lg bg-[color:var(--rm-soft)] group-hover:bg-blue-100 transition-colors">
           <ArrowLeft size={16} aria-hidden="true" />
         </span>
-        Back
+        {t("Back")}
       </button>
 
       <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-md shadow-indigo-500/25 mb-4">
-          <LayoutDashboard size={24} strokeWidth={2.5} aria-hidden="true" />
-        </div>
-        <h1 className="text-3xl font-extrabold text-[color:var(--rm-ink)] tracking-tight">Welcome back</h1>
+        <LogoMark size={52} className="inline-block rounded-2xl shadow-md shadow-violet-500/25 mb-4" />
+        <h1 className="text-3xl font-extrabold text-[color:var(--rm-ink)] tracking-tight">{t("Welcome back")}</h1>
         <p className="mt-2 text-slate-600 font-medium">
-          Sign in to <span className="text-slate-800 font-extrabold">Remind</span>
-          <span className="text-blue-600 font-extrabold">Me</span> and get things done.
+          {t("Sign in to Deadline and get things done.")}
         </p>
       </div>
 
@@ -136,11 +135,11 @@ export default function Login() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} noValidate aria-label="Log in" className="space-y-5">
+      <form onSubmit={handleSubmit} noValidate aria-label={t("Log in")} className="space-y-5">
         <FormField
           id="email"
           name="email"
-          label="Email address"
+          label={t("Email address")}
           icon={Mail}
           type="email"
           autoComplete="email"
@@ -157,7 +156,7 @@ export default function Login() {
           <FormField
             id="password"
             name="password"
-            label="Password"
+            label={t("Password")}
             icon={Lock}
             type={showPassword ? "text" : "password"}
             autoComplete="current-password"
@@ -174,7 +173,7 @@ export default function Login() {
           />
           {capsOn && (
             <p role="status" className="text-amber-700 text-xs font-medium flex items-center gap-1.5">
-              <AlertCircle size={14} aria-hidden="true" /> Caps Lock is on
+              <AlertCircle size={14} aria-hidden="true" /> {t("Caps Lock is on")}
             </p>
           )}
         </div>
@@ -186,11 +185,11 @@ export default function Login() {
         >
           {loading ? (
             <>
-              <Loader2 className="animate-spin" size={20} aria-hidden="true" /> Signing in…
+              <Loader2 className="animate-spin" size={20} aria-hidden="true" /> {t("Signing in…")}
             </>
           ) : (
             <>
-              Sign in <ArrowRight size={18} aria-hidden="true" />
+              {t("Sign in")} <ArrowRight size={18} aria-hidden="true" />
             </>
           )}
         </button>
@@ -198,14 +197,14 @@ export default function Login() {
 
       <div className="flex justify-end mt-5">
         <Link to="/forgot-password" className="text-sm font-semibold text-blue-700 hover:text-blue-800 hover:underline transition-colors">
-          Forgot password?
+          {t("Forgot password?")}
         </Link>
       </div>
 
       <div className="mt-3 pt-3 border-t border-slate-100 text-center text-sm text-slate-600">
-        Don't have an account?{" "}
+        {t("Don't have an account?")}{" "}
         <Link to="/register" className="text-blue-700 font-bold hover:text-blue-800 hover:underline transition-colors">
-          Sign up
+          {t("Sign up")}
         </Link>
       </div>
     </AuthShell>

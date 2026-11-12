@@ -59,4 +59,28 @@ describe('parseQuick', () => {
     expect(parseQuick('finish reading the long paper about graphs', NOW).confidence).toBe('low');
     expect(parseQuick('gym tomorrow 7am', NOW).confidence).toBe('high');
   });
+
+  it('keeps the clock time when the duration is in days', () => {
+    expect(ist(run('submit form in 2 days at 5pm').due_date)).toBe('2026-11-01 17:00');
+    expect(ist(run('in 2 days').due_date)).toBe('2026-11-01 21:58');
+  });
+
+  it('treats small night hours as after midnight, not as a time in the past', () => {
+    expect(ist(run('aaj raat 12 baje dawai').due_date)).toBe('2026-10-31 00:00');
+    expect(ist(run('tonight at 1 call').due_date)).toBe('2026-10-31 01:00');
+  });
+
+  it('reads ISO dates year first and rejects impossible minutes', () => {
+    expect(ist(run('2026-11-05 submit lab file').due_date)).toBe('2026-11-05 09:00');
+    expect(run('5.75pm call').due_date).toBeDefined();
+    expect(ist(run('5.75pm call').due_date)).toBe('2026-10-30 23:58'); // not a time: falls back to the default
+  });
+
+  it('never returns a weekly repeat without a weekday', () => {
+    expect(run('gym every thurday 7am').weekdays).toEqual([3]);
+  });
+
+  it('waits for the next leap year for 29 Feb', () => {
+    expect(ist(parseQuick('29 feb party', Date.parse('2028-03-10T10:00:00+05:30')).payload.due_date)).toBe('2032-02-29 09:00');
+  });
 });

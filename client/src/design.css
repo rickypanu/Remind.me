@@ -1,0 +1,121 @@
+/*
+ * Design layer: loaded after theme.css, so it refines the whole site at once.
+ * Typography, corner radii, shadows and the neutral palette live here. Dark and Minimal themes keep their own
+ * colours (their selectors are more specific), but share the type and shape rules.
+ */
+
+:root {
+  --font-sans: "Schibsted Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Noto Sans", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Arabic", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --default-font-family: var(--font-sans);
+
+  /* Shape: one calm scale. Controls 10px, cards 14px, large panels 18px. */
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 0.875rem;
+  --radius-3xl: 1.125rem;
+
+  /* Shadows: low and layered, tinted with the ink colour instead of flat grey. */
+  --shadow-xs: 0 1px 1px rgb(23 23 43 / .04);
+  --shadow-sm: 0 1px 2px rgb(23 23 43 / .06), 0 1px 1px rgb(23 23 43 / .03);
+  --shadow-md: 0 2px 4px rgb(23 23 43 / .05), 0 6px 14px -4px rgb(23 23 43 / .08);
+  --shadow-lg: 0 4px 8px rgb(23 23 43 / .04), 0 14px 30px -8px rgb(23 23 43 / .12);
+  --shadow-xl: 0 8px 16px rgb(23 23 43 / .05), 0 24px 48px -12px rgb(23 23 43 / .16);
+  --shadow-2xl: 0 12px 24px rgb(23 23 43 / .06), 0 36px 72px -16px rgb(23 23 43 / .22);
+
+  /* Neutrals: cool greys with a trace of violet, so the ink matches the logo instead of fighting it. */
+  --color-slate-50: #f8f8fc;
+  --color-slate-100: #f0f0f7;
+  --color-slate-200: #e3e3ee;
+  --color-slate-300: #cdcddd;
+  --color-slate-400: #9696ae;
+  --color-slate-500: #6c6c86;
+  --color-slate-600: #53536b;
+  --color-slate-700: #3c3c52;
+  --color-slate-800: #26263a;
+  --color-slate-900: #17172b;
+  --color-slate-950: #0d0d1e;
+  --color-gray-50: #f8f8fc;
+  --color-gray-100: #f0f0f7;
+  --color-gray-200: #e3e3ee;
+  --color-gray-300: #cdcddd;
+  --color-gray-400: #9696ae;
+  --color-gray-500: #6c6c86;
+  --color-gray-600: #53536b;
+  --color-gray-700: #3c3c52;
+  --color-gray-800: #26263a;
+  --color-gray-900: #17172b;
+  --color-gray-950: #0d0d1e;
+}
+
+/* Page surfaces (light, classic): off-white page, white cards, tinted soft fills that follow the accent. */
+html:not(.dark):not([data-theme="minimal"]) {
+  --rm-page: #f8f8fc;
+  --rm-soft: #f0f0f8;
+  --rm-soft-2: #e9e8f5;
+  --rm-hero-top: #f1eefb;
+  --rm-ink: #17172b;
+  --rm-accent: var(--color-blue-600);
+  --rm-icon-bg: var(--color-blue-100);
+  --rm-cta-1: var(--color-blue-50);
+  --rm-cta-2: #f4f3fb;
+  --rm-cta-3: #f1f6f4;
+  --rm-toast-bg: #17172b;
+}
+html.dark:not([data-theme="minimal"]) { --rm-accent: var(--color-blue-400); }
+
+/* ---------- Typography ---------- */
+html { font-family: var(--font-sans); }
+body {
+  font-family: var(--font-sans);
+  font-feature-settings: "kern", "liga", "calt";
+  font-optical-sizing: auto;
+  letter-spacing: -0.006em;
+}
+.rm-display { font-family: var(--font-sans); }
+/* Lighter, steadier weights: 700/800/900 shout; 600 reads as confident and professional. */
+.font-black, .font-extrabold { font-weight: 700; }
+.font-bold { font-weight: 650; }
+.font-semibold { font-weight: 600; }
+.font-medium { font-weight: 500; }
+h1, h2, h3, h4 { text-wrap: balance; }
+h1, h2 { letter-spacing: -0.028em; line-height: 1.12; }
+h3, h4 { letter-spacing: -0.016em; }
+p, li { text-wrap: pretty; }
+/* Small caps-lock labels become plain sentence-case labels. */
+.uppercase { text-transform: none; }
+.tracking-wider, .tracking-widest, .tracking-wide { letter-spacing: 0; }
+.tracking-tight { letter-spacing: -0.022em; }
+.tracking-tighter { letter-spacing: -0.03em; }
+:lang(hi), :lang(hi-Latn):not(:lang(hi)), :lang(bn), :lang(mr), :lang(gu), :lang(pa), :lang(ta), :lang(te), :lang(kn), :lang(ml), :lang(or), :lang(ur), :lang(ar) { letter-spacing: 0; }
+:lang(hi) h1, :lang(hi) h2, :lang(bn) h1, :lang(bn) h2, :lang(mr) h1, :lang(mr) h2, :lang(gu) h1, :lang(gu) h2, :lang(pa) h1, :lang(pa) h2,
+:lang(ta) h1, :lang(ta) h2, :lang(te) h1, :lang(te) h2, :lang(kn) h1, :lang(kn) h2, :lang(ml) h1, :lang(ml) h2, :lang(or) h1, :lang(or) h2,
+:lang(ur) h1, :lang(ur) h2, :lang(ar) h1, :lang(ar) h2 { letter-spacing: 0; line-height: 1.3; }
+
+/* ---------- Shape ---------- */
+/* Text buttons, chips and tabs were full pills; they now share the control radius. Round icon buttons and avatars
+   have no horizontal padding utility, so they stay circular. */
+[class*="rounded-full"][class*="px-"] { border-radius: 0.625rem; }
+[class*="rounded-full"][class*="px-"][class*="py-0.5"], [class*="rounded-full"][class*="px-"][class*="py-1 "] { border-radius: 0.5rem; }
+/* Segmented tab tracks (inset pill containers) */
+[class*="rounded-full"][class*="p-1"][class*="grid"], [class*="rounded-full"][class*="p-1"][class*="inline-flex"] { border-radius: 0.75rem; }
+.rm-toast { border-radius: 0.75rem !important; }
+
+/* ---------- Focus, selection, scrolling ---------- */
+:focus-visible { outline: 2px solid var(--color-blue-500); outline-offset: 2px; }
+input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offset: 0; }
+::selection { background: color-mix(in oklab, var(--color-blue-500) 28%, transparent); }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+/* ---------- Surfaces ---------- */
+/* Cards get a hairline instead of relying on shadow alone; this is what makes light mode look crisp. */
+html:not(.dark):not([data-theme="minimal"]) .bg-white.border { border-color: var(--color-slate-200); }
+html:not(.dark):not([data-theme="minimal"]) .bg-white.shadow-sm { box-shadow: var(--shadow-sm); }
+
+/* Page entrance: one quiet fade for the page, instead of every section sliding in. */
+.rm-rise, .rm-lift, .rm-card-in { animation-duration: .2s; }
+
+/* Arbitrary large radii used on a few panels share the large-panel radius. */
+.rounded-\[2rem\], .rounded-\[24px\], .rounded-\[28px\] { border-radius: 1.125rem; }
+html[data-theme="minimal"] .rounded-\[2rem\], html[data-theme="minimal"] .rounded-\[24px\], html[data-theme="minimal"] .rounded-\[28px\] { border-radius: 6px; }

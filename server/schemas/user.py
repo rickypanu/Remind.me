@@ -70,7 +70,7 @@ def check_avatar_url(value: str | None) -> str | None:
         return None
     if AVATAR_URL_RE.match(value) or DICEBEAR_URL_RE.match(value) or _is_safe_svg_data_uri(value):
         return value
-    raise ValueError("avatar_url must be a picture uploaded to RemindMe or one of the built-in illustrations.")
+    raise ValueError("avatar_url must be a picture uploaded to Deadline or one of the built-in illustrations.")
 
 
 AvatarUrl = Annotated[str | None, AfterValidator(check_avatar_url)]

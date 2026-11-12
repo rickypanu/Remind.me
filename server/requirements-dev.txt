@@ -1,0 +1,17 @@
+# Deadline API - development and CI dependencies.
+#   pip install -r requirements-dev.txt
+# Lock exactly like requirements.txt (see the note there).
+
+-r requirements.txt
+
+# --- tests -----------------------------------------------------------------------
+pytest>=8.3,<9
+pytest-asyncio>=0.24,<2              # asyncio_mode = "auto" is set in pyproject.toml
+pytest-cov>=5.0,<8
+# httpx (already a runtime dependency) provides AsyncClient + ASGITransport for route tests.
+
+# --- quality gates ------------------------------------------------------------------
+ruff>=0.8,<1                         # lint + format (replaces black, isort, flake8, bandit subset)
+mypy>=1.13,<2
+pip-audit>=2.7,<3                    # known-vulnerability scan of the installed packages
+pre-commit>=4.0,<5

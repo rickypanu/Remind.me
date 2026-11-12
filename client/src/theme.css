@@ -237,7 +237,7 @@ html.dark input, html.dark textarea, html.dark select { color-scheme: dark; }
    ===================================================================== */
 html[data-theme="minimal"] {
   --page-bg: #fafafa;
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: "Schibsted Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Noto Sans", Roboto, Arial, sans-serif;
   --radius-xs: 2px; --radius-sm: 2px; --radius-md: 3px; --radius-lg: 4px;
   --radius-xl: 4px; --radius-2xl: 6px; --radius-3xl: 6px; --radius-4xl: 8px;
   --shadow-2xs: none; --shadow-xs: none; --shadow-sm: none; --shadow-md: none;
@@ -357,8 +357,8 @@ html[data-theme="minimal"] {
 }
 html[data-theme="minimal"] body { font-family: var(--font-sans); letter-spacing: -0.005em; }
 html[data-theme="minimal"] [class*="font-["] { font-family: var(--font-sans); }
-html[data-theme="minimal"] .font-bold, html[data-theme="minimal"] .font-extrabold, html[data-theme="minimal"] .font-black { font-weight: 600; }
-html[data-theme="minimal"] .font-semibold { font-weight: 500; }
+
+
 /* arbitrary radii & shadows that tokens can't reach */
 html[data-theme="minimal"] .rounded-\[2rem\], html[data-theme="minimal"] .rounded-\[24px\], html[data-theme="minimal"] .rounded-\[28px\] { border-radius: 6px; }
 html[data-theme="minimal"] [class*="shadow"] { --tw-shadow: 0 0 #0000 !important; --tw-shadow-colored: 0 0 #0000 !important; --tw-inset-shadow: 0 0 #0000 !important; }

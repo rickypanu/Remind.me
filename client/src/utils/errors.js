@@ -10,7 +10,7 @@ export function getErrorMessage(err, fallback = "Something went wrong. Please tr
   if (err.request && !err.response) {
     return typeof navigator !== "undefined" && navigator.onLine === false
       ? "You appear to be offline. Check your connection and try again."
-      : "Can't reach the server right now. It may be waking up, so please try again in a few seconds.";
+      : "We couldn't connect right now. Please check your internet connection and try again.";
   }
 
   const detail = err.response?.data?.detail;

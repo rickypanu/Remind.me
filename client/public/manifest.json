@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "short_name": "RemindMe",
-  "name": "RemindMe: Specific, Daily & Weekly Reminders",
+  "short_name": "Deadline",
+  "name": "Deadline: Specific, Daily & Weekly Reminders",
   "icons": [
     {
       "src": "/icon-192x192.png",
@@ -14,20 +14,6 @@
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any maskable"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "/screenshot-mobile.png",
-      "sizes": "418x747",
-      "type": "image/png",
-      "form_factor": "narrow"
-    },
-    {
-      "src": "/screenshot-desktop.png",
-      "sizes": "1903x868",
-      "type": "image/png",
-      "form_factor": "wide"
     }
   ],
   "start_url": "/",

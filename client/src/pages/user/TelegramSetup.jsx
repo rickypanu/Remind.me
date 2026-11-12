@@ -12,7 +12,7 @@ const GIVE_UP_MS = 60000;
 
 export default function TelegramSetup() {
   const navigate = useNavigate();
-  usePageMeta({ title: 'Connect Telegram', description: 'Connect your Telegram account to receive RemindMe reminders instantly on your phone.', noindex: true });
+  usePageMeta({ title: 'Connect Telegram', description: 'Connect your Telegram account to receive Deadline reminders instantly on your phone.', noindex: true });
 
   const me = useMe();
   const userId = userIdOf(me.data);
@@ -124,7 +124,7 @@ export default function TelegramSetup() {
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-1">Connected</h3>
               <p className="text-gray-500 font-medium mb-6">
-                Your account is actively linked to RemindMe Bot.
+                Your account is actively linked to Deadline Bot.
               </p>
               
               {phoneNumber && (
@@ -204,7 +204,7 @@ export default function TelegramSetup() {
             {/* Mock Message 1 */}
             <div className="bg-white p-3.5 rounded-2xl rounded-tl-sm shadow-sm border border-gray-100/50">
               <div className="flex items-center gap-1.5 text-[#0088cc] font-semibold text-[13px] mb-1">
-                RemindMe Bot
+                Deadline Bot
               </div>
               <p className="text-[15px] text-gray-800 leading-snug">
                 Hey! Your task <span className="font-semibold">"Algorithm Final Prep"</span> is due in 30 minutes. ⏰

@@ -44,7 +44,7 @@ async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
 def create_app(settings: Settings | None = None, *, use_lifespan: bool = True) -> FastAPI:
     settings = settings or get_settings()
     app = FastAPI(
-        title="RemindMe API",
+        title="Deadline API",
         version="1.0.0",
         lifespan=lifespan if use_lifespan else None,
         redirect_slashes=False,  # a 307 on POST is a round trip (and a CORS pre-flight failure) for nothing
@@ -100,12 +100,12 @@ def create_app(settings: Settings | None = None, *, use_lifespan: bool = True) -
 
     @app.get("/", response_model=WelcomeResponse, tags=["Health"])
     async def root() -> WelcomeResponse:
-        return WelcomeResponse(message="Welcome to the RemindMe API")
+        return WelcomeResponse(message="Welcome to the Deadline API")
 
     @app.api_route("/health", methods=["GET", "HEAD"], response_model=HealthResponse, tags=["Health"])
     def health_check() -> HealthResponse:
         """Endpoint for UptimeRobot to ping and keep the server awake."""
-        return HealthResponse(status="ok", message="Remind me backend is active and awake")
+        return HealthResponse(status="ok", message="Deadline backend is active")
 
     return app
 

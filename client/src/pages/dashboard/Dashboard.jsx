@@ -23,15 +23,17 @@ import { effectiveStreak } from "./motivation";
 import TaskGroups from "./TaskGroups";
 import OverdueBanner from "./OverdueBanner";
 import TaskSkeleton from "./TaskSkeleton";
+import { useI18n } from "../../i18n/index.jsx";
 
 const EMPTY_STATES = {
   today: { Icon: Coffee, title: "Nothing due today", body: "You're all caught up. Enjoy your break!", cta: "Add a reminder" },
   upcoming: { Icon: CalendarDays, title: "Nothing planned yet", body: "Add a reminder to plan ahead.", cta: "Add a reminder" },
 };
 
-const savedOfflineNote = () => (navigator.onLine ? "" : " Saved on this device.");
+const savedOfflineNote = (t) => (navigator.onLine ? "" : " " + t("Saved on this device."));
 
 export default function Dashboard() {
+  const { t, locale } = useI18n();
   const navigate = useNavigate();
   usePageMeta({
     title: "Dashboard",
@@ -63,26 +65,26 @@ export default function Dashboard() {
       const result = await toggleTask(task);
       const next = result?.task;
       if (next) {
-        let message = next.status === "completed" ? "Task marked complete!" : "Task moved back to pending";
+        let message = next.status === "completed" ? t("Task marked complete!") : t("Task moved back to pending");
         if (next.schedule_type !== "once" && task.status !== "completed") {
           message =
             next.status === "pending" && next.due_date
               ? `Done! Next reminder: ${formatDueIst(next.due_date)} IST`
               : "Done! That was the last reminder in this series.";
         }
-        notify.success(message + savedOfflineNote());
+        notify.success(message + savedOfflineNote(t));
       }
       return result;
     },
-    [toggleTask]
+    [toggleTask, t]
   );
 
   const handleDelete = useCallback(
     async (task) => {
       await removeTask(task);
-      notify.success("Reminder deleted." + savedOfflineNote());
+      notify.success(t("Reminder deleted.") + savedOfflineNote(t));
     },
-    [removeTask]
+    [removeTask, t]
   );
 
   const cardProps = (task) => ({ task, onToggle: handleToggle, onDelete: handleDelete, onEdit: editTask });
@@ -90,10 +92,10 @@ export default function Dashboard() {
   const greeting = useMemo(() => greetingForHour(getIstHour()), []);
   const tabs = useMemo(
     () => [
-      { id: "today", label: "Today", count: today.length, icon: Sun },
-      { id: "upcoming", label: "Upcoming", count: upcoming.length, icon: CalendarDays },
+      { id: "today", label: t("Today"), count: today.length, icon: Sun },
+      { id: "upcoming", label: t("Upcoming"), count: upcoming.length, icon: CalendarDays },
     ],
-    [today.length, upcoming.length]
+    [today.length, upcoming.length, t]
   );
   const displayedTasks = activeTab === "upcoming" ? upcoming : today;
   const empty = EMPTY_STATES[activeTab];
@@ -127,11 +129,11 @@ export default function Dashboard() {
         {/* Greeting */}
         <div className="pt-10 pb-6">
           <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-            {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: APP_TIMEZONE })}
+            {new Date().toLocaleDateString(locale, { weekday: "long", month: "long", day: "numeric", timeZone: APP_TIMEZONE })}
           </p>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight text-balance">
-            {greeting},{" "}
-            <span className="text-blue-600 font-semibold">{userInfo?.username ? userInfo.username.split(" ")[0] : "there"}</span>
+            {t(greeting)},{" "}
+            <span className="text-blue-600 font-semibold">{userInfo?.username ? userInfo.username.split(" ")[0] : t("there")}</span>
           </h1>
         </div>
 
@@ -163,7 +165,7 @@ export default function Dashboard() {
         {selectedDate && (
           <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-2.5">
             <p className="min-w-0 text-xs font-semibold text-blue-900" role="status">
-              Showing reminders for <span className="font-bold">{dateLabel}</span> · {dateMatches.length}
+              {t("Showing reminders for")} <span className="font-bold">{dateLabel}</span> · {dateMatches.length}
             </p>
             <button
               type="button"
@@ -171,7 +173,7 @@ export default function Dashboard() {
               className="inline-flex shrink-0 items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-slate-700 shadow-sm hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             >
               <X size={12} strokeWidth={3} aria-hidden="true" />
-              Clear
+              {t("Clear")}
             </button>
           </div>
         )}
@@ -179,11 +181,11 @@ export default function Dashboard() {
         <div
           id="task-panel"
           role="tabpanel"
-          {...(selectedDate ? { "aria-label": `Reminders for ${dateLabel}` } : { "aria-labelledby": `tab-${activeTab}` })}
+          {...(selectedDate ? { "aria-label": t("Reminders for {date}", { date: dateLabel }) } : { "aria-labelledby": `tab-${activeTab}` })}
           tabIndex={-1}
         >
           {!ready ? (
-            <div className="grid gap-3 mb-8" aria-busy="true" aria-label="Loading tasks">
+            <div className="grid gap-3 mb-8" aria-busy="true" aria-label={t("Loading tasks")}>
               <TaskSkeleton />
               <TaskSkeleton />
               <TaskSkeleton />
@@ -191,7 +193,7 @@ export default function Dashboard() {
           ) : selectedDate ? (
             <div className="mb-8">
               {dateMatches.length === 0 ? (
-                <EmptyState Icon={CalendarDays} title={`Nothing on ${dateLabel}`} body="No reminders are set for that day." cta="Add a reminder" />
+                <EmptyState Icon={CalendarDays} title={t("Nothing on {date}", { date: dateLabel })} body={t("No reminders are set for that day.")} cta={t("Add a reminder")} />
               ) : (
                 <TaskGroups groups={dateGroups} cardProps={cardProps} />
               )}
@@ -203,7 +205,7 @@ export default function Dashboard() {
           ) : (
             <div className="grid gap-3 mb-8">
               {displayedTasks.length === 0 ? (
-                <EmptyState {...empty} />
+                <EmptyState Icon={empty.Icon} title={t(empty.title)} body={t(empty.body)} cta={t(empty.cta)} />
               ) : (
                 displayedTasks.map((task) => <TaskCard key={task.id} {...cardProps(task)} isPrevious={false} />)
               )}
