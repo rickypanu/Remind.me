@@ -5,6 +5,8 @@
  */
 
 :root {
+  /* Tailwind multiplies every padding, margin, gap and size by this. 0.25rem is the default; 0.222rem tightens the whole site by about 11%. */
+  --spacing: 0.222rem;
   --font-sans: "Schibsted Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Noto Sans", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Arabic", Roboto, "Helvetica Neue", Arial, sans-serif;
   --default-font-family: var(--font-sans);
 
@@ -119,3 +121,25 @@ html:not(.dark):not([data-theme="minimal"]) .bg-white.shadow-sm { box-shadow: va
 /* Arbitrary large radii used on a few panels share the large-panel radius. */
 .rounded-\[2rem\], .rounded-\[24px\], .rounded-\[28px\] { border-radius: 1.125rem; }
 html[data-theme="minimal"] .rounded-\[2rem\], html[data-theme="minimal"] .rounded-\[24px\], html[data-theme="minimal"] .rounded-\[28px\] { border-radius: 6px; }
+
+/* Marketing sections used very tall vertical padding; trim it on larger screens. */
+@media (min-width: 768px) {
+  .py-24 { padding-block: 4.25rem; }
+  .py-20 { padding-block: 3.5rem; }
+  .pb-28 { padding-bottom: 4.5rem; }
+  .pt-20 { padding-top: 3.5rem; }
+}
+
+/* ---------- Next deadline (dashboard) ---------- */
+.dl-next { border-radius: 1.125rem; padding: 1rem 1.125rem 1.125rem; color: #fff; background: var(--color-blue-700); box-shadow: var(--shadow-lg); }
+.dl-next-label { display: inline-flex; align-items: center; gap: .375rem; font-size: .8125rem; font-weight: 600; color: rgb(255 255 255 / .78); }
+.dl-next-title { margin-top: .375rem; font-size: 1.25rem; font-weight: 650; line-height: 1.25; letter-spacing: -0.02em; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.dl-next-sub { margin-top: .25rem; font-size: .8125rem; color: rgb(255 255 255 / .74); font-variant-numeric: tabular-nums; }
+.dl-next-time { font-size: 2rem; font-weight: 650; line-height: 1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dl-next-urgent { color: #fde68a; }
+.dl-next-bar { margin-top: .875rem; height: 4px; border-radius: 4px; background: rgb(255 255 255 / .22); overflow: hidden; }
+.dl-next-bar span { display: block; height: 100%; border-radius: 4px; background: #fff; transition: width .6s ease; }
+.dl-next-bar span.dl-next-bar-urgent { background: #fbbf24; }
+html.dark .dl-next { background: var(--color-blue-800); }
+@media (max-width: 380px) { .dl-next-time { font-size: 1.625rem; } }
+@media (prefers-reduced-motion: reduce) { .dl-next-bar span { transition: none; } }

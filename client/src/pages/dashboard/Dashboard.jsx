@@ -18,6 +18,7 @@ import DateFilterButton from "./DateFilterButton";
 import EmptyState from "./EmptyState";
 import MagicAddForm from "./MagicAddForm";
 import InstallBanner from "../../components/InstallBanner";
+import NextDeadline from "./NextDeadline";
 import MotivationCard from "./MotivationCard";
 import { effectiveStreak } from "./motivation";
 import TaskGroups from "./TaskGroups";
@@ -127,15 +128,17 @@ export default function Dashboard() {
 
       <main id="main" className="max-w-3xl mx-auto px-4 sm:px-6">
         {/* Greeting */}
-        <div className="pt-10 pb-6">
-          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+        <div className="pt-7 pb-5">
+          <p className="text-sm font-medium text-slate-500 mb-1">
             {new Date().toLocaleDateString(locale, { weekday: "long", month: "long", day: "numeric", timeZone: APP_TIMEZONE })}
           </p>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight text-balance">
+          <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight text-balance">
             {t(greeting)},{" "}
-            <span className="text-blue-600 font-semibold">{userInfo?.username ? userInfo.username.split(" ")[0] : t("there")}</span>
+            <span data-no-translate className="text-blue-600 font-semibold">{userInfo?.username ? userInfo.username.split(" ")[0] : t("there")}</span>
           </h1>
         </div>
+
+        <NextDeadline tasks={tasks} />
 
         <MagicAddForm isOffline={isOffline} />
 

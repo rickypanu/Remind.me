@@ -5,6 +5,8 @@ import { feedback } from '../../feedback/feedback';
 import ConfirmDeleteDialog from '../../components/ConfirmDeleteDialog';
 import EditReminderDialog from '../../components/EditReminderDialog';
 import { sameTask } from '../../utils/taskEquality';
+import { formatLeft } from '../dashboard/NextDeadline';
+import { useI18n } from '../../i18n/index.jsx';
 
 const getDynamicColor = (text) => {
   if (!text) return 'text-slate-600 bg-slate-100 border-slate-200';
@@ -36,6 +38,7 @@ export const getCategoryStyle = (category) => {
 };
 
 function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious }) {
+  const { t } = useI18n();
   const [showConfirm, setShowConfirm] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [localStatus, setLocalStatus] = useState(task.status);
@@ -76,22 +79,28 @@ function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious }) {
   const isOverdue = relativeTimeString.startsWith('Overdue') && !isCompleted;
   const isHighPriority = String(task.priority || '').toLowerCase() === 'high' && !isCompleted;
 
-  // Left accent: overdue (rose) > high priority (amber) > none
-  const accent = isOverdue
-    ? 'border-l-4 border-l-rose-400'
-    : isHighPriority
-    ? 'border-l-4 border-l-amber-400'
-    : '';
+  // Urgency rail on the left edge: overdue (rose), under an hour (amber), high priority (amber), later today or beyond (accent).
+  const msLeft = task.due_date ? new Date(task.due_date).getTime() - Date.now() : null;
+  const soon = msLeft != null && msLeft >= 0 && msLeft < 3600000 && !isCompleted;
+  const rail = isCompleted || isPrevious
+    ? 'bg-slate-300'
+    : isOverdue
+    ? 'bg-rose-500'
+    : soon || isHighPriority
+    ? 'bg-amber-400'
+    : 'bg-blue-500';
+  const accent = '';
 
   return (
     <>
       <div
-        className={`rm-card-in p-4 sm:p-5 rounded-[24px] border transition-all duration-300 ease-out motion-reduce:transition-none group relative overflow-hidden ${accent} ${
+        className={`rm-card-in py-3.5 pl-5 pr-4 sm:py-4 sm:pl-6 sm:pr-5 rounded-2xl border transition-all duration-300 ease-out motion-reduce:transition-none group relative overflow-hidden ${accent} ${
           isCompleted || isPrevious
             ? 'bg-slate-50 border-slate-200 shadow-none'
             : 'rm-ios-card bg-white border-slate-200 hover:border-blue-200'
         }`}
       >
+        <span aria-hidden="true" className={`absolute inset-y-0 left-0 w-1 ${rail}`} />
         <div className="flex items-start gap-3 sm:gap-4 relative z-10">
           {/* Status Toggle: padded to a ~40px touch target without shifting layout */}
           <button
@@ -165,7 +174,8 @@ function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious }) {
             </div>
 
             <h3
-              className={`text-base sm:text-lg font-bold leading-tight break-words transition-colors duration-500 ${
+              data-no-translate
+              className={`text-base sm:text-[17px] font-semibold leading-snug break-words transition-colors duration-500 ${
                 isCompleted ? 'text-slate-600 line-through decoration-slate-400' : 'text-slate-900'
               }`}
             >
@@ -174,6 +184,7 @@ function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious }) {
 
             {task.description && (
               <p
+                data-no-translate
                 className={`mt-1.5 text-[13px] sm:text-sm font-medium line-clamp-2 transition-colors duration-500 ${
                   'text-slate-600'
                 }`}
@@ -182,6 +193,13 @@ function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious }) {
               </p>
             )}
           </div>
+
+          {msLeft != null && !isCompleted && !isPrevious && (
+            <div className="hidden sm:block shrink-0 text-right pr-1">
+              <p data-no-translate className={`text-lg font-semibold leading-none tabular-nums ${isOverdue ? 'text-rose-600' : soon ? 'text-amber-600' : 'text-slate-800'}`}>{formatLeft(msLeft)}</p>
+              <p className="mt-1 text-xs text-slate-500">{msLeft < 0 ? t('late') : t('left')}</p>
+            </div>
+          )}
 
           {/* Edit + Delete: always visible so they work on touch devices too */}
           <div className="flex shrink-0 items-center -mr-1 -mt-1">

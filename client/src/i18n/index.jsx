@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { CODES, LANGUAGES, LANG_KEY, dateLocale, htmlLang } from "./languages";
+import { CODES, LANG_KEY, PICKER_LANGUAGES, LANGUAGES, dateLocale, htmlLang } from "./languages";
+import { applyDictionary } from "./translator";
 
 /**
  * Tiny translation layer with no extra packages.
@@ -17,20 +18,24 @@ const read = () => {
   }
 };
 
+// English until the visitor picks a language; the choice is remembered on this device.
 const detect = () => {
   const saved = read();
-  if (CODES.includes(saved)) return saved;
-  const nav = (typeof navigator !== "undefined" && navigator.language ? navigator.language : "en").toLowerCase().split("-")[0];
-  return CODES.includes(nav) && nav !== "en" ? nav : "en";
+  return CODES.includes(saved) ? saved : "en";
 };
 
 const fill = (text, vars) => (vars ? text.replace(/\{(\w+)\}/g, (m, k) => (vars[k] != null ? String(vars[k]) : m)) : text);
 
-const I18nContext = createContext({ t: (s, v) => fill(s, v), lang: "en", locale: "en-US", setLang: () => {}, languages: LANGUAGES });
+const I18nContext = createContext({ t: (s, v) => fill(s, v), lang: "en", locale: "en-US", setLang: () => {}, languages: PICKER_LANGUAGES });
 
 export function I18nProvider({ children }) {
   const [lang, setLangState] = useState(detect);
   const [dict, setDict] = useState({});
+
+  // The page itself (every heading, label, paragraph, placeholder) is translated from the same dictionary.
+  useEffect(() => {
+    applyDictionary(dict);
+  }, [dict]);
 
   useEffect(() => {
     let alive = true;
@@ -61,7 +66,7 @@ export function I18nProvider({ children }) {
   }, []);
 
   const t = useCallback((text, vars) => fill(dict[text] ?? text, vars), [dict]);
-  const value = useMemo(() => ({ t, lang, locale: dateLocale(lang), setLang, languages: LANGUAGES }), [t, lang, setLang]);
+  const value = useMemo(() => ({ t, lang, locale: dateLocale(lang), setLang, languages: PICKER_LANGUAGES }), [t, lang, setLang]);
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 
