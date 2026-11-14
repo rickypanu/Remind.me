@@ -193,6 +193,8 @@ export function parseQuick(input, nowMs = Date.now()) {
   let barePast = false;
   if (schedule === 'once' && relativeMs === null) {
     let m;
+    // "hackathon 21-22 nov": a deadline is the end of the range, so keep the last day
+    state.text = state.text.replace(new RegExp(`\\b\\d{1,2}\\s*[-–]\\s*(\\d{1,2})\\s+(${MONTH_NAME})\\b`), '$1 $2');
     if ((m = take(state, /\b(?:day after tomorrow|parso|parson|overmorrow)\b/))) dayMs = dayStart(now) + 2 * DAY;
     else if ((m = take(state, /\b(?:tomorrow|tmrw|tmr|tomorow|tommorow|kal)\b/))) dayMs = dayStart(now) + DAY;
     else if ((m = take(state, /\b(?:today|aaj|tonight)\b/))) dayMs = dayStart(now);
@@ -207,6 +209,9 @@ export function parseQuick(input, nowMs = Date.now()) {
       dayMs = namedDate(nowP, Number(m[1]), MONTHS[m[2]], m[3]);
     } else if ((m = take(state, new RegExp(`\\b(${MONTH_NAME})\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b(?:\\s*,?\\s*(\\d{4}))?`)))) {
       dayMs = namedDate(nowP, Number(m[2]), MONTHS[m[1]], m[3]);
+    } else if ((m = take(state, /\b(?:by|on|before|till|until)?\s*(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)\b(?!\s*(?:of\s+)?(?:every|each))/))) {
+      // "pay fees by 15th": the next 15th (this month if it is still ahead, otherwise next month)
+      dayMs = nextDayOfMonth(nowP, Number(m[1]));
     } else if ((m = take(state, /\b(\d{4})-(\d{1,2})-(\d{1,2})\b/))) {
       // 2026-11-05 (year first). Without this the day-first rule below would read "11-05" as 11 May.
       const month = Number(m[2]) - 1;
@@ -317,6 +322,19 @@ function namedDate(nowP, day, month, yearText) {
   return null;
 }
 
+/** The next calendar day with this day-of-month (today counts); skips months that do not have it (31st). */
+function nextDayOfMonth(nowP, day) {
+  if (day < 1 || day > 31) return null;
+  const today = fromIst(nowP.y, nowP.mo, nowP.d);
+  for (let i = 0; i < 14; i++) {
+    const year = nowP.y + Math.floor((nowP.mo + i) / 12);
+    const month = (nowP.mo + i) % 12;
+    const ms = fromIst(year, month, day);
+    if (istParts(ms).d === day && ms >= today) return ms;
+  }
+  return null;
+}
+
 /** Same rule as server/utils/quick_defaults.py: 2 hours from now, or 10 minutes if that would cross midnight. */
 function defaultFromNow(now) {
   const candidate = now + DEFAULT_LEAD_MS;
@@ -325,7 +343,7 @@ function defaultFromNow(now) {
 
 const FILLER_LEADING =
   /^(?:(?:please|plz|pls|hey|hi)\s+)?(?:(?:can|could)\s+you\s+)?(?:remind\s+me|reminder|set\s+(?:a\s+)?reminder|mujhe\s+yaad\s+dilao|yaad\s+dilana|add)\s*(?:to|about|for|that|ki|ko|:)?\s*/;
-const FILLER_EDGES = /^(?:to|about|for|that|ki|ko|ke liye|at|on|by|in|the|a|and|aur|se|tak|par|pe|per|me|mein)\s+|\s+(?:to|about|for|that|ki|ko|ke liye|at|on|by|in|and|aur|se|tak|par|pe|per|me|mein|from)$/;
+const FILLER_EDGES = /^(?:to|about|for|that|ki|ko|ke liye|at|on|by|in|the|a|and|aur|se|tak|par|pe|per|me|mein)\s+|\s+(?:to|about|for|that|ki|ko|ke liye|at|on|by|in|and|aur|se|tak|par|pe|per|me|mein|from|due|before|till|until|deadline)$/;
 
 function cleanTitle(text) {
   let t = text.replace(/[,;|]+/g, ' ').replace(/\s+/g, ' ').trim();

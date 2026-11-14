@@ -83,4 +83,16 @@ describe('parseQuick', () => {
   it('waits for the next leap year for 29 Feb', () => {
     expect(ist(parseQuick('29 feb party', Date.parse('2028-03-10T10:00:00+05:30')).payload.due_date)).toBe('2032-02-29 09:00');
   });
+
+  it('reads a bare day of the month ("by 15th")', () => {
+    const r = run('pay fees by 15th');
+    expect(ist(r.due_date)).toBe('2026-11-15 09:00');
+    expect(r.title).toBe('Pay fees');
+    expect(ist(run('rent on 1st').due_date)).toBe('2026-11-01 09:00');
+  });
+
+  it('keeps the end of a date range and drops "due" from the title', () => {
+    expect(ist(run('hackathon 21-22 nov').due_date)).toBe('2026-11-22 09:00');
+    expect(run('assignment due sunday').title).toBe('Assignment');
+  });
 });
