@@ -18,51 +18,51 @@
   --radius-3xl: 1.125rem;
 
   /* Shadows: low and layered, tinted with the ink colour instead of flat grey. */
-  --shadow-xs: 0 1px 1px rgb(23 23 43 / .04);
-  --shadow-sm: 0 1px 2px rgb(23 23 43 / .06), 0 1px 1px rgb(23 23 43 / .03);
-  --shadow-md: 0 2px 4px rgb(23 23 43 / .05), 0 6px 14px -4px rgb(23 23 43 / .08);
-  --shadow-lg: 0 4px 8px rgb(23 23 43 / .04), 0 14px 30px -8px rgb(23 23 43 / .12);
-  --shadow-xl: 0 8px 16px rgb(23 23 43 / .05), 0 24px 48px -12px rgb(23 23 43 / .16);
-  --shadow-2xl: 0 12px 24px rgb(23 23 43 / .06), 0 36px 72px -16px rgb(23 23 43 / .22);
+  --shadow-xs: 0 1px 1px rgb(15 23 42 / .04);
+  --shadow-sm: 0 1px 2px rgb(15 23 42 / .06), 0 1px 1px rgb(15 23 42 / .03);
+  --shadow-md: 0 2px 4px rgb(15 23 42 / .05), 0 6px 14px -4px rgb(15 23 42 / .08);
+  --shadow-lg: 0 4px 8px rgb(15 23 42 / .04), 0 14px 30px -8px rgb(15 23 42 / .12);
+  --shadow-xl: 0 8px 16px rgb(15 23 42 / .05), 0 24px 48px -12px rgb(15 23 42 / .16);
+  --shadow-2xl: 0 12px 24px rgb(15 23 42 / .06), 0 36px 72px -16px rgb(15 23 42 / .22);
 
-  /* Neutrals: cool greys with a trace of violet, so the ink matches the logo instead of fighting it. */
-  --color-slate-50: #f8f8fc;
-  --color-slate-100: #f0f0f7;
-  --color-slate-200: #e3e3ee;
-  --color-slate-300: #cdcddd;
-  --color-slate-400: #9696ae;
-  --color-slate-500: #6c6c86;
-  --color-slate-600: #53536b;
-  --color-slate-700: #3c3c52;
-  --color-slate-800: #26263a;
-  --color-slate-900: #17172b;
-  --color-slate-950: #0d0d1e;
-  --color-gray-50: #f8f8fc;
-  --color-gray-100: #f0f0f7;
-  --color-gray-200: #e3e3ee;
-  --color-gray-300: #cdcddd;
-  --color-gray-400: #9696ae;
-  --color-gray-500: #6c6c86;
-  --color-gray-600: #53536b;
-  --color-gray-700: #3c3c52;
-  --color-gray-800: #26263a;
-  --color-gray-900: #17172b;
-  --color-gray-950: #0d0d1e;
+  /* Neutrals: cool slate greys that sit well with the blue brand colour. */
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #020617;
+  --color-gray-50: #f8fafc;
+  --color-gray-100: #f1f5f9;
+  --color-gray-200: #e2e8f0;
+  --color-gray-300: #cbd5e1;
+  --color-gray-400: #94a3b8;
+  --color-gray-500: #64748b;
+  --color-gray-600: #475569;
+  --color-gray-700: #334155;
+  --color-gray-800: #1e293b;
+  --color-gray-900: #0f172a;
+  --color-gray-950: #020617;
 }
 
 /* Page surfaces (light, classic): off-white page, white cards, tinted soft fills that follow the accent. */
 html:not(.dark):not([data-theme="minimal"]) {
-  --rm-page: #f8f8fc;
-  --rm-soft: #f0f0f8;
-  --rm-soft-2: #e9e8f5;
-  --rm-hero-top: #f1eefb;
-  --rm-ink: #17172b;
+  --rm-page: #f8fafc;
+  --rm-soft: #f1f5f9;
+  --rm-soft-2: #e2e8f4;
+  --rm-hero-top: #eff6ff;
+  --rm-ink: #0f172a;
   --rm-accent: var(--color-blue-600);
   --rm-icon-bg: var(--color-blue-100);
   --rm-cta-1: var(--color-blue-50);
-  --rm-cta-2: #f4f3fb;
+  --rm-cta-2: #f1f5f9;
   --rm-cta-3: #f1f6f4;
-  --rm-toast-bg: #17172b;
+  --rm-toast-bg: #0f172a;
 }
 html.dark:not([data-theme="minimal"]) { --rm-accent: var(--color-blue-400); }
 
@@ -106,6 +106,9 @@ p, li { text-wrap: pretty; }
 /* ---------- Focus, selection, scrolling ---------- */
 :focus-visible { outline: 2px solid var(--color-blue-500); outline-offset: 2px; }
 input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offset: 0; }
+/* No box around headings that are focused by the page itself, or around the quick-add box (its card already shows the state) */
+[tabindex="-1"]:focus, [tabindex="-1"]:focus-visible { outline: none; }
+form .rm-ios-card > textarea:focus, form .rm-ios-card > textarea:focus-visible { outline: none; box-shadow: none; }
 ::selection { background: color-mix(in oklab, var(--color-blue-500) 28%, transparent); }
 html { scroll-behavior: smooth; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
@@ -143,3 +146,19 @@ html[data-theme="minimal"] .rounded-\[2rem\], html[data-theme="minimal"] .rounde
 html.dark .dl-next { background: var(--color-blue-800); }
 @media (max-width: 380px) { .dl-next-time { font-size: 1.625rem; } }
 @media (prefers-reduced-motion: reduce) { .dl-next-bar span { transition: none; } }
+
+/* Premium charcoal dark: a slate-charcoal page, raised cards with a fine border (loaded after theme.css). */
+html.dark:not([data-theme="minimal"]) {
+  --page-bg: #0d0f12;
+  --dk-card: #15181d;
+  --color-white: #15181d;
+  --color-gray-50: #1a1e24;   --color-slate-50: #1a1e24;   --color-zinc-50: #1a1e24;
+  --color-gray-100: #1f242b;  --color-slate-100: #1f242b;  --color-zinc-100: #1f242b;
+  --color-gray-200: #2a3039;  --color-slate-200: #2a3039;  --color-zinc-200: #2a3039;
+  --color-gray-300: #3a414c;  --color-slate-300: #3a414c;  --color-zinc-300: #3a414c;
+  --color-gray-400: #6b7381;  --color-slate-400: #6b7381;  --color-zinc-400: #6b7381;
+  --color-gray-500: #9aa1ae;  --color-slate-500: #9aa1ae;  --color-zinc-500: #9aa1ae;
+  --color-gray-900: #eceef2;  --color-slate-900: #eceef2;  --color-zinc-900: #eceef2;
+}
+html.dark:not([data-theme="minimal"]) .rm-ios-card,
+html.dark:not([data-theme="minimal"]) .bg-white.border { border-color: rgba(255, 255, 255, 0.07); box-shadow: none; }

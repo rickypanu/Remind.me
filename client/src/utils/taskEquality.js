@@ -5,11 +5,11 @@
  */
 const FIELDS = [
   "id", "rev", "status", "title", "description", "category", "due_date", "needsSync",
-  "updated_at", "schedule_type", "schedule_label", "priority",
+  "updated_at", "schedule_type", "schedule_label", "priority", "subtasks", "alert_offsets",
 ];
 
 export function sameTask(a, b) {
   if (a === b) return true;
   if (!a || !b) return false;
-  return FIELDS.every((field) => a[field] === b[field]);
+  return FIELDS.every((field) => (field === "subtasks" || field === "alert_offsets" ? JSON.stringify(a[field] ?? null) === JSON.stringify(b[field] ?? null) : a[field] === b[field]));
 }

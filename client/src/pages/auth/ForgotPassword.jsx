@@ -13,7 +13,7 @@ const RESEND_SECONDS = 30;
 
 
 export default function ForgotPassword() {
-  usePageMeta({ title: 'Forgot password', description: "Enter your email and we'll send you a link to reset your Deadline password." });
+  usePageMeta({ title: 'Forgot password', description: "Enter your email and we'll send you a link to reset your GetRemindMe password." });
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);

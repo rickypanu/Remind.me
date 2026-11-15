@@ -13,12 +13,22 @@ from datetime import datetime, timedelta
 
 from utils.timezone import as_utc
 
-# Minutes before due time. Order matters: earliest reminder first.
-REMINDER_OFFSETS = (60, 10, 1)
+# Every offset a reminder can use (minutes before the due time), earliest first. A reminder that made no choice gets
+# DEFAULT_OFFSETS; one with its own ``alert_offsets`` list gets exactly those (an empty list means no pre-alerts).
+REMINDER_OFFSETS = (1440, 180, 60, 10, 1)
+DEFAULT_OFFSETS = (60, 10, 1)
 CHANNELS = ("tele", "web")
 
 # Flags written by earlier versions of the schedulers; still cleared for tasks that carry them.
 LEGACY_FLAGS = ("notified_due_soon", "notified_due_soon_web", "notified_tomorrow_digest", "last_notified_at")
+
+
+def offsets_for(task: dict) -> tuple[int, ...]:
+    """The alert offsets that apply to one reminder."""
+    chosen = task.get("alert_offsets")
+    if chosen is None:
+        return DEFAULT_OFFSETS
+    return tuple(m for m in chosen if m in REMINDER_OFFSETS)
 
 
 def grace_minutes(offset: int) -> int:

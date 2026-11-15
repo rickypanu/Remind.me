@@ -21,6 +21,9 @@ export function buildNewTask(payload, userId, now = Date.now()) {
     title: payload.title,
     description: payload.description || null,
     category: payload.category,
+    priority: payload.priority === 'high' ? 'high' : 'normal',
+    subtasks: Array.isArray(payload.subtasks) ? payload.subtasks : [],
+    alert_offsets: Array.isArray(payload.alert_offsets) ? payload.alert_offsets : null,
     status: 'pending',
     schedule_type: type,
     time_of_day: recurring ? payload.time_of_day : null,
@@ -49,10 +52,10 @@ const markDirty = (task, extra = {}) => ({
   rev: (task.rev || 0) + 1,
 });
 
-/** Edit text / time. `changes` may hold title, description, category, due_date, time_of_day. */
+/** Edit text / time. `changes` may hold title, description, category, priority, subtasks, alert_offsets, due_date, time_of_day. */
 export function applyEdit(task, changes, now = Date.now()) {
   const next = { ...task };
-  for (const key of ['title', 'description', 'category']) {
+  for (const key of ['title', 'description', 'category', 'priority', 'subtasks', 'alert_offsets']) {
     if (key in changes) next[key] = changes[key];
   }
   if (!isRecurring(task) && changes.due_date) next.due_date = changes.due_date;
@@ -117,6 +120,9 @@ export const toCreatePayload = (t) => {
     status: 'pending',
     schedule_type: t.schedule_type,
     client_id: t.clientId,
+    priority: t.priority === 'high' ? 'high' : 'normal',
+    subtasks: t.subtasks || [],
+    alert_offsets: Array.isArray(t.alert_offsets) ? t.alert_offsets : null,
   };
   if (t.schedule_type === 'once') p.due_date = t.due_date;
   else {
@@ -128,7 +134,14 @@ export const toCreatePayload = (t) => {
 };
 
 export const toUpdatePayload = (t) => {
-  const p = { title: t.title, description: t.description || null, category: t.category };
+  const p = {
+    title: t.title,
+    description: t.description || null,
+    category: t.category,
+    priority: t.priority === 'high' ? 'high' : 'normal',
+    subtasks: t.subtasks || [],
+    alert_offsets: Array.isArray(t.alert_offsets) ? t.alert_offsets : null,
+  };
   if (t.schedule_type === 'once') p.due_date = t.due_date;
   else p.time_of_day = t.time_of_day;
   return p;

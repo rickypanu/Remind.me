@@ -5,10 +5,12 @@ Shared helpers for reading / writing reminders so that ENCRYPTION is applied in 
   * Anything read from MongoDB goes through `from_storage()` (decrypted in memory, for the owner only).
 """
 
+import json
+
 from utils.crypto import decrypt_fields, encrypt_fields
 from utils.recurrence import describe_schedule
 
-ENCRYPTED_FIELDS = ("title", "description", "category")
+ENCRYPTED_FIELDS = ("title", "description", "category", "subtasks_json")  # subtasks_json: the checklist as JSON text
 
 
 def to_storage(user_id, doc: dict) -> dict:
@@ -36,6 +38,13 @@ def shape_response(task: dict) -> dict:
     task["user_id"] = str(task.get("user_id"))
     task.setdefault("schedule_type", "once")
     task["schedule_label"] = describe_schedule(task["schedule_type"], task.get("time_of_day"), task.get("weekdays"))
+    task["priority"] = task.get("priority") or "normal"
+    raw = task.pop("subtasks_json", None)
+    try:
+        task["subtasks"] = json.loads(raw) if raw else []
+    except (TypeError, ValueError):
+        task["subtasks"] = []
+    task.setdefault("alert_offsets", None)
     # Internal bookkeeping flags are not part of the API.
     for k in [k for k in task if k.startswith("notified_") or k == "last_notified_at"]:
         task.pop(k, None)

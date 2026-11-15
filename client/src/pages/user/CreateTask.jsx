@@ -19,6 +19,8 @@ import AppPage from "../../components/AppPage";
 import notify from "../../utils/notify";
 import usePageMeta from "../../utils/usePageMeta";
 import { getIstNowInputValue, istInputToUtcIso } from "../../utils/date";
+import TaskExtrasFields from "../../components/TaskExtrasFields";
+import { cleanAlerts, cleanSteps } from "../../utils/taskExtras";
 
 const SCHEDULES = [
   { id: "once", label: "Specific date", icon: CalendarClock },
@@ -76,6 +78,7 @@ export default function CreateTask() {
   });
   const [scheduleType, setScheduleType] = useState("once");
   const [weekdays, setWeekdays] = useState([]);
+  const [extras, setExtras] = useState({ priority: "normal", subtasks: [], alertOffsets: null });
 
   const [customCategory, setCustomCategory] = useState("");
   const customInputRef = useRef(null);
@@ -123,6 +126,9 @@ export default function CreateTask() {
       category: formData.category === "Other" ? customCategory.trim() : formData.category,
       status: "pending",
       schedule_type: scheduleType,
+      priority: extras.priority === "high" ? "high" : "normal",
+      subtasks: cleanSteps(extras.subtasks),
+      alert_offsets: cleanAlerts(extras.alertOffsets),
     };
 
     if (scheduleType === "once") {
@@ -398,6 +404,8 @@ export default function CreateTask() {
                 </div>
               )}
             </div>
+
+            <TaskExtrasFields value={extras} onChange={setExtras} />
 
             {/* Action Bar */}
             <div className="pt-4 flex items-center gap-3">

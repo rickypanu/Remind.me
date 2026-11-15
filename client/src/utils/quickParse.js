@@ -293,16 +293,22 @@ export function parseQuick(input, nowMs = Date.now()) {
     if (schedule === 'weekly') payload.weekdays = weekdays;
   }
 
-  // 6. Title + category
-  let title = cleanTitle(state.text);
+  // 6. Title, description + category
+  const { title: rawTitle, description } = splitTitleAndDescription(state.text);
+  let title = rawTitle;
   if (!title) title = cleanTitle(original.toLowerCase()) || original;
+  title = restoreCase(title, original);
   title = title.charAt(0).toUpperCase() + title.slice(1);
   payload.title = title.slice(0, 200);
+  const detail = description ? restoreCase(description, original) : '';
+  payload.description = detail ? detail.charAt(0).toUpperCase() + detail.slice(1) : null;
   payload.category = guessCategory(original.toLowerCase());
 
   const wordCount = original.split(' ').length;
   const confidence = found.length > 0 || wordCount <= 3 ? 'high' : 'low';
-  return { payload, confidence, found };
+  // No clock time in a one-time sentence: the time above is a default the person did not choose.
+  const assumedTime = schedule === 'once' && !found.includes('relative') && !clock;
+  return { payload, confidence, found, assumedTime };
 }
 
 function namedDate(nowP, day, month, yearText) {
@@ -354,6 +360,56 @@ function cleanTitle(text) {
     t = next;
   }
   return t.replace(/^[\s.:\-–—]+|[\s.:\-–—]+$/g, '').trim();
+}
+
+const wordsIn = (t) => t.split(/\s+/).filter(Boolean).length;
+
+/**
+ * "call dad, ask about fees" / "buy groceries: milk, eggs" / "pay fees (use the portal)" / "exam - bring calculator":
+ * the first part is the title, whatever follows is the description. `text` is the lower-case sentence with the date,
+ * time and repeat words already taken out. A single leading word before a comma ("milk, eggs, bread") is a list, not a title.
+ */
+function splitTitleAndDescription(text) {
+  let rest = text;
+  for (let guard = 0; guard < 4; guard++) {
+    const cut = firstDetailBreak(rest);
+    if (!cut) return { title: cleanTitle(rest), description: null };
+    const title = cleanTitle(rest.slice(0, cut.index));
+    const after = rest.slice(cut.index + cut.length);
+    // "remind me: call mom" / "reminder about the exam": a first part that is only filler is not a title
+    if (!title) {
+      rest = after;
+      continue;
+    }
+    const description = after.replace(/[()|]/g, ' ').replace(/\s*,\s*/g, ', ').replace(/\s+/g, ' ').replace(/^[\s.,:;\-–—]+|[\s.,:;\-–—]+$/g, '');
+    return { title, description: description || null };
+  }
+  return { title: cleanTitle(rest), description: null };
+}
+
+/** The first place where the main sentence stops and the extra detail starts, or null. */
+function firstDetailBreak(text) {
+  const candidates = [/\s[-–—]\s/, /[:;]/, /\(/, /\s(?:because|about|regarding|including|include)\s/];
+  let best = null;
+  for (const re of candidates) {
+    const m = re.exec(text);
+    if (m && (!best || m.index < best.index)) best = { index: m.index, length: m[0].length };
+  }
+  // A comma only starts the detail after a real title of two or more words ("milk, eggs, bread" is a list)
+  const comma = text.indexOf(',');
+  if (comma > 0 && wordsIn(text.slice(0, comma)) >= 2 && (!best || comma < best.index)) best = { index: comma, length: 1 };
+  return best;
+}
+
+/** The sentence was lower-cased to match words; give names and abbreviations back their capitals ("DSA", "Rahul"). */
+function restoreCase(text, original) {
+  const map = new Map();
+  for (const w of original.split(' ')) {
+    const core = w.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '');
+    if (core && core !== core.toLowerCase() && !map.has(core.toLowerCase())) map.set(core.toLowerCase(), core);
+  }
+  if (!map.size) return text;
+  return text.replace(/[\p{L}\p{N}]+/gu, (w) => map.get(w.toLowerCase()) || w);
 }
 
 function guessCategory(lower) {

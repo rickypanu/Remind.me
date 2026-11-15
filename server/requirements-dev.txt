@@ -1,4 +1,4 @@
-# Deadline API - development and CI dependencies.
+# GetRemindMe API - development and CI dependencies.
 #   pip install -r requirements-dev.txt
 # Lock exactly like requirements.txt (see the note there).
 

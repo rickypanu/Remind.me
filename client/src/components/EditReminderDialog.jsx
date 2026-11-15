@@ -3,6 +3,8 @@ import { X, Check, Repeat, Loader2 } from "lucide-react";
 import Modal from "./Modal";
 import { istInputToUtcIso, utcToIstInput } from "../utils/date";
 import notify from "../utils/notify";
+import TaskExtrasFields from "./TaskExtrasFields";
+import { cleanAlerts, cleanSteps } from "../utils/taskExtras";
 
 const BASE_CATEGORIES = ["Assignment", "Project", "Exam / Quiz", "Placement / Internship", "Extracurricular", "Personal"];
 
@@ -22,6 +24,11 @@ export default function EditReminderDialog({ task, onClose, onSave }) {
     category: task.category,
     due_date: utcToIstInput(task.due_date),
     time_of_day: task.time_of_day || "09:00",
+  });
+  const [extras, setExtras] = useState({
+    priority: task.priority === "high" ? "high" : "normal",
+    subtasks: (task.subtasks || []).map((x) => ({ ...x })),
+    alertOffsets: Array.isArray(task.alert_offsets) ? [...task.alert_offsets] : null,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -46,6 +53,9 @@ export default function EditReminderDialog({ task, onClose, onSave }) {
       title: form.title.trim(),
       description: form.description.trim() || null,
       category: form.category,
+      priority: extras.priority,
+      subtasks: cleanSteps(extras.subtasks),
+      alert_offsets: cleanAlerts(extras.alertOffsets),
     };
     if (recurring) {
       if (!form.time_of_day) return setError("Please choose a time.");
@@ -120,6 +130,8 @@ export default function EditReminderDialog({ task, onClose, onSave }) {
             </div>
           </div>
         </div>
+
+        <div className="mt-5"><TaskExtrasFields value={extras} onChange={setExtras} /></div>
 
         <div className="mt-6 flex gap-3">
           <button type="button" onClick={onClose} disabled={saving} className="flex min-h-[46px] flex-1 items-center justify-center rounded-xl bg-slate-100 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 active:scale-[0.98] disabled:opacity-50">

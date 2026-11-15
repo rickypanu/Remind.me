@@ -23,6 +23,7 @@ Delta sync (``list_changes``)
 
 import base64
 import binascii
+import json
 import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -54,6 +55,11 @@ _EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
 _MIN_OID = ObjectId("0" * 24)
 _MS = timedelta(milliseconds=1)
 NO_UPCOMING = "That schedule has no upcoming occurrence. Check the end date."
+
+
+def _dump_subtasks(items) -> str:
+    """The checklist as JSON text (it is encrypted at rest like the title)."""
+    return json.dumps([{"id": i.id, "text": i.text, "done": bool(i.done)} for i in items], ensure_ascii=False)
 
 
 # ---------------------------------------------------------------------------------------------------------
@@ -134,7 +140,11 @@ class TaskService:
             "weekdays": task.weekdays,
             "ends_on": task.ends_on,
             "completed_count": 0,
+            "priority": task.priority,
+            "alert_offsets": task.alert_offsets,
         }
+        if task.subtasks:
+            doc["subtasks_json"] = _dump_subtasks(task.subtasks)
         if task.client_id:
             doc["client_id"] = task.client_id
         if task.schedule_type in RECURRING_TYPES:
@@ -230,6 +240,12 @@ class TaskService:
         ensure_allowed(changes.get("title"), changes.get("description"), changes.get("category"))
 
         plain = {k: changes[k] for k in ("title", "description", "category") if k in changes}
+        if changes.get("priority") is not None:
+            plain["priority"] = changes["priority"]
+        if "subtasks" in changes and changes["subtasks"] is not None:
+            plain["subtasks_json"] = _dump_subtasks(payload.subtasks or [])
+        if "alert_offsets" in changes:
+            plain["alert_offsets"] = changes["alert_offsets"]
         schedule_type = task.get("schedule_type", "once")
 
         if schedule_type == "once":
@@ -251,7 +267,7 @@ class TaskService:
 
         if not plain:
             return shape_response(task)
-        clear = NOTIFICATION_FLAGS if "due_date" in plain else ()
+        clear = NOTIFICATION_FLAGS if ("due_date" in plain or "alert_offsets" in plain) else ()
         fresh = await self.repo.update_fields(user_id, oid, plain, clear_flags=clear)
         if fresh is None:
             raise NotFound("Task not found")

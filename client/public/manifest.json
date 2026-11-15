@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "short_name": "Deadline",
-  "name": "Deadline: Specific, Daily & Weekly Reminders",
+  "short_name": "GetRemindMe",
+  "name": "GetRemindMe: Specific, Daily & Weekly Reminders",
   "icons": [
     {
       "src": "/icon-192x192.png",
@@ -18,7 +18,7 @@
   ],
   "start_url": "/",
   "background_color": "#f9fafb",
-  "theme_color": "#070B1F",
+  "theme_color": "#ffffff",
   "display": "standalone",
   "orientation": "any",
   "description": "Specific, daily and weekly reminders delivered to Telegram and your browser.",

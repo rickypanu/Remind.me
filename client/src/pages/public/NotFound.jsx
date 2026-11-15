@@ -10,7 +10,7 @@ export default function NotFound() {
   const isLoggedIn = hasSession();
   usePageMeta({
     title: "Page not found (404)",
-    description: "The page you are looking for doesn't exist or has moved. Head back to Deadline.",
+    description: "The page you are looking for doesn't exist or has moved. Head back to GetRemindMe.",
     noindex: true,
   });
 

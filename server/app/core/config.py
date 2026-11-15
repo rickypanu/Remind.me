@@ -234,7 +234,7 @@ class Settings(BaseSettings):
     # ---- email (Brevo) -------------------------------------------------------------------
     brevo_api_key: SecretStr | None = None
     email_sender_address: EmailStr | None = None
-    email_sender_name: str = "Deadline"
+    email_sender_name: str = "GetRemindMe"
 
     # ---- web push (VAPID) ----------------------------------------------------------------
     vapid_private_key: SecretStr | None = None

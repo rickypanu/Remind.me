@@ -52,10 +52,10 @@ export default function Register() {
       </button>
 
       <div className="text-center mb-8">
-        <LogoMark size={52} className="inline-block rounded-2xl shadow-md shadow-violet-500/25 mb-4" />
+        <LogoMark size={52} className="inline-block rounded-2xl shadow-md shadow-blue-500/25 mb-4" />
         <h1 className="text-3xl font-extrabold text-[color:var(--rm-ink)] tracking-tight">{t("Create your account")}</h1>
         <p className="mt-2 text-slate-600 font-medium">
-          {t("Join Deadline and conquer your deadlines.")}
+          {t("Join GetRemindMe and conquer your deadlines.")}
         </p>
         <p className="mt-1 text-xs text-slate-500">{t("Free. Takes about 30 seconds.")}</p>
       </div>

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Coffee, Sun, CalendarDays, X } from "lucide-react";
+import { Coffee, Sun, CalendarDays, X, Search, Download } from "lucide-react";
 import { APP_TIMEZONE, formatDueIst, formatIstDayLabel, getIstHour, istDateKey } from "../../utils/date";
 import TaskCard from "../tasks/TaskCard";
 import Header from "../components/Header";
@@ -14,7 +14,9 @@ import useTaskStats from "../../hooks/useTaskStats";
 import { filterByIstDate, greetingForHour } from "./buckets";
 import CompletedArchive from "./CompletedArchive";
 import DashboardTabs from "./DashboardTabs";
-import DateFilterButton from "./DateFilterButton";
+import CalendarPopover from "./CalendarPopover";
+import CategoryBar from "../../components/CategoryBar";
+import { categoryCounts, dayCounts, downloadText, exportText, groupByCategory } from "../../utils/taskExtras";
 import EmptyState from "./EmptyState";
 import MagicAddForm from "./MagicAddForm";
 import InstallBanner from "../../components/InstallBanner";
@@ -44,6 +46,11 @@ export default function Dashboard() {
 
   const [activeTab, setActiveTab] = useState("today");
   const [selectedDate, setSelectedDate] = useState(null); // "YYYY-MM-DD" (an IST day) or null
+  const [catFilter, setCatFilter] = useState(null);
+  const [grouped, setGrouped] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   // Auth guard (expired sessions are handled globally by the API client)
   useEffect(() => {
@@ -98,12 +105,29 @@ export default function Dashboard() {
     ],
     [today.length, upcoming.length, t]
   );
-  const displayedTasks = activeTab === "upcoming" ? upcoming : today;
+  const categories = useMemo(() => categoryCounts(tasks), [tasks]);
+  useEffect(() => {
+    if (catFilter && !categories.some((c) => c.name === catFilter)) setCatFilter(null);
+  }, [categories, catFilter]);
+  const byCat = useCallback((list) => (catFilter ? list.filter((x) => x.category === catFilter) : list), [catFilter]);
+  const titles = useMemo(() => [...new Set(tasks.map((x) => x.title).filter(Boolean))].slice(0, 200), [tasks]);
+  const counts = useMemo(() => dayCounts(tasks), [tasks]);
+  const needle = query.trim().toLowerCase();
+  const searchHits = useMemo(() => {
+    if (!searching || !needle) return [];
+    return byCat(tasks.filter((x) => !x.deleted && `${x.title} ${x.category || ""} ${x.description || ""}`.toLowerCase().includes(needle)))
+      .filter((x) => (statusFilter === "done" ? x.status === "completed" : statusFilter === "pending" ? x.status !== "completed" : true));
+  }, [searching, needle, tasks, byCat, statusFilter]);
+  const displayedTasks = byCat(activeTab === "upcoming" ? upcoming : today);
+  const filteredUpcomingGroups = useMemo(
+    () => (grouped ? [] : upcomingGroups.map((g) => ({ ...g, tasks: byCat(g.tasks) })).filter((g) => g.tasks.length)),
+    [upcomingGroups, byCat, grouped]
+  );
   const empty = EMPTY_STATES[activeTab];
 
   // Calendar filter: every reminder due on the picked IST day, replacing the Today / Upcoming list until cleared.
   const dateLabel = useMemo(() => (selectedDate ? formatIstDayLabel(selectedDate) : ""), [selectedDate]);
-  const dateMatches = useMemo(() => (selectedDate ? filterByIstDate(tasks, selectedDate) : []), [tasks, selectedDate]);
+  const dateMatches = useMemo(() => (selectedDate ? byCat(filterByIstDate(tasks, selectedDate)) : []), [tasks, selectedDate, byCat]);
   const dateGroups = useMemo(() => [{ key: "picked", label: dateLabel, tasks: dateMatches }], [dateLabel, dateMatches]);
   const changeTab = useCallback((id) => {
     setSelectedDate(null); // choosing Today / Upcoming leaves the date filter
@@ -140,7 +164,7 @@ export default function Dashboard() {
 
         <NextDeadline tasks={tasks} />
 
-        <MagicAddForm isOffline={isOffline} />
+        <MagicAddForm isOffline={isOffline} titles={titles} />
 
         <InstallBanner />
 
@@ -156,14 +180,56 @@ export default function Dashboard() {
           overdue={missed.length}
         />
 
-        <OverdueBanner tasks={missed} cardProps={cardProps} />
+        <OverdueBanner tasks={byCat(missed)} cardProps={cardProps} />
 
         <div className="mb-6 flex items-stretch gap-2">
           <div className="min-w-0 flex-1">
             <DashboardTabs tabs={tabs} active={selectedDate ? null : activeTab} onChange={changeTab} panelId="task-panel" />
           </div>
-          <DateFilterButton value={selectedDate} label={dateLabel} onChange={setSelectedDate} />
+          <CalendarPopover value={selectedDate} label={dateLabel} counts={counts} onChange={setSelectedDate} />
+          <button
+            type="button"
+            onClick={() => { setSearching((x) => !x); setQuery(""); }}
+            aria-pressed={searching}
+            aria-label={t("Search reminders")}
+            title={t("Search reminders")}
+            className={`min-w-[48px] self-stretch rounded-2xl border px-3 flex items-center justify-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${searching ? "bg-blue-600 border-blue-600 text-white" : "bg-slate-200/60 border-transparent text-slate-600 hover:text-slate-900"}`}
+          >
+            <Search size={19} strokeWidth={2.25} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={() => downloadText("deadline-reminders.txt", exportText(tasks))}
+            aria-label={t("Export my reminders")}
+            title={t("Export my reminders")}
+            className="min-w-[48px] self-stretch rounded-2xl border border-transparent bg-slate-200/60 px-3 flex items-center justify-center text-slate-600 transition-colors hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          >
+            <Download size={19} strokeWidth={2.25} aria-hidden="true" />
+          </button>
         </div>
+
+        {searching && (
+          <div className="mb-4">
+            <input
+              type="search"
+              autoFocus
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t("Search your reminders…")}
+              aria-label={t("Search your reminders…")}
+              className="min-h-[46px] w-full rounded-2xl border border-slate-200 bg-white px-4 text-[15px] text-slate-900 placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/10"
+            />
+            <div className="mt-2 flex gap-2">
+              {[["all", "All"], ["pending", "To do"], ["done", "Done"]].map(([id, label]) => (
+                <button key={id} type="button" aria-pressed={statusFilter === id} onClick={() => setStatusFilter(id)} className={`h-8 rounded-full px-3.5 text-[13px] font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${statusFilter === id ? "bg-blue-600 text-white" : "bg-slate-200/60 text-slate-600"}`}>
+                  {t(label)}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <CategoryBar categories={categories} value={catFilter} onChange={setCatFilter} grouped={grouped} onToggleGrouped={() => setGrouped((g) => !g)} />
 
         {selectedDate && (
           <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-2.5">
@@ -193,6 +259,22 @@ export default function Dashboard() {
               <TaskSkeleton />
               <TaskSkeleton />
             </div>
+          ) : searching && needle ? (
+            <div className="mb-8">
+              {searchHits.length === 0 ? (
+                <EmptyState Icon={Search} title={t("No matches")} body={t("Try a different word.")} cta={t("Add a reminder")} />
+              ) : (
+                <TaskGroups groups={[{ key: "search", label: `${searchHits.length} ${t("found")}`, tasks: searchHits }]} cardProps={cardProps} />
+              )}
+            </div>
+          ) : grouped && !selectedDate ? (
+            <div className="mb-8">
+              {displayedTasks.length === 0 && activeTab === "today" ? (
+                <EmptyState Icon={empty.Icon} title={t(empty.title)} body={t(empty.body)} cta={t(empty.cta)} />
+              ) : (
+                <TaskGroups groups={groupByCategory(activeTab === "upcoming" ? byCat(upcoming) : displayedTasks)} cardProps={cardProps} />
+              )}
+            </div>
           ) : selectedDate ? (
             <div className="mb-8">
               {dateMatches.length === 0 ? (
@@ -201,9 +283,9 @@ export default function Dashboard() {
                 <TaskGroups groups={dateGroups} cardProps={cardProps} />
               )}
             </div>
-          ) : activeTab === "upcoming" && upcomingGroups.length > 0 ? (
+          ) : activeTab === "upcoming" && filteredUpcomingGroups.length > 0 ? (
             <div className="mb-8">
-              <TaskGroups groups={upcomingGroups} cardProps={cardProps} />
+              <TaskGroups groups={filteredUpcomingGroups} cardProps={cardProps} />
             </div>
           ) : (
             <div className="grid gap-3 mb-8">

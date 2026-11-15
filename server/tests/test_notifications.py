@@ -372,9 +372,10 @@ class RulesAndSchedulerTests(Base):
             "notified_tele_60m", "notified_tele_10m", "notified_tele_1m",
             "notified_web_60m", "notified_web_10m", "notified_web_1m",
         }
-        self.assertEqual(set(NOTIFICATION_FLAGS), old)
-        self.assertEqual(len(NOTIFICATION_FLAGS), len(old))
-        self.assertEqual(set(rules.NOTIFICATION_FLAGS), old)
+        new = {f"notified_{c}_{m}m" for c in ("tele", "web") for m in (1440, 180)}  # the opt-in early alerts
+        self.assertEqual(set(NOTIFICATION_FLAGS), old | new)
+        self.assertEqual(len(NOTIFICATION_FLAGS), len(old | new))
+        self.assertEqual(set(rules.NOTIFICATION_FLAGS), old | new)
 
     def test_scheduler_registers_jobs_for_configured_channels_only(self):
         scheduler = start_scheduler(self.n)

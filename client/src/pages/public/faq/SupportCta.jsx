@@ -2,7 +2,7 @@ import React from "react";
 import { Mail } from "lucide-react";
 import { mailto } from "../../../config/site";
 
-const SUPPORT_MAILTO = mailto("Support Request - Deadline");
+const SUPPORT_MAILTO = mailto("Support Request - GetRemindMe");
 
 export default function SupportCta() {
   return (

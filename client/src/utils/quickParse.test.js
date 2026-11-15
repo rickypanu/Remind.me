@@ -96,3 +96,38 @@ describe('parseQuick', () => {
     expect(run('assignment due sunday').title).toBe('Assignment');
   });
 });
+
+describe('title and description', () => {
+  const at = (s) => parseQuick(s, NOW);
+  it('splits a detail after a dash into the description', () => {
+    const r = at('Submit DSA assignment tomorrow 6pm - include the report and code');
+    expect(r.payload.title).toBe('Submit DSA assignment');
+    expect(r.payload.description).toBe('Include the report and code');
+  });
+  it('splits after a colon, keeping the list in the description', () => {
+    const r = at('Buy groceries: milk, eggs, bread tomorrow morning');
+    expect(r.payload.title).toBe('Buy groceries');
+    expect(r.payload.description).toBe('Milk, eggs, bread');
+  });
+  it('splits after a comma once the title has two words', () => {
+    const r = at('Call dad tomorrow 8pm, ask about fees');
+    expect(r.payload.title).toBe('Call dad');
+    expect(r.payload.description).toBe('Ask about fees');
+  });
+  it('reads brackets and "about" as details', () => {
+    expect(at('Pay fees by 20th (use the college portal)').payload.description).toBe('Use the college portal');
+    expect(at('Meeting with Rahul at 5pm about project demo').payload.title).toBe('Meeting with Rahul');
+  });
+  it('does not turn a one-word list start into a title', () => {
+    const r = at('milk, eggs, bread tomorrow');
+    expect(r.payload.description).toBe(null);
+  });
+  it('keeps capitals the person typed', () => {
+    expect(at('submit DSA lab file friday').payload.title).toBe('Submit DSA lab file');
+  });
+  it('says when the time was not given', () => {
+    expect(at('buy milk').assumedTime).toBe(true);
+    expect(at('buy milk tomorrow 6pm').assumedTime).toBe(false);
+    expect(at('call mom in 30 min').assumedTime).toBe(false);
+  });
+});

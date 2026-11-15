@@ -25,7 +25,7 @@ const Footer = () => {
           </p>
           <div className="mt-4 flex flex-col items-center sm:items-start gap-2 font-medium text-slate-600">
             <a
-              href={mailto('Deadline support')}
+              href={mailto('GetRemindMe support')}
               className="inline-flex items-center gap-2 break-all hover:text-blue-700 transition-colors rounded outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             >
               <Mail size={16} className="shrink-0" /> {SITE.supportEmail}

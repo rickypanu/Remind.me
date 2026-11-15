@@ -26,7 +26,7 @@ const ACCENT_IDS = ACCENTS.map((a) => a.id);
 
 const META_COLORS = {
   "classic-light": "#ffffff",
-  "classic-dark": "#0f1117",
+  "classic-dark": "#0d0f12",
   "minimal-light": "#fafafa",
   "minimal-dark": "#0a0a0a",
 };
@@ -50,15 +50,15 @@ const write = (key, value) => {
 const getInitialColorMode = () => {
   const saved = read(COLOR_MODE_KEY);
   if (saved === "light" || saved === "dark") return saved;
-  // No choice made yet: follow the device setting.
-  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  // No choice made yet: dark (the visitor can switch to light in Profile).
+  return "dark";
 };
 
 const getInitialThemeStyle = () => (read(THEME_STYLE_KEY) === "minimal" ? "minimal" : "classic");
 
 const getInitialAccent = () => {
   const saved = read(ACCENT_KEY);
-  return ACCENT_IDS.includes(saved) ? saved : "violet";
+  return ACCENT_IDS.includes(saved) ? saved : "blue";
 };
 
 const applyToDocument = (colorMode, themeStyle, accent) => {

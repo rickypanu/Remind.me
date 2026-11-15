@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { CheckCircle2, Circle, Trash2, Pencil, Clock, Loader2, Repeat, CloudOff } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { CheckCircle2, Circle, Trash2, Pencil, Clock, Loader2, Repeat, CloudOff, Flame, Timer, ListChecks } from 'lucide-react';
+import FocusTimerDialog from '../../components/FocusTimerDialog';
 import { getRelativeTime, formatDueIst } from '../../utils/date';
 import { feedback } from '../../feedback/feedback';
 import ConfirmDeleteDialog from '../../components/ConfirmDeleteDialog';
@@ -41,6 +42,9 @@ function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious }) {
   const { t } = useI18n();
   const [showConfirm, setShowConfirm] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
+  const [showFocus, setShowFocus] = useState(false);
+  const [swipe, setSwipe] = useState(0);
+  const drag = useRef(null);
   const [localStatus, setLocalStatus] = useState(task.status);
   const [isUpdating, setIsUpdating] = useState(false);
   const [justChecked, setJustChecked] = useState(false);
@@ -52,7 +56,7 @@ function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious }) {
   // Tap: the check animates and the sound / vibration fire at once; the list updates a beat later
   // (the change itself is saved locally first, so this works with no connection).
   const handleStatusChange = async (e) => {
-    e.stopPropagation();
+    e?.stopPropagation?.();
     if (isUpdating) return;
     const next = localStatus === 'pending' ? 'completed' : 'pending';
     setIsUpdating(true);
@@ -91,9 +95,37 @@ function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious }) {
     : 'bg-blue-500';
   const accent = '';
 
+  // Touch swipe: right = complete / undo, left = edit. Mouse and pen use the buttons.
+  const swipeHandlers = {
+    onPointerDown: (e) => { if (e.pointerType === 'touch') drag.current = { x: e.clientX, y: e.clientY, on: false }; },
+    onPointerMove: (e) => {
+      const d = drag.current;
+      if (!d) return;
+      const dx = e.clientX - d.x;
+      const dy = e.clientY - d.y;
+      if (!d.on && Math.abs(dx) > 14 && Math.abs(dx) > Math.abs(dy) * 2) d.on = true;
+      if (d.on) setSwipe(Math.max(-120, Math.min(120, dx)));
+    },
+    onPointerUp: () => {
+      const d = drag.current;
+      drag.current = null;
+      const dx = swipe;
+      setSwipe(0);
+      if (!d?.on) return;
+      if (dx > 84 && !isUpdating) handleStatusChange();
+      else if (dx < -84 && onEdit && !isCompleted) setShowEdit(true);
+    },
+    onPointerCancel: () => { drag.current = null; setSwipe(0); },
+  };
+  const steps = task.subtasks || [];
+  const stepsDone = steps.filter((x) => x.done).length;
+  const toggleStep = (id) => onEdit?.(task.id, { subtasks: steps.map((x) => (x.id === id ? { ...x, done: !x.done } : x)) });
+
   return (
     <>
       <div
+        {...swipeHandlers}
+        style={{ transform: swipe ? `translateX(${swipe}px)` : undefined, transition: swipe ? 'none' : 'transform .2s ease', touchAction: 'pan-y' }}
         className={`rm-card-in py-3.5 pl-5 pr-4 sm:py-4 sm:pl-6 sm:pr-5 rounded-2xl border transition-all duration-300 ease-out motion-reduce:transition-none group relative overflow-hidden ${accent} ${
           isCompleted || isPrevious
             ? 'bg-slate-50 border-slate-200 shadow-none'
@@ -139,6 +171,17 @@ function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious }) {
                   }`}
                 >
                   {task.category}
+                </span>
+              )}
+
+              {isHighPriority && (
+                <span className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700 sm:text-[11px]">
+                  <Flame size={11} strokeWidth={2.75} aria-hidden="true" /> High
+                </span>
+              )}
+              {steps.length > 0 && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-600">
+                  <ListChecks size={12} strokeWidth={2.5} aria-hidden="true" /> {stepsDone}/{steps.length}
                 </span>
               )}
 
@@ -192,6 +235,18 @@ function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious }) {
                 {task.description}
               </p>
             )}
+            {steps.length > 0 && !isCompleted && onEdit && (
+              <ul className="mt-2.5 space-y-1.5">
+                {steps.map((x) => (
+                  <li key={x.id}>
+                    <label className="flex cursor-pointer items-center gap-2 text-[13px] font-medium text-slate-700">
+                      <input type="checkbox" checked={!!x.done} onChange={() => toggleStep(x.id)} className="h-4 w-4 shrink-0 rounded accent-blue-600" />
+                      <span data-no-translate className={x.done ? 'text-slate-500 line-through' : ''}>{x.text}</span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {msLeft != null && !isCompleted && !isPrevious && (
@@ -203,6 +258,16 @@ function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious }) {
 
           {/* Edit + Delete: always visible so they work on touch devices too */}
           <div className="flex shrink-0 items-center -mr-1 -mt-1">
+            {!isCompleted && !isPrevious && (
+              <button
+                aria-label={`Focus timer: ${task.title}`}
+                title="Focus timer"
+                onClick={() => setShowFocus(true)}
+                className="text-slate-500 hover:text-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 p-2.5 rounded-xl hover:bg-blue-50 transition-all"
+              >
+                <Timer size={17} strokeWidth={2.5} />
+              </button>
+            )}
             {onEdit && !isCompleted && (
               <button
                 aria-label={`Edit task: ${task.title}`}
@@ -225,6 +290,7 @@ function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious }) {
         </div>
       </div>
 
+      {showFocus && <FocusTimerDialog task={task} onClose={() => setShowFocus(false)} />}
       {showEdit && <EditReminderDialog task={task} onClose={() => setShowEdit(false)} onSave={onEdit} />}
 
       {showConfirm && (

@@ -30,7 +30,7 @@ from app.notifications.messages import (
     get_tomorrow_digest_copy,
 )
 from app.notifications.queries import find_recurring_projected_to_day, find_tasks
-from app.notifications.rules import REMINDER_OFFSETS, minutes_left, reminder_flag, reminder_window
+from app.notifications.rules import REMINDER_OFFSETS, minutes_left, offsets_for, reminder_flag, reminder_window
 from app.repositories import TaskRepository
 from utils.recurrence import MISSED_GRACE, RECURRING_TYPES, advance_after_miss
 from utils.timezone import as_utc, ist_day_bounds_utc, now_ist, now_utc
@@ -62,6 +62,8 @@ def _claim_fields(channel: str, minutes: int, now) -> dict:
 async def _remind_one(n: Notifier, task: dict, minutes: int, now, users: dict) -> None:
     user = users.get(to_object_id(task.get("user_id")))
     title = task.get("title", "Untitled Task")
+    if task.get("priority") == "high":
+        title = f"\u2757 {title}"
     category = task.get("category", "Other")
 
     for channel in n.channels:
@@ -103,7 +105,7 @@ async def remind_upcoming_tasks(n: Notifier) -> None:
         else:
             query["$or"] = conditions
 
-        tasks = await find_tasks(n.db, query)
+        tasks = [t for t in await find_tasks(n.db, query) if minutes in offsets_for(t)]
         if not tasks:
             continue
         log.info("%d task(s) due in ~%d min", len(tasks), minutes)

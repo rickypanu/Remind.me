@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles, ArrowUp, Mic, MicOff, CalendarClock, Repeat } from "lucide-react";
 import useAutosizeTextarea from "../../hooks/useAutosizeTextarea";
 import useQuickAdd from "../../hooks/useQuickAdd";
@@ -8,6 +8,8 @@ import notify from "../../utils/notify";
 import { describeScheduleLocal, formatDueIst } from "../../utils/date";
 import { parseQuick } from "../../utils/quickParse";
 import { useI18n } from "../../i18n/index.jsx";
+import { deleteTask, editTask } from "../../offline/taskStore";
+import EditReminderDialog from "../../components/EditReminderDialog";
 
 const VOICE_LANG = "en-IN";
 const MAX_LENGTH = 500;
@@ -23,11 +25,18 @@ function whenLabel(payload) {
  * "Type or speak a reminder" box on the dashboard. The sentence is understood on the phone and saved at once
  * (see hooks/useQuickAdd.js), so it works in about a second, even offline or while the server is waking up.
  */
-export default function MagicAddForm({ isOffline }) {
+export default function MagicAddForm({ isOffline, titles = [] }) {
   const { t } = useI18n();
   const [text, setText] = useState("");
   const inputRef = useRef(null);
   const { add } = useQuickAdd();
+  const [added, setAdded] = useState(null); // the reminder just saved, so it can be undone or fixed for a few seconds
+  const [editing, setEditing] = useState(null);
+  useEffect(() => {
+    if (!added) return undefined;
+    const id = setTimeout(() => setAdded(null), 8000);
+    return () => clearTimeout(id);
+  }, [added]);
   useAutosizeTextarea(inputRef, text);
 
   const { listening, toggle } = useSpeechRecognition({
@@ -40,6 +49,11 @@ export default function MagicAddForm({ isOffline }) {
   });
 
   // Live preview of what will be saved (cheap: it is plain string work)
+  const suggestions = useMemo(() => {
+    const q = text.trim().toLowerCase();
+    if (q.length < 2 || q.length > 40) return [];
+    return titles.filter((x) => x.toLowerCase().startsWith(q) && x.toLowerCase() !== q).slice(0, 3);
+  }, [text, titles]);
   const preview = useMemo(() => (text.trim() ? parseQuick(text) : null), [text]);
 
   const handleSubmit = async (event) => {
@@ -52,7 +66,7 @@ export default function MagicAddForm({ isOffline }) {
       if (!result) return;
       setText(""); // clear first: the reminder is already saved on this device
       feedback.added();
-      notify.success(`${t("Added")} · ${whenLabel(result.parsed.payload)}${navigator.onLine ? "" : " (" + t("saved offline") + ")"}`);
+      setAdded({ task: result.task, label: whenLabel(result.parsed.payload), assumed: result.parsed.assumedTime });
       inputRef.current?.focus({ preventScroll: true });
     } catch (err) {
       console.error("Quick add failed:", err);
@@ -65,8 +79,8 @@ export default function MagicAddForm({ isOffline }) {
   return (
     <form onSubmit={handleSubmit} className="mb-4">
       <div
-        className={`rm-ios-card relative flex items-end gap-2 rounded-[24px] border bg-white p-2 pl-4 transition-[border-color,box-shadow] duration-200 ${
-          listening ? "border-red-300 ring-4 ring-red-500/10" : "border-slate-200 focus-within:border-blue-300 focus-within:ring-4 focus-within:ring-blue-500/10"
+        className={`rm-ios-card relative flex items-end gap-2 rounded-[24px] p-2 pl-4 transition-colors duration-200 ${
+          listening ? "bg-red-50" : "bg-white"
         }`}
       >
         <Sparkles className="mb-[15px] shrink-0 text-blue-600" size={20} strokeWidth={2.5} aria-hidden="true" />
@@ -114,7 +128,21 @@ export default function MagicAddForm({ isOffline }) {
 
       {/* Live preview, or one-tap examples while the box is empty */}
       <div className="mt-2.5 min-h-[28px] px-1" aria-live="polite">
-        {preview ? (
+        {preview && preview.payload.description && (
+          <p data-no-translate className="mb-1 truncate pl-[23px] text-[12.5px] text-slate-500">{preview.payload.description}</p>
+        )}
+        {!preview && added ? (
+          <p className="flex min-w-0 items-center gap-2 text-[13px] font-semibold text-slate-700">
+            <span className="min-w-0 flex-1 truncate">
+              <span data-no-translate className="text-slate-900">{added.task.title}</span> · {added.label}
+              {added.assumed ? <span className="font-medium text-slate-500"> · {t("time not given, set by default")}</span> : null}
+            </span>
+            <button type="button" onClick={async () => { const x = added.task; setAdded(null); await deleteTask(x.id, { silent: true }); }}
+              className="shrink-0 rounded-full px-2.5 py-1 text-blue-700 hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">{t("Undo")}</button>
+            <button type="button" onClick={() => { setEditing(added.task); setAdded(null); }}
+              className="shrink-0 rounded-full px-2.5 py-1 text-blue-700 hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">{t("Edit")}</button>
+          </p>
+        ) : preview ? (
           <p className="flex min-w-0 items-center gap-2 text-[13px] font-semibold text-slate-700">
             {preview.payload.schedule_type === "once" ? (
               <CalendarClock size={15} strokeWidth={2.4} className="shrink-0 text-blue-600" aria-hidden="true" />
@@ -123,6 +151,7 @@ export default function MagicAddForm({ isOffline }) {
             )}
             <span className="min-w-0 truncate">
               <span className="text-slate-900">{preview.payload.title}</span> · {whenLabel(preview.payload)}
+              {preview.assumedTime ? <span className="font-medium text-slate-500"> · {t("time not given, set by default")}</span> : null}
             </span>
           </p>
         ) : (
@@ -142,6 +171,22 @@ export default function MagicAddForm({ isOffline }) {
             ))}
           </div>
         )}
+        {suggestions.length > 0 && !listening && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {suggestions.map((x) => (
+              <button
+                key={x}
+                type="button"
+                data-no-translate
+                onClick={() => { setText(`${x} `); inputRef.current?.focus(); }}
+                className="max-w-[240px] truncate rounded-full bg-blue-50 px-3 py-1.5 text-[12.5px] font-semibold text-blue-700 hover:bg-blue-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 active:scale-95"
+              >
+                {x}
+              </button>
+            ))}
+          </div>
+        )}
+        {editing && <EditReminderDialog task={editing} onClose={() => setEditing(null)} onSave={editTask} />}
         {isOffline && !preview && (
           <p className="mt-1.5 text-[12px] font-semibold text-amber-700">{t("Offline: reminders are saved on this phone and upload later.")}</p>
         )}

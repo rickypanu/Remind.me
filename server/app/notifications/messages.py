@@ -84,6 +84,9 @@ def get_short_reminder_copy(task_title: str, category: str, minutes: int, html: 
     html=True escapes the title for Telegram's HTML parse mode."""
     emoji = _get_emoji(category)
     safe_title = escape(task_title) if html else task_title
+    if minutes >= 120:
+        span = "tomorrow" if minutes >= 1440 else f"in {minutes // 60} hours"
+        return f"{emoji} Due {span}", f"'{safe_title}' is due {span}. Plan ahead."
     unit = "minute" if minutes == 1 else "minutes"
     if minutes <= 1:
         return f"{emoji} Due in 1 minute!", f"'{safe_title}' is due right now. Finish up!"
