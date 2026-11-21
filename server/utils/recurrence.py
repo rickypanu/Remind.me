@@ -66,9 +66,31 @@ def next_occurrence(
     weekdays: Iterable[int] | None,
     after: datetime,
     ends_on: str | None = None,
+    interval_days: int = 1,
+    anchor: datetime | None = None,
 ) -> datetime | None:
-    """First occurrence strictly later than `after`, as a UTC datetime. None if the series has ended."""
+    """First occurrence strictly later than `after`, as a UTC datetime. None if the series has ended.
+
+    ``interval_days`` > 1 (daily reminders only, "every 3 days") steps from ``anchor`` (the occurrence just handled)
+    in whole IST days. Without an anchor (a brand-new reminder) the first occurrence is simply the next daily slot.
+    """
     if schedule_type not in RECURRING_TYPES:
+        return None
+    if schedule_type == "daily" and interval_days > 1 and anchor is not None:
+        t = parse_time_of_day(time_of_day)
+        end = parse_end_date(ends_on)
+        after_utc = as_utc(after)
+        anchor_day = as_utc(anchor).astimezone(IST).date()
+        ahead = (after_utc.astimezone(IST).date() - anchor_day).days
+        k = max(1, -(-ahead // interval_days))  # whole steps, rounded up
+        for _ in range(3):
+            day = anchor_day + timedelta(days=k * interval_days)
+            if end and day > end:
+                return None
+            candidate = datetime.combine(day, t, tzinfo=IST).astimezone(UTC)
+            if candidate > after_utc:
+                return candidate
+            k += 1
         return None
     t = parse_time_of_day(time_of_day)
     allowed = set(normalize_weekdays(weekdays)) if schedule_type == "weekly" else set(range(7))
@@ -90,7 +112,9 @@ def next_occurrence(
     return None
 
 
-def describe_schedule(schedule_type: str, time_of_day: str | None, weekdays: Iterable[int] | None = None) -> str:
+def describe_schedule(
+    schedule_type: str, time_of_day: str | None, weekdays: Iterable[int] | None = None, interval_days: int = 1
+) -> str:
     """Human readable summary, e.g. 'Every day at 9:00 AM' or 'Every Mon, Wed at 6:30 PM'."""
     if schedule_type not in RECURRING_TYPES or not time_of_day:
         return "One time"
@@ -98,6 +122,8 @@ def describe_schedule(schedule_type: str, time_of_day: str | None, weekdays: Ite
     hour12 = t.hour % 12 or 12
     stamp = f"{hour12}:{t.minute:02d} {'AM' if t.hour < 12 else 'PM'}"
     if schedule_type == "daily":
+        if interval_days and interval_days > 1:
+            return f"Every {interval_days} days at {stamp}"
         return f"Every day at {stamp}"
     days = normalize_weekdays(weekdays)
     if len(days) == 7:
@@ -115,6 +141,10 @@ def occurs_on_ist_day(task: dict, day_start_utc: datetime) -> bool:
     if end and day > end:
         return False
     if stype == "daily":
+        step = int(task.get("interval_days") or 1)
+        if step > 1 and task.get("due_date"):
+            gap = (day - as_utc(task["due_date"]).astimezone(IST).date()).days
+            return gap >= 0 and gap % step == 0
         return True
     return day.weekday() in set(normalize_weekdays(task.get("weekdays")))
 
@@ -129,6 +159,7 @@ def advance_after_completion(task: dict, now: datetime) -> dict:
     nxt = next_occurrence(
         task.get("schedule_type", "once"), task.get("time_of_day", "00:00"),
         task.get("weekdays"), max(as_utc(now), due), task.get("ends_on"),
+        int(task.get("interval_days") or 1), due,
     )
     unset = {f: "" for f in NOTIFICATION_FLAGS}
     if nxt is None:  # series is over (ends_on passed)
@@ -146,6 +177,7 @@ def advance_after_miss(task: dict, now: datetime) -> dict | None:
     nxt = next_occurrence(
         task.get("schedule_type", "once"), task.get("time_of_day", "00:00"),
         task.get("weekdays"), as_utc(now), task.get("ends_on"),
+        int(task.get("interval_days") or 1), as_utc(task["due_date"]) if task.get("due_date") else None,
     )
     if nxt is None:
         return {"set": {"status": "completed"}, "unset": {}, "inc": {"missed_count": 1}, "next_due": None}

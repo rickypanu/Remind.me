@@ -31,6 +31,7 @@ from app.notifications.messages import (
 )
 from app.notifications.queries import find_recurring_projected_to_day, find_tasks
 from app.notifications.rules import REMINDER_OFFSETS, minutes_left, offsets_for, reminder_flag, reminder_window
+from app.notifications.voice import voice_of
 from app.repositories import TaskRepository
 from utils.recurrence import MISSED_GRACE, RECURRING_TYPES, advance_after_miss
 from utils.timezone import as_utc, ist_day_bounds_utc, now_ist, now_utc
@@ -76,14 +77,16 @@ async def _remind_one(n: Notifier, task: dict, minutes: int, now, users: dict) -
             continue
 
         left = min(minutes, minutes_left(task["due_date"], now))
+        voice = voice_of(user)  # the tone this person chose: Friendly, Funny, Strict or Calm
+        seed = f"{task.get('_id')}|{task.get('due_date')}"
         if channel == "tele":
             if minutes == 60:
-                copy = await get_due_soon_copy(task_title=title, category=category)
+                copy = await get_due_soon_copy(task_title=title, category=category, voice=voice, seed=seed)
             else:
-                copy = get_short_reminder_copy(title, category, left, html=True)
+                copy = get_short_reminder_copy(title, category, left, html=True, voice=voice, seed=seed)
             delivery = await n.send_telegram(user, *copy)
         else:
-            copy = get_push_due_soon_copy(title) if minutes == 60 else get_short_reminder_copy(title, category, left)
+            copy = get_push_due_soon_copy(title, voice, seed) if minutes == 60 else get_short_reminder_copy(title, category, left, voice=voice, seed=seed)
             delivery = await n.send_push(user, *copy)
 
         if delivery is Delivery.FAILED:
@@ -130,14 +133,18 @@ async def _send_digest(n: Notifier, channel: str, user: dict | None, items: list
     if user is None:
         return
     if channel == "tele":
+        seed = f"{user.get('_id')}|{when}|{hour}"
+        voice = voice_of(user)
         if when == "today":
-            copy = await get_today_digest_copy(items, hour)
+            copy = await get_today_digest_copy(items, hour, voice, seed)
         else:
-            copy = await get_tomorrow_digest_copy(items)
+            copy = await get_tomorrow_digest_copy(items, voice, seed)
         await n.send_telegram(user, *copy)
     else:
         titles = [item["title"] for item in items]
-        copy = get_push_today_copy(titles) if when == "today" else get_push_tomorrow_copy(titles)
+        voice = voice_of(user)
+        seed = f"{user.get('_id')}|{when}|{hour}"
+        copy = get_push_today_copy(titles, voice, seed) if when == "today" else get_push_tomorrow_copy(titles, voice, seed)
         await n.send_push(user, *copy)
 
 

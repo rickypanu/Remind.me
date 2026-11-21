@@ -1,3 +1,4 @@
 # Replaced at build time by scripts/prerender.mjs (adds the Sitemap line for your domain).
 User-agent: *
 Allow: /
+Disallow: /join/

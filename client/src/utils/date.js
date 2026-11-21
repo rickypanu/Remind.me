@@ -118,9 +118,23 @@ export function getRelativeTime(value) {
 const WEEKDAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 /** Next daily/weekly occurrence (UTC ISO string) strictly after `afterMs`, or null if the series has ended. */
-export function nextOccurrenceIso(type, timeOfDay, weekdays = [], afterMs = Date.now(), endsOn = null) {
+export function nextOccurrenceIso(type, timeOfDay, weekdays = [], afterMs = Date.now(), endsOn = null, intervalDays = 1, anchorMs = null) {
   const [h, m] = String(timeOfDay || '09:00').split(':').map(Number);
   const todayStart = getIstDayRange(afterMs).start; // IST midnight of the day containing afterMs
+  // "Every N days" (daily reminders only): step in whole IST days from the occurrence just handled.
+  // Without an anchor (a brand-new reminder) the first occurrence is simply the next daily slot, as on the server.
+  if (type === 'daily' && intervalDays > 1 && anchorMs != null) {
+    const anchorStart = getIstDayRange(anchorMs).start;
+    const ahead = Math.round((todayStart - anchorStart) / DAY_MS);
+    let k = Math.max(1, Math.ceil(ahead / intervalDays));
+    for (let tries = 0; tries < 3; tries++, k++) {
+      const dayStart = anchorStart + k * intervalDays * DAY_MS;
+      if (endsOn && new Date(dayStart + IST_OFFSET_MS).toISOString().slice(0, 10) > endsOn) return null;
+      const candidate = dayStart + (h * 60 + m) * 60000;
+      if (candidate > afterMs) return new Date(candidate).toISOString();
+    }
+    return null;
+  }
   for (let i = 0; i <= 8; i++) {
     const dayStart = todayStart + i * DAY_MS;
     const candidate = dayStart + (h * 60 + m) * 60000;
@@ -137,11 +151,12 @@ export function nextOccurrenceIso(type, timeOfDay, weekdays = [], afterMs = Date
 }
 
 /** Same wording as the server's describe_schedule(), e.g. "Every Mon, Wed at 6:30 PM". */
-export function describeScheduleLocal(type, timeOfDay, weekdays = []) {
+export function describeScheduleLocal(type, timeOfDay, weekdays = [], intervalDays = 1) {
   if ((type !== 'daily' && type !== 'weekly') || !timeOfDay) return 'One time';
   const [h, m] = timeOfDay.split(':').map(Number);
   const stamp = `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
   const days = [...new Set(weekdays)].sort();
+  if (type === 'daily' && intervalDays > 1) return `Every ${intervalDays} days at ${stamp}`;
   if (type === 'daily' || days.length === 7) return `Every day at ${stamp}`;
   return `Every ${days.map((d) => WEEKDAY_SHORT[d]).join(', ')} at ${stamp}`;
 }

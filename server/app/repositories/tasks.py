@@ -28,7 +28,7 @@ LIVE: dict[str, Any] = {"deleted": {"$ne": True}}
 
 # Everything a tombstone forgets. What remains: _id, user_id, deleted, deleted_at, updated_at, purge_at.
 _TOMBSTONE_DROP: tuple[str, ...] = (
-    "title", "description", "category", "status", "due_date", "schedule_type", "time_of_day", "weekdays",
+    "title", "description", "category", "status", "due_date", "schedule_type", "time_of_day", "weekdays", "interval_days",
     "ends_on", "completed_count", "last_completed_at", "completed_at", "missed_count", "client_id", "created_at",
     *NOTIFICATION_FLAGS,
 )  # fmt: skip

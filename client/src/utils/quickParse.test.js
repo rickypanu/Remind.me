@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { parseQuick } from './quickParse';
+import { parseQuick, TIME_CHIPS } from './quickParse';
+import { habitKey, learnHabit } from './timeHabits';
 
 // Fri 30 Oct 2026, 21:58 IST
 const NOW = Date.parse('2026-10-30T21:58:00+05:30');
@@ -41,10 +42,14 @@ describe('parseQuick', () => {
   });
 
   it('uses the same defaults as the server', () => {
-    // no date, no time: 2 hours ahead, but 10 minutes when that would cross midnight (21:58 + 2h does)
-    expect(ist(run('submit report').due_date)).toBe('2026-10-30 23:58');
-    const early = parseQuick('submit report', Date.parse('2026-10-30T10:00:00+05:30')).payload;
-    expect(ist(early.due_date)).toBe('2026-10-30 12:00');
+    // no date, no time: about 2 hours ahead on a clean half hour; late at night (21:58 + 2h is past 10 pm) it waits for 9 am
+    expect(ist(run('submit report').due_date)).toBe('2026-10-31 09:00');
+    const early = parseQuick('submit report', Date.parse('2026-10-30T10:13:00+05:30')).payload;
+    expect(ist(early.due_date)).toBe('2026-10-30 12:30');
+    const small = parseQuick('submit report', Date.parse('2026-10-30T02:10:00+05:30')).payload;
+    expect(ist(small.due_date)).toBe('2026-10-30 09:00'); // never rings in the small hours
+    const today = parseQuick('submit report today', Date.parse('2026-10-30T22:41:00+05:30')).payload;
+    expect(ist(today.due_date)).toBe('2026-10-30 22:55'); // "today" said late: soon, on a 5-minute mark
     // a time that has passed today means tomorrow
     expect(ist(run('raat 9 baje dawai').due_date)).toBe('2026-10-31 21:00');
   });
@@ -73,7 +78,7 @@ describe('parseQuick', () => {
   it('reads ISO dates year first and rejects impossible minutes', () => {
     expect(ist(run('2026-11-05 submit lab file').due_date)).toBe('2026-11-05 09:00');
     expect(run('5.75pm call').due_date).toBeDefined();
-    expect(ist(run('5.75pm call').due_date)).toBe('2026-10-30 23:58'); // not a time: falls back to the default
+    expect(ist(run('5.75pm call').due_date)).toBe('2026-10-31 09:00'); // not a time: falls back to the default
   });
 
   it('never returns a weekly repeat without a weekday', () => {
@@ -81,7 +86,7 @@ describe('parseQuick', () => {
   });
 
   it('waits for the next leap year for 29 Feb', () => {
-    expect(ist(parseQuick('29 feb party', Date.parse('2028-03-10T10:00:00+05:30')).payload.due_date)).toBe('2032-02-29 09:00');
+    expect(ist(parseQuick('29 feb exam', Date.parse('2028-03-10T10:00:00+05:30')).payload.due_date)).toBe('2032-02-29 09:00');
   });
 
   it('reads a bare day of the month ("by 15th")', () => {
@@ -97,38 +102,135 @@ describe('parseQuick', () => {
   });
 });
 
-describe('title and description', () => {
+describe('title only', () => {
   const at = (s) => parseQuick(s, NOW);
-  it('splits a detail after a dash into the description', () => {
-    const r = at('Submit DSA assignment tomorrow 6pm - include the report and code');
-    expect(r.payload.title).toBe('Submit DSA assignment');
-    expect(r.payload.description).toBe('Include the report and code');
+  const title = (s) => at(s).payload.title;
+  it('never fills the description: the sentence is cleaned and kept as the title', () => {
+    for (const s of ['Submit DSA assignment tomorrow 6pm - include the report and code', 'Buy groceries: milk, eggs, bread tomorrow morning', 'Pay fees by 20th (use the college portal)']) {
+      expect(at(s).payload.description).toBe(null);
+    }
+    expect(title('Submit DSA assignment tomorrow 6pm - include the report and code')).toBe('Submit DSA assignment, include the report and code');
+    expect(title('Buy groceries: milk, eggs, bread tomorrow morning')).toBe('Buy groceries, milk, eggs, bread');
+    expect(title('Call dad tomorrow 8pm, ask about fees')).toBe('Call dad, ask about fees');
+    expect(title('Meeting with Rahul at 5pm about project demo')).toBe('Meeting with Rahul about project demo');
   });
-  it('splits after a colon, keeping the list in the description', () => {
-    const r = at('Buy groceries: milk, eggs, bread tomorrow morning');
-    expect(r.payload.title).toBe('Buy groceries');
-    expect(r.payload.description).toBe('Milk, eggs, bread');
+  it('drops lead-in words, however many', () => {
+    expect(title('I need to remember to bring my laptop charger and id card for tomorrows exam at 9')).toBe('Bring laptop charger and id card for exam');
+    expect(title("don't forget to pay rent")).toBe('Pay rent');
+    expect(title('remind me that i have to call the plumber')).toBe('Call the plumber');
+    expect(title('please remind me to drink water')).toBe('Drink water');
+    expect(title('kal subah 7 baje gym jana hai')).toBe('Gym jana');
   });
-  it('splits after a comma once the title has two words', () => {
-    const r = at('Call dad tomorrow 8pm, ask about fees');
-    expect(r.payload.title).toBe('Call dad');
-    expect(r.payload.description).toBe('Ask about fees');
+  it('takes out the word left standing before a removed date', () => {
+    expect(title('submit the DBMS lab file to Prof Sharma before 5:45pm on 25th')).toBe('Submit the DBMS lab file to Prof Sharma');
+    expect(title('submit by friday the lab record')).toBe('Submit the lab record');
+    expect(title('assignment due sunday')).toBe('Assignment');
   });
-  it('reads brackets and "about" as details', () => {
-    expect(at('Pay fees by 20th (use the college portal)').payload.description).toBe('Use the college portal');
-    expect(at('Meeting with Rahul at 5pm about project demo').payload.title).toBe('Meeting with Rahul');
+  it('cuts a very long sentence where one thought ends', () => {
+    const t = title('finish the chemistry practical file and submit it to the lab assistant before the deadline tomorrow');
+    expect(t).toBe('Finish the chemistry practical file');
+    const long = title('prepare slides for the quarterly review meeting with every department head about hiring plans');
+    expect(long.split(' ').length <= 9).toBe(true);
+    expect(long).toBe('Prepare slides for the quarterly review meeting');
   });
-  it('does not turn a one-word list start into a title', () => {
-    const r = at('milk, eggs, bread tomorrow');
-    expect(r.payload.description).toBe(null);
+  it('falls back to "Reminder" when only a date or time was said', () => {
+    expect(title('tomorrow')).toBe('Reminder');
+    expect(title('7pm')).toBe('Reminder');
+    expect(title('remind me tomorrow 5pm')).toBe('Reminder');
   });
   it('keeps capitals the person typed', () => {
-    expect(at('submit DSA lab file friday').payload.title).toBe('Submit DSA lab file');
+    expect(title('submit DSA lab file friday')).toBe('Submit DSA lab file');
   });
   it('says when the time was not given', () => {
     expect(at('buy milk').assumedTime).toBe(true);
     expect(at('buy milk tomorrow 6pm').assumedTime).toBe(false);
     expect(at('call mom in 30 min').assumedTime).toBe(false);
+  });
+});
+
+describe('times people do not spell out', () => {
+  const when = (s, now = NOW) => ist(parseQuick(s, now).payload.due_date);
+  // Sat 21 Nov 2026, 20:33 IST
+  const SAT = Date.parse('2026-11-21T20:33:00+05:30');
+  it('uses clean times, never 10:33 pm', () => {
+    expect(when('pay electricity bill', SAT)).toBe('2026-11-22 09:00');
+    expect(when('pay electricity bill', Date.parse('2026-11-21T14:41:00+05:30'))).toBe('2026-11-21 17:00');
+    expect(when('pay electricity bill', Date.parse('2026-11-21T14:11:00+05:30'))).toBe('2026-11-21 16:30');
+  });
+  it('reads after lunch, after dinner, before bed, end of day', () => {
+    expect(when('remind me after lunch to call the plumber', Date.parse('2026-11-21T10:00:00+05:30'))).toBe('2026-11-21 13:30');
+    expect(when('take medicine after dinner', Date.parse('2026-11-21T10:00:00+05:30'))).toBe('2026-11-21 21:00');
+    expect(when('take medicine before bed', SAT)).toBe('2026-11-21 22:30');
+    expect(when('send the report by end of day', Date.parse('2026-11-21T10:00:00+05:30'))).toBe('2026-11-21 17:00');
+    expect(parseQuick('take medicine after dinner', SAT).payload.title).toBe('Take medicine');
+  });
+  it('reads "9 15 am", "half past 7", "quarter to 6"', () => {
+    expect(when('tomorrow 9 15 am interview with amazon', SAT)).toBe('2026-11-22 09:15');
+    expect(parseQuick('tomorrow 9 15 am interview with amazon', SAT).payload.title).toBe('Interview with amazon');
+    expect(when('tomorrow half past 7 pm call mom', SAT)).toBe('2026-11-22 19:30');
+    expect(when('tomorrow quarter to 6 pm call mom', SAT)).toBe('2026-11-22 17:45');
+    expect(when('tomorrow quarter past 3 meeting', SAT)).toBe('2026-11-22 15:15');
+  });
+  it('reads "tomorrows" and "tomorrow at 9" as the morning', () => {
+    expect(when('bring id card for tomorrows exam at 9', SAT)).toBe('2026-11-22 09:00');
+    expect(when("tomorrow's viva at 10", SAT)).toBe('2026-11-22 10:00');
+    expect(when('tomorrow at 3 meeting', SAT)).toBe('2026-11-22 15:00');
+  });
+  it('knows which hours are am for wake-up words and pm for dinner words', () => {
+    expect(parseQuick('wake up at 6 daily', SAT).payload).toMatchObject({ schedule_type: 'daily', time_of_day: '06:00', title: 'Wake up' });
+    expect(when('dinner at 8 with friends', Date.parse('2026-11-21T15:00:00+05:30'))).toBe('2026-11-21 20:00');
+    expect(when('dinner at 8 with friends', SAT)).toBe('2026-11-22 20:00');
+    expect(when('alarm at 5', SAT)).toBe('2026-11-22 05:00');
+  });
+  it('uses the usual time of a sentence when only the day is given', () => {
+    expect(when('call mom tomorrow', SAT)).toBe('2026-11-22 18:00');
+    expect(when('dinner with rahul saturday', Date.parse('2026-11-18T10:00:00+05:30'))).toBe('2026-11-21 20:00');
+    expect(when('submit lab file tomorrow', SAT)).toBe('2026-11-22 09:00');
+  });
+  it('offers one-tap times only when no time was said', () => {
+    expect(TIME_CHIPS.map((c) => c.word)).toEqual(['morning', 'afternoon', 'evening', 'night']);
+    expect(when('buy milk evening', Date.parse('2026-11-21T10:00:00+05:30'))).toBe('2026-11-21 18:00');
+  });
+});
+
+describe('mistakes found by trying real sentences', () => {
+  const SAT = Date.parse('2026-11-21T20:33:00+05:30');
+  const at = (s) => parseQuick(s, SAT).payload;
+  it('does not turn "hr" (human resources) into hours', () => {
+    expect(at('send resume to hr by friday 5 pm').title).toBe('Send resume to hr');
+    expect(ist(at('call mom in 2 hrs').due_date)).toBe('2026-11-21 22:33');
+  });
+  it('reads "at 10" in a repeat as the morning, not the next time it happens tonight', () => {
+    expect(at('standup at 10 daily')).toMatchObject({ schedule_type: 'daily', time_of_day: '10:00' });
+    expect(at('gym every monday at 7')).toMatchObject({ time_of_day: '07:00' });
+  });
+  it('drops "I have a", "really" and a trailing "please remind me"', () => {
+    expect(at('i have a viva on 28th november at 10 am please remind me').title).toBe('Viva');
+    expect(at('i should really start studying for the endsem exam on 5th december').title).toBe('Start studying for the endsem exam');
+  });
+});
+
+describe('usual times', () => {
+  const SAT = Date.parse('2026-11-21T20:33:00+05:30');
+  it('is learned from a said time, after the same time twice, and only used when no time is said', () => {
+    let habits = {};
+    habits = learnHabit(habits, parseQuick('gym tomorrow 6am', SAT));
+    expect(parseQuick('gym tomorrow', SAT, habits).found.includes('habit')).toBe(false); // once is not a habit yet
+    habits = learnHabit(habits, parseQuick('gym friday 6am', SAT));
+    const r = parseQuick('gym tomorrow', SAT, habits);
+    expect(r.found.includes('habit')).toBe(true);
+    expect(ist(r.payload.due_date)).toBe('2026-11-22 06:00');
+    expect(r.assumedTime).toBe(false);
+    expect(ist(parseQuick('gym tomorrow 7am', SAT, habits).payload.due_date)).toBe('2026-11-22 07:00'); // a said time always wins
+    expect(habitKey('Call mom tomorrow')).toBe('call mom');
+  });
+  it('is not taught by a default time, and one different time starts over', () => {
+    expect(learnHabit({}, parseQuick('buy milk', SAT))).toEqual({});
+    let habits = learnHabit({}, parseQuick('gym 6am', SAT));
+    habits = learnHabit(habits, parseQuick('gym 6am', SAT));
+    habits = learnHabit(habits, parseQuick('gym 7am', SAT));
+    expect(habits.gym).toEqual({ h: 7, m: 0, n: 1 });
+    expect(parseQuick('gym tomorrow', SAT, habits).found.includes('habit')).toBe(false);
   });
 });
 

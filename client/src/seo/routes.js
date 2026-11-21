@@ -9,7 +9,7 @@ import { FAQS } from "../data/faqs.data.js";
 export const SITE_NAME = "GetRemindMe";
 export const OG_IMAGE = { path: "/og-image.png", width: 1200, height: 630, alt: "GetRemindMe: specific, daily and weekly reminders" };
 
-const HOME_TITLE = "GetRemindMe: Specific, Daily & Weekly Reminders";
+const HOME_TITLE = "GetRemindMe: Forget less. Do more.";
 const HOME_DESCRIPTION =
   "GetRemindMe sends specific, daily and weekly reminders to Telegram and your browser. Type or speak a task, try it free without signing up, and never miss a deadline or habit again.";
 

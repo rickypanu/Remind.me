@@ -3,5 +3,6 @@ export const queryKeys = {
   me: ["me"],
   updates: ["updates"],
   taskStats: ["tasks", "stats"],
+  social: ["social"],
   telegramStatus: ["telegram", "status"],
 };

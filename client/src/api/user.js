@@ -5,6 +5,7 @@ export const userApi = {
   me: (config) => api.get("/user/me", config).then((r) => r.data),
   rename: (username) => api.patch("/user/me", { username }).then((r) => r.data),
   setAvatarUrl: (avatarUrl) => api.patch("/user/me", { avatar_url: avatarUrl }).then((r) => r.data),
+  setVoice: (notifyTone, notifyLang) => api.patch("/user/me", { notify_tone: notifyTone, notify_lang: notifyLang }).then((r) => r.data),
   uploadAvatar: (file) => {
     const form = new FormData();
     form.append("avatar", file);

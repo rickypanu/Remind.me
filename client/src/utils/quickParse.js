@@ -4,19 +4,24 @@
 //   "gym every monday and thursday 7am"   -> weekly, Mon + Thu, 07:00
 //   "kal sham 6 baje maths assignment"    -> once, tomorrow 18:00
 //   "call mom in 30 min"                  -> once, now + 30 minutes
-//   "submit report"                       -> once, 2 hours from now (same defaults as the server's Quick Add)
+//   "submit report"                       -> once, the next clean half-hour slot about 2 hours ahead (never 10:33 pm)
+//   "I need to remember to bring my charger for tomorrows exam at 9" -> "Bring charger for exam", tomorrow 09:00
 //
 // Everything is IST (UTC+05:30), like the rest of the app. The result is a normal `createTask()` payload, so the
 // reminder is saved on the device at once and uploaded in the background. `confidence` is "low" when the sentence
-// had a lot of words but nothing the parser could pin down; the caller may then ask the server's AI to polish it.
+// had a lot of words but nothing the parser could pin down; the caller may show a gentle hint.
 //
-// Pure functions, no imports from the app (easy to test). Keep the defaults in sync with
-// server/utils/quick_defaults.py.
+// The reminder has a TITLE ONLY (description is always null): the sentence is cleaned (lead-in words like "I need to"
+// and the date / time words are taken out) and kept short, so nothing the person said is lost into a second field.
+//
+// Pure functions, no imports from the app (easy to test). The app, the website and server/utils/quick_parse.py
+// are the same parser: change one, change all three (tests/test_quick_parse.py compares them).
 // ---------------------------------------------------------------------------
 
 import { normalizeLocal } from './localWords.js';
 import { fixTypos } from './typos.js';
 import { pickCategory } from './categoryModel.js';
+import { habitClock, habitKey } from './timeHabits.js';
 
 const IST_OFFSET_MS = 330 * 60 * 1000;
 const MIN = 60 * 1000;
@@ -24,8 +29,43 @@ const HOUR = 60 * MIN;
 const DAY = 24 * HOUR;
 
 const DEFAULT_LEAD_MS = 2 * HOUR;
-const LATE_NIGHT_LEAD_MS = 10 * MIN;
+const SLOT_MS = 30 * MIN; // a default time is always on the hour or half hour
+const EARLIEST_DEFAULT_HOUR = 7; // a default reminder never rings before 7 am ...
+const LATEST_DEFAULT_HOUR = 22; // ... or from 10 pm on: those wait for 9 am
 const DEFAULT_TIME_ON_FUTURE_DAY = [9, 0];
+
+/** The one-tap time words shown under the box when the sentence had no time. `word` is appended to the sentence. */
+export const TIME_CHIPS = [
+  { word: 'morning', label: 'Morning · 9 AM' },
+  { word: 'afternoon', label: 'Afternoon · 2 PM' },
+  { word: 'evening', label: 'Evening · 6 PM' },
+  { word: 'night', label: 'Night · 9 PM' },
+];
+
+// "after lunch", "before bed", "end of day": a phrase for a moment of the day, with the clock time it usually means.
+const MOMENTS = {
+  'before breakfast': [7, 30],
+  'after breakfast': [9, 30],
+  'before lunch': [12, 30],
+  'after lunch': [13, 30],
+  'before dinner': [19, 30],
+  'after dinner': [21, 0],
+  'before bed': [22, 30],
+  'end of day': [17, 0],
+};
+const MOMENT_RE = /\b(?:(before|after)\s+(breakfast|lunch|dinner|supper|bed(?:\s*time)?|sleeping|sleep)|(bed\s*time)|(end\s+of\s+(?:the\s+)?day|eod))\b/;
+
+// A sentence that names a meal or an outing has a usual time when the day is given but not the hour.
+const KEYWORD_CLOCKS = [
+  [/\bbreakfast\b/, [8, 30]],
+  [/\blunch\b/, [13, 0]],
+  [/\b(?:dinner|supper)\b/, [20, 0]],
+  [/\b(?:call|phone|ring|movie|party|catch up|hangout)\b/, [18, 0]],
+];
+
+// "wake up at 6" is 6 am and "dinner at 8" is 8 pm, even though the person never said am / pm.
+const AM_WORDS = /\b(?:wake|wakeup|alarm|jog\w*|yoga|breakfast|meditat\w*|school|namaz|puja)\b/; // not "gym" / "walk": those are as often in the evening
+const PM_WORDS = /\b(?:dinner|supper|party|movie|concert|date|drinks|netflix|tv)\b/;
 
 export const QUICK_CATEGORIES = ['Assignment', 'Project', 'Exam / Quiz', 'Placement / Internship', 'Extracurricular', 'Personal', 'Other'];
 
@@ -111,14 +151,17 @@ function to24(hour12, meridiem) {
 }
 
 /** "5 baje" / "at 5" with no am/pm: use the word for the part of the day if there is one, else the likeliest reading. */
-function guessHour(h, minute, partKey, nowMs) {
+function guessHour(h, minute, partKey, nowMs, bias = null, futureDay = false) {
   if (h >= 13) return h; // already 24-hour
   if (partKey === 'morning') return h === 12 ? 12 : h;
   if (partKey === 'afternoon') return h === 12 ? 12 : h + 12;
   if (partKey === 'evening') return h === 12 ? 0 : h + 12;
   if (partKey === 'night') return h === 12 ? 0 : h >= 6 ? h + 12 : h; // "raat 2 baje" is 02:00, "raat 9 baje" is 21:00
   if (h === 12) return 12;
+  if (bias === 'am') return h; // "wake up at 6", "gym at 7"
+  if (bias === 'pm') return h + 12; // "dinner at 8", "movie at 7"
   if (h >= 1 && h <= 6) return h + 12; // nobody sets "3" for 3 in the morning
+  if (futureDay) return h; // "tomorrow at 9" is 9 am; the "next time it happens" rule below is only for today
   // 7-11: the next time it happens: this morning if still ahead, else this evening, else tomorrow morning
   const now = istParts(nowMs);
   const nowMin = now.h * 60 + now.mi;
@@ -131,9 +174,10 @@ function guessHour(h, minute, partKey, nowMs) {
 /**
  * @param {string} input what the user typed or said
  * @param {number} [nowMs] injectable clock for tests
+ * @param {object|null} [habits] the person's usual times (see timeHabits.js); used only when the sentence has no time
  * @returns {{ payload: object, confidence: 'high'|'low', found: string[] } | null} null for empty input
  */
-export function parseQuick(input, nowMs = Date.now()) {
+export function parseQuick(input, nowMs = Date.now(), habits = null) {
   const original = fixTypos(normalizeLocal(String(input ?? '').replace(/\s+/g, ' ').trim()));
   if (!original) return null;
   const now = floorMinute(nowMs);
@@ -200,8 +244,8 @@ export function parseQuick(input, nowMs = Date.now()) {
     // "hackathon 21-22 nov": a deadline is the end of the range, so keep the last day
     state.text = state.text.replace(new RegExp(`\\b\\d{1,2}\\s*[-–]\\s*(\\d{1,2})\\s+(${MONTH_NAME})\\b`), '$1 $2');
     if ((m = take(state, /\b(?:day after tomorrow|parso|parson|overmorrow)\b/))) dayMs = dayStart(now) + 2 * DAY;
-    else if ((m = take(state, /\b(?:tomorrow|tmrw|tmr|tomorow|tommorow|kal)\b/))) dayMs = dayStart(now) + DAY;
-    else if ((m = take(state, /\b(?:today|aaj|tonight)\b/))) dayMs = dayStart(now);
+    else if ((m = take(state, /\b(?:tomorrow|tmrw|tmr|tomorow|tommorow)(?:'?s)?\b|\bkal\b/))) dayMs = dayStart(now) + DAY;
+    else if ((m = take(state, /\b(?:today(?:'?s)?|aaj|tonight(?:'?s)?)\b/))) dayMs = dayStart(now);
     else if ((m = take(state, /\bnext week\b/))) dayMs = dayStart(now) + 7 * DAY;
     else if ((m = take(state, new RegExp(`\\b(?:(next|this|coming|agle)\\s+)?(?:on\\s+)?(${DAY_NAME})\\b`)))) {
       const target = WEEKDAY_WORDS[m[2]];
@@ -233,6 +277,11 @@ export function parseQuick(input, nowMs = Date.now()) {
   let clock = null; // [h, m]
   let partKey = partFromRepeat;
   let clockFromPart = false;
+  const lowerOriginal = original.toLowerCase();
+  const bias = AM_WORDS.test(lowerOriginal) !== PM_WORDS.test(lowerOriginal) ? (AM_WORDS.test(lowerOriginal) ? 'am' : 'pm') : null;
+  // "tomorrow at 9" and "every day at 10" are mornings; the "next time it happens" reading is only for a one-time reminder today
+  const futureDay = schedule !== 'once' || (dayMs !== null && dayMs > dayStart(now));
+  const guess = (h, minute) => guessHour(h === 24 ? 0 : h, minute, partKey, now, bias, futureDay);
   {
     let m;
     // "tonight" already consumed above as a date word; remember it as a part of the day
@@ -240,7 +289,20 @@ export function parseQuick(input, nowMs = Date.now()) {
     const partMatch = new RegExp(`\\b(${PART_ANY})\\b`).exec(state.text);
     if (partMatch && !partKey) partKey = Object.keys(PARTS).find((k) => new RegExp(`^${PARTS[k].word}$`).test(partMatch[1])) || null;
 
-    if ((m = take(state, /\b(?:at\s+|@\s*)?(\d{1,2})(?:[:.](\d{2}))?\s*(a\.?m\.?|p\.?m\.?)(?=\W|$)/))) {
+    // "after lunch", "before bed", "end of day": taken out of the sentence always, used only when no clock time was said
+    const moment = take(state, MOMENT_RE);
+
+    if ((m = take(state, /\b(half\s+past|quarter\s+past|quarter\s+to)\s+(\d{1,2})(?:\s*(a\.?m\.?|p\.?m\.?))?(?=\W|$)/))) {
+      const h = Number(m[2]);
+      if (h >= 1 && h <= 12) {
+        const to = m[1].endsWith('to');
+        const hh = to ? (h === 1 ? 12 : h - 1) : h;
+        const minute = m[1].startsWith('half') ? 30 : to ? 45 : 15;
+        clock = [m[3] ? to24(hh, m[3]) : guess(hh, minute), minute];
+      }
+    }
+    // "5pm", "5:30 pm" and the spoken "9 15 am"
+    if (!clock && (m = take(state, /\b(?:at\s+|@\s*)?(\d{1,2})(?:[:.\s](\d{2}))?\s*(a\.?m\.?|p\.?m\.?)(?=\W|$)/))) {
       const h = Number(m[1]);
       if (h >= 1 && h <= 12 && Number(m[2] || 0) <= 59) clock = [to24(h, m[3]), Number(m[2] || 0)];
     }
@@ -248,18 +310,19 @@ export function parseQuick(input, nowMs = Date.now()) {
       const h = Number(m[1]);
       const minute = Number(m[2]);
       // "17:30" and "09:00" are 24-hour; "7:30" or "5:15" with no am/pm is read the way people mean it
-      clock = h >= 13 || m[1].length === 2 || h === 0 ? [h, minute] : [guessHour(h, minute, partKey, now), minute];
+      clock = h >= 13 || m[1].length === 2 || h === 0 ? [h, minute] : [guess(h, minute), minute];
     }
     if (!clock && (m = take(state, /\b(?:at\s+|@\s*)?(\d{1,2})(?:[:.](\d{2}))?\s*(?:baje|bje|o'?clock|oclock|am|pm)\b/))) {
       const h = Number(m[1]);
-      if (h >= 0 && h <= 24 && Number(m[2] || 0) <= 59) clock = [guessHour(h === 24 ? 0 : h, Number(m[2] || 0), partKey, now), Number(m[2] || 0)];
+      if (h >= 0 && h <= 24 && Number(m[2] || 0) <= 59) clock = [guess(h, Number(m[2] || 0)), Number(m[2] || 0)];
     }
     if (!clock && (m = take(state, /\bat\s+(\d{1,2})(?:[:.](\d{2}))?(?!\d)(?!\s*(?:min|hour|hr|day|week|%))/))) {
       const h = Number(m[1]);
-      if (h >= 0 && h <= 24 && Number(m[2] || 0) <= 59) clock = [guessHour(h === 24 ? 0 : h, Number(m[2] || 0), partKey, now), Number(m[2] || 0)];
+      if (h >= 0 && h <= 24 && Number(m[2] || 0) <= 59) clock = [guess(h, Number(m[2] || 0)), Number(m[2] || 0)];
     }
     if (!clock && take(state, /\b(?:noon|midday|dopahar ko)\b/)) clock = [12, 0];
     if (!clock && take(state, /\b(?:midnight|aadhi raat)\b/)) clock = [0, 0];
+    if (!clock && moment) clock = MOMENTS[momentKey(moment)] || null;
     if (clock) found.push('time');
     if (partMatch) state.text = state.text.replace(new RegExp(`\\b${PART_ANY}\\b`), ' ');
     if (!clock && partKey) {
@@ -269,7 +332,24 @@ export function parseQuick(input, nowMs = Date.now()) {
     }
   }
 
-  // 5. Resolve the due date / time_of_day
+  // 5. Title (the title is all there is: no description) and category
+  const title = buildTitle(state.text, original);
+  const category = pickCategory(title, '', guessCategory(lowerOriginal));
+
+  // 6. A time the person did not say: first a habit of theirs ("gym" is always 6 am), then the usual time for the sentence
+  if (!clock && habits) {
+    const usual = habitClock(habits, habitKey(title));
+    if (usual) {
+      clock = usual;
+      found.push('habit');
+    }
+  }
+  const usualClock = () => {
+    for (const [re, at] of KEYWORD_CLOCKS) if (re.test(lowerOriginal)) return at;
+    return null;
+  };
+
+  // 7. Resolve the due date / time_of_day
   const payload = { schedule_type: schedule, description: null };
   if (schedule === 'once') {
     let due;
@@ -282,31 +362,24 @@ export function parseQuick(input, nowMs = Date.now()) {
       due = fromIst(nowP.y, nowP.mo, nowP.d, clock[0], clock[1]);
       if (due <= now) due += DAY; // that time has passed today: tomorrow
     } else if (!clock) {
-      due = dayMs === dayStart(now) ? defaultFromNow(now) : dayMs + (DEFAULT_TIME_ON_FUTURE_DAY[0] * 60 + DEFAULT_TIME_ON_FUTURE_DAY[1]) * MIN;
+      const at = usualClock() || DEFAULT_TIME_ON_FUTURE_DAY;
+      due = dayMs === dayStart(now) ? defaultFromNow(now, true) : dayMs + (at[0] * 60 + at[1]) * MIN;
     } else {
       due = dayMs + (clock[0] * 60 + clock[1]) * MIN;
-      if (clockFromPart && due <= now && dayMs === dayStart(now)) due = defaultFromNow(now); // "tonight" said at 23:00
+      if (clockFromPart && due <= now && dayMs === dayStart(now)) due = defaultFromNow(now, true); // "tonight" said at 23:00
       // "aaj raat 12 baje" / "tonight at 1": the small hours of tonight are after midnight, i.e. the next calendar day
       if (partKey === 'night' && !clockFromPart && clock[0] < 6 && due <= now && dayMs === dayStart(now)) due += DAY;
       if (barePast && due <= now) due += 7 * DAY; // "monday 9am" said on Monday evening means next Monday
     }
     payload.due_date = new Date(due).toISOString();
   } else {
-    const [h, m] = clock || [9, 0];
+    const [h, m] = clock || usualClock() || [9, 0];
     payload.time_of_day = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
     if (schedule === 'weekly') payload.weekdays = weekdays;
   }
 
-  // 6. Title, description + category
-  const { title: rawTitle, description } = splitTitleAndDescription(state.text);
-  let title = rawTitle;
-  if (!title) title = cleanTitle(original.toLowerCase()) || original;
-  title = restoreCase(title, original);
-  title = title.charAt(0).toUpperCase() + title.slice(1);
-  payload.title = title.slice(0, 200);
-  const detail = description ? restoreCase(description, original) : '';
-  payload.description = detail ? detail.charAt(0).toUpperCase() + detail.slice(1) : null;
-  payload.category = pickCategory(payload.title, payload.description || '', guessCategory(original.toLowerCase()));
+  payload.title = title;
+  payload.category = category;
 
   const wordCount = original.split(' ').length;
   const confidence = found.length > 0 || wordCount <= 3 ? 'high' : 'low';
@@ -345,64 +418,109 @@ function nextDayOfMonth(nowP, day) {
   return null;
 }
 
-/** Same rule as server/utils/quick_defaults.py: 2 hours from now, or 10 minutes if that would cross midnight. */
-function defaultFromNow(now) {
-  const candidate = now + DEFAULT_LEAD_MS;
-  return dayStart(candidate) !== dayStart(now) ? now + LATE_NIGHT_LEAD_MS : candidate;
-}
-
-const FILLER_LEADING =
-  /^(?:(?:please|plz|pls|hey|hi)\s+)?(?:(?:can|could)\s+you\s+)?(?:remind\s+me|reminder|set\s+(?:a\s+)?reminder|mujhe\s+yaad\s+dilao|yaad\s+dilana|add)\s*(?:to|about|for|that|ki|ko|:)?\s*/;
-const FILLER_EDGES = /^(?:to|about|for|that|ki|ko|ke liye|at|on|by|in|the|a|and|aur|se|tak|par|pe|per|me|mein)\s+|\s+(?:to|about|for|that|ki|ko|ke liye|at|on|by|in|and|aur|se|tak|par|pe|per|me|mein|from|due|before|till|until|deadline)$/;
-
-function cleanTitle(text) {
-  let t = text.replace(/[,;|]+/g, ' ').replace(/\s+/g, ' ').trim();
-  t = t.replace(FILLER_LEADING, '').trim();
-  for (let i = 0; i < 4; i++) {
-    const next = t.replace(FILLER_EDGES, '').trim();
-    if (next === t) break;
-    t = next;
+/**
+ * The time for a reminder that has none: about 2 hours ahead, on the next hour or half hour (never 10:33 pm).
+ * Before 7 am it waits for 9 am; from 10 pm on it waits for 9 am tomorrow (or, when the person said "today", rings
+ * in about 10 minutes, on a 5-minute mark).
+ */
+function defaultFromNow(now, saidToday = false) {
+  const slot = Math.ceil((now + DEFAULT_LEAD_MS) / SLOT_MS) * SLOT_MS;
+  const sameDay = dayStart(slot) === dayStart(now);
+  const hour = istParts(slot).h;
+  if (sameDay && hour >= EARLIEST_DEFAULT_HOUR && hour < LATEST_DEFAULT_HOUR) return slot;
+  if (sameDay && hour < EARLIEST_DEFAULT_HOUR) return dayStart(now) + 9 * HOUR;
+  if (saidToday) {
+    const soon = Math.ceil((now + 10 * MIN) / (5 * MIN)) * 5 * MIN;
+    return dayStart(soon) === dayStart(now) ? soon : now + 10 * MIN;
   }
-  return t.replace(/^[\s.:\-–—]+|[\s.:\-–—]+$/g, '').trim();
+  return dayStart(now) + DAY + 9 * HOUR;
 }
+
+/** Which MOMENTS entry a MOMENT_RE match means. */
+function momentKey(m) {
+  if (m[4]) return 'end of day';
+  if (m[3]) return 'before bed';
+  const what = /^(?:bed|sleep)/.test(m[2]) ? 'bed' : m[2] === 'supper' ? 'dinner' : m[2];
+  return `${m[1]} ${what}`;
+}
+
+const TITLE_MAX_WORDS = 9;
+const TITLE_MAX_CHARS = 60;
+
+// Lead-in words that say "remember this" but are not the thing to remember. Tried over and over, so
+// "remind me that I need to remember to bring ..." loses all three.
+const LEAD_PATTERNS = [
+  /^(?:please|plz|pls|kindly|hey|hi|ok|okay|so|also|then|really|just|actually)\s+/,
+  /^(?:can|could|would|will)\s+you\s+(?:please\s+)?/,
+  /^(?:remind\s+me|reminder|set\s+(?:a\s+)?reminder|add\s+(?:a\s+)?reminder|mujhe\s+yaad\s+dilao|yaad\s+dilana|add)\s*(?:to|about|for|that|ki|ko|:)?\s*/,
+  /^(?:i|we)(?:'ll|\s+will)\s+/,
+  /^(?:let\s+me|lemme)\s+/,
+  /^(?:i|we|mujhe|mereko|hume|humein)\s+(?:(?:really|just|also)\s+)?(?:need|must|should|gotta|wanna)(?:\s+(?:really|just|actually|also))?(?:\s+to)?\s+/,
+  /^(?:i|we)\s+(?:have|got|has)\s+(?:an?|the)\s+/,
+  /^(?:i|we|mujhe|mereko|hume|humein)\s+(?:(?:really|just|also)\s+)?(?:have|has|got|want|ought)\s+to\s+/,
+  /^(?:mujhe|mereko|hume|humein)\s+/,
+  /^(?:need|have|has|got|want)\s+to\s+/,
+  /^(?:gotta|must|should|wanna|supposed\s+to)\s+/,
+  /^(?:(?:please\s+)?(?:don'?t|do\s+not|never)\s+forget|remember|yaad\s+se|yaad\s+rakhna|yaad\s+rakho|bhoolna\s+mat|make\s+sure)(?:\s+(?:to|that|ki|i|you))?\s+/,
+];
+const TRAIL_PATTERNS = [/\s+(?:(?:please|plz|pls)\s+)?(?:remind\s+me|reminder)$/, /\s+(?:please|plz|pls|thanks|thank\s+you|ok|okay)$/, /\s+(?:hai|hain|hoga|hogi|tha|thi)$/, /\s+(?:yaad\s+se|yaad\s+rakhna|bhoolna\s+mat)$/];
+// A word like "on" / "by" / "before" left standing right before the place where a date or time was taken out
+const DANGLING = /\b(?:on|at|by|before|till|until|due|from|around)\s{2,}/g;
+const FILLER_EDGES = /^(?:to|about|for|that|ki|ko|ke liye|at|on|by|in|the|a|and|aur|se|tak|par|pe|per|me|mein)\s+|\s+(?:to|about|for|that|ki|ko|ke liye|at|on|by|in|and|aur|se|tak|par|pe|per|me|mein|from|due|before|till|until|deadline)$/;
+const TRAILING_STOPWORDS = /\s+(?:to|the|a|an|of|for|and|with|in|on|at|by|from|my|your|our|that|this|every|each|all|any|some|aur|ko|ki|ka|ke|se|me|mein)$/;
+const CLAUSE_BREAK = /,|\s(?:because|so that|since|as|but|which|while|kyunki|kyuki|taaki|jab|aur|and)\s/g;
 
 const wordsIn = (t) => t.split(/\s+/).filter(Boolean).length;
 
-/**
- * "call dad, ask about fees" / "buy groceries: milk, eggs" / "pay fees (use the portal)" / "exam - bring calculator":
- * the first part is the title, whatever follows is the description. `text` is the lower-case sentence with the date,
- * time and repeat words already taken out. A single leading word before a comma ("milk, eggs, bread") is a list, not a title.
- */
-function splitTitleAndDescription(text) {
-  let rest = text;
-  for (let guard = 0; guard < 4; guard++) {
-    const cut = firstDetailBreak(rest);
-    if (!cut) return { title: cleanTitle(rest), description: null };
-    const title = cleanTitle(rest.slice(0, cut.index));
-    const after = rest.slice(cut.index + cut.length);
-    // "remind me: call mom" / "reminder about the exam": a first part that is only filler is not a title
-    if (!title) {
-      rest = after;
-      continue;
-    }
-    const description = after.replace(/[()|]/g, ' ').replace(/\s*,\s*/g, ', ').replace(/\s+/g, ' ').replace(/^[\s.,:;\-–—]+|[\s.,:;\-–—]+$/g, '');
-    return { title, description: description || null };
-  }
-  return { title: cleanTitle(rest), description: null };
+/** Spaces, stray commas and dashes at the ends tidied up. */
+function tidy(t) {
+  return t
+    .replace(/\s+/g, ' ')
+    .replace(/\s+,/g, ',')
+    .replace(/(?:,\s*){2,}/g, ', ')
+    .replace(/^[\s.,:;\-–—]+|[\s.,:;\-–—]+$/g, '')
+    .trim();
 }
 
-/** The first place where the main sentence stops and the extra detail starts, or null. */
-function firstDetailBreak(text) {
-  const candidates = [/\s[-–—]\s/, /[:;]/, /\(/, /\s(?:because|about|regarding|including|include)\s/];
-  let best = null;
-  for (const re of candidates) {
-    const m = re.exec(text);
-    if (m && (!best || m.index < best.index)) best = { index: m.index, length: m[0].length };
+/**
+ * The reminder's title from the sentence with its date, time and repeat words already taken out (`text`, lower case).
+ * "bring my laptop charger and id card for exam" / "pay rent on 1st of every month" / "call the plumber".
+ * Nothing is moved to a description: what the person said stays in the title, only the lead-in and the clock words go.
+ */
+function buildTitle(text, original) {
+  let t = text.replace(DANGLING, ' ');
+  t = tidy(t.replace(/\s*[:;|]\s*/g, ', ').replace(/\s[-–—]\s/g, ', ').replace(/\s*[()]\s*/g, ', '));
+  for (let pass = 0; pass < 6; pass++) {
+    const before = t;
+    for (const re of LEAD_PATTERNS) t = t.replace(re, '').trim();
+    for (const re of TRAIL_PATTERNS) t = t.replace(re, '').trim();
+    t = tidy(t.replace(FILLER_EDGES, ''));
+    if (t === before) break;
   }
-  // A comma only starts the detail after a real title of two or more words ("milk, eggs, bread" is a list)
-  const comma = text.indexOf(',');
-  if (comma > 0 && wordsIn(text.slice(0, comma)) >= 2 && (!best || comma < best.index)) best = { index: comma, length: 1 };
-  return best;
+  if (!t) return 'Reminder';
+  if (wordsIn(t) > 6) t = t.replace(/\b(?:my|our)\s+/g, ''); // "submit my assignment to my professor" -> shorter
+  t = capTitle(t);
+  t = restoreCase(t, original);
+  return (t.charAt(0).toUpperCase() + t.slice(1)).slice(0, 200);
+}
+
+/** A long sentence is cut where one thought ends ("... and", ", because"); with no such place, at the last whole word that fits. */
+function capTitle(t) {
+  if (wordsIn(t) <= TITLE_MAX_WORDS && t.length <= TITLE_MAX_CHARS) return t;
+  CLAUSE_BREAK.lastIndex = 0;
+  let m;
+  while ((m = CLAUSE_BREAK.exec(t))) {
+    const left = tidy(t.slice(0, m.index));
+    if (wordsIn(left) >= 3 && wordsIn(left) <= TITLE_MAX_WORDS && left.length <= TITLE_MAX_CHARS) return left;
+  }
+  const out = [];
+  for (const w of t.split(' ')) {
+    if (out.length >= TITLE_MAX_WORDS || [...out, w].join(' ').length > TITLE_MAX_CHARS) break;
+    out.push(w);
+  }
+  let cut = tidy(out.join(' '));
+  for (let i = 0; i < 3; i++) cut = tidy(cut.replace(TRAILING_STOPWORDS, ''));
+  return cut;
 }
 
 /** The sentence was lower-cased to match words; give names and abbreviations back their capitals ("DSA", "Rahul"). */

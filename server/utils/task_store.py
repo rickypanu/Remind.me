@@ -37,7 +37,8 @@ def shape_response(task: dict) -> dict:
         task["id"] = str(task.pop("_id"))
     task["user_id"] = str(task.get("user_id"))
     task.setdefault("schedule_type", "once")
-    task["schedule_label"] = describe_schedule(task["schedule_type"], task.get("time_of_day"), task.get("weekdays"))
+    task["schedule_label"] = describe_schedule(task["schedule_type"], task.get("time_of_day"), task.get("weekdays"), int(task.get("interval_days") or 1))
+    task["interval_days"] = int(task.get("interval_days") or 1)
     task["priority"] = task.get("priority") or "normal"
     raw = task.pop("subtasks_json", None)
     try:

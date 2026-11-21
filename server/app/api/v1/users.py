@@ -22,7 +22,7 @@ async def get_profile(current_user: CurrentUser) -> dict:
 
 @router.patch("/me", response_model=ProfileUpdateResponse)
 async def update_profile(update: UserUpdate, user_id: UserId, users: UserSvc) -> ProfileUpdateResponse:
-    # Only fields that were actually provided; UserUpdate forbids everything except username and avatar_url.
+    # Only fields that were actually provided; UserUpdate forbids everything except the profile fields it lists.
     changed = await users.update_profile(user_id, update.model_dump(exclude_unset=True))
     return ProfileUpdateResponse(message="Profile updated successfully", updated_fields=changed)
 

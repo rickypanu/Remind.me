@@ -21,9 +21,15 @@ import {
   ChevronDown,
   Share,
   CheckCircle2,
+  Gift,
 } from "../../components/icons";
 import { logoutFromServer } from "../../api";
 import useMe from "../../hooks/useMe";
+import useTaskStats from "../../hooks/useTaskStats";
+import { useSocial } from "../../hooks/useSocial";
+import StatsStrip from "../../components/profile/StatsStrip";
+import FriendsCard from "../../components/profile/FriendsCard";
+import { shareStreakCard } from "../../utils/shareCard";
 import { useDeleteAccount, useRenameUser, useSetAvatarUrl, useUploadAvatar } from "../../hooks/useProfileMutations";
 import { useUnreadUpdates } from "../../hooks/useUpdates";
 import notify from "../../utils/notify";
@@ -81,7 +87,7 @@ function InstallAppCard() {
 
       {/* 1. Web app (hidden only inside the Android app itself, where it makes no sense) */}
       {!install.webview && (
-        <div className="rm-ios-card bg-white border border-gray-100 rounded-[24px] overflow-hidden">
+        <div className="rm-ios-card bg-white border-[1.5px] border-slate-900 rounded-[24px] overflow-hidden shadow-[4px_4px_0_0_#14161f]">
           <div className="p-5 flex items-center gap-4">
             <img src="/icon-192x192.png" alt="" width="52" height="52" className="h-[52px] w-[52px] shrink-0 rounded-[14px] shadow-sm" />
             <div className="min-w-0">
@@ -111,7 +117,7 @@ function InstallAppCard() {
       )}
 
       {/* 2. Android app (APK): exactly as before, on every device except iPhone */}
-      <div className="rm-ios-card bg-white border border-gray-100 rounded-[24px] overflow-hidden">
+      <div className="rm-ios-card bg-white border-[1.5px] border-slate-900 rounded-[24px] overflow-hidden shadow-[4px_4px_0_0_#14161f]">
         <div className="p-5 flex items-center gap-4">
           <div className="h-[52px] w-[52px] shrink-0 rounded-[14px] bg-blue-50 text-blue-700 flex items-center justify-center">
             <Smartphone size={24} strokeWidth={2} />
@@ -196,6 +202,8 @@ export default function Profile() {
   const userInfo = me.data ?? null;
   const loading = me.isPending;
   const unreadUpdatesCount = useUnreadUpdates();
+  const stats = useTaskStats().data;
+  const reward = !!useSocial().data?.reward_unlocked;
   const renameUser = useRenameUser();
   const setAvatarUrlOnServer = useSetAvatarUrl();
   const uploadAvatar = useUploadAvatar();
@@ -311,6 +319,17 @@ export default function Profile() {
     }
   };
 
+  const handleShareStreak = async () => {
+    const result = await shareStreakCard({
+      name: userInfo?.username,
+      streak: stats?.streak ?? 0,
+      best: stats?.best_streak ?? 0,
+      doneToday: stats?.completed_today ?? 0,
+    });
+    if (result === "downloaded") notify.success("Streak card saved. Post it anywhere.");
+    else if (result === "failed") notify.error("Could not make the streak card. Please try again.");
+  };
+
   // --- Render Loading Skeleton ---
   if (loading) {
     return (
@@ -324,115 +343,106 @@ export default function Profile() {
   }
 
   return (
-    // <AppPage title="Profile" subtitle="Your account and preferences." backTo="/dashboard" backLabel="Dashboard" width="narrow">
-    <AppPage title="Profile" subtitle="Your account and preferences." backTo="/dashboard" backLabel="Dashboard" width="narrow" centerHeader>
-        {/* User Avatar & Info Header */}
-        <div className="flex flex-col items-center text-center mb-10">
-          <button
-            type="button"
-            onClick={() => !isUploadingImage && setShowAvatarModal(true)}
-            disabled={isUploadingImage}
-            aria-label="Change profile picture"
-            className="relative h-24 w-24 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 mb-4 shadow-sm border-2 border-white cursor-pointer group overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {avatarUrl ? (
-              <img
-                src={resolveAvatarSrc(avatarUrl)}
-                alt="Profile Avatar"
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <UserIcon size={36} strokeWidth={2} />
-            )}
-
-            <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              <Camera className="text-white mb-0.5" size={18} strokeWidth={2} />
-              <span className="text-white text-[10px] font-semibold uppercase tracking-wider">Edit</span>
-            </div>
-
-            {isUploadingImage && (
-              <div className="absolute inset-0 bg-white/70 flex items-center justify-center backdrop-blur-sm">
-                <Loader2 className="animate-spin text-blue-500" size={24} />
-              </div>
-            )}
-          </button>
-
-          {/* Hidden File Input */}
-          <input
-            type="file"
-            accept="image/*"
-            ref={fileInputRef}
-            onChange={handleImageUpload}
-            className="hidden"
-          />
-
-          {/* Editable Username */}
-          <div className="flex items-center justify-center h-10 mb-1">
-            {isEditingName ? (
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={editNameValue}
-                  onChange={(e) => setEditNameValue(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleUpdateName()}
-                  className="px-3 py-1.5 bg-gray-50 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-gray-900 font-semibold text-lg max-w-[200px]"
-                  autoFocus
-                />
-                <button
-                  type="button"
-                  onClick={handleUpdateName}
-                  disabled={isUpdatingName}
-                  className="p-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors shadow-sm"
-                >
-                  {isUpdatingName ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} strokeWidth={2.5} />}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsEditingName(false);
-                    setEditNameValue(userInfo?.username || "Student");
-                  }}
-                  className="p-2 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-colors"
-                >
-                  <X size={16} strokeWidth={2.5} />
-                </button>
-              </div>
-            ) : (
+    <AppPage title="Profile" backTo="/dashboard" backLabel="Dashboard" width="narrow" centerHeader>
+        {/* Identity card: ultramarine band, avatar with a ring, name, then the streak numbers */}
+        <section className="mb-8 overflow-hidden rounded-[28px] border-[1.5px] border-slate-900 bg-white shadow-[6px_6px_0_0_#14161f]">
+          <div className="relative h-28 bg-blue-600">
+            <span aria-hidden="true" className="absolute -right-6 -top-10 h-36 w-36 rounded-full bg-[#f4b400]" />
+            <span aria-hidden="true" className="absolute right-24 top-14 h-10 w-10 rounded-full border-[3px] border-white/70" />
+            <span aria-hidden="true" className="absolute left-8 top-6 h-3 w-16 rounded-full bg-white/30" />
+          </div>
+          <div className="px-5 pb-6 sm:px-8">
+            <div className="-mt-14 flex flex-col items-center text-center sm:flex-row sm:items-end sm:gap-5 sm:text-left">
               <button
                 type="button"
-                className="flex items-center gap-2 group cursor-pointer focus:outline-none"
-                onClick={startEditingName}
+                onClick={() => !isUploadingImage && setShowAvatarModal(true)}
+                disabled={isUploadingImage}
+                aria-label="Change profile picture"
+                className={`group relative h-28 w-28 shrink-0 cursor-pointer overflow-hidden rounded-full bg-blue-50 text-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                  reward ? "ring-4 ring-[#f4b400]" : "ring-4 ring-white"
+                } border-[1.5px] border-slate-900`}
               >
-                <h2 className="text-2xl font-bold text-gray-900 tracking-tight">
-                  {userInfo?.username || "User"}
-                </h2>
-                <Edit2 size={15} className="text-gray-500 group-hover:text-blue-500 transition-colors" />
+                {avatarUrl ? (
+                  <img src={resolveAvatarSrc(avatarUrl)} alt="Profile Avatar" className="h-full w-full object-cover" />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center"><UserIcon size={40} strokeWidth={2} /></span>
+                )}
+                <span className="absolute inset-0 flex flex-col items-center justify-center bg-black/45 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+                  <Camera className="mb-0.5 text-white" size={18} strokeWidth={2} />
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-white">Edit</span>
+                </span>
+                {isUploadingImage && (
+                  <span className="absolute inset-0 flex items-center justify-center bg-white/70 backdrop-blur-sm">
+                    <Loader2 className="animate-spin text-blue-500" size={24} />
+                  </span>
+                )}
               </button>
-            )}
-          </div>
 
-          <p className="text-gray-500 font-medium text-sm">{userInfo?.email}</p>
+              <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
 
-          {userInfo?.created_at && (
-            <div className="flex items-center gap-1.5 mt-3 px-3.5 py-1 bg-white border border-gray-100 text-gray-500 rounded-full text-xs font-semibold shadow-sm">
-              <CalendarDays size={13} strokeWidth={2} />
-              <span>
-                Joined{" "}
-                {new Date(userInfo.created_at).toLocaleDateString("en-US", {
-                  month: "long",
-                  year: "numeric",
-                })}
-              </span>
+              <div className="mt-3 min-w-0 flex-1 sm:mb-1">
+                <div className="flex h-10 items-center justify-center sm:justify-start">
+                  {isEditingName ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={editNameValue}
+                        onChange={(e) => setEditNameValue(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleUpdateName()}
+                        aria-label="Your name"
+                        className="max-w-[200px] rounded-xl border border-blue-200 bg-gray-50 px-3 py-1.5 text-lg font-semibold text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        autoFocus
+                      />
+                      <button type="button" onClick={handleUpdateName} disabled={isUpdatingName} aria-label="Save name" className="rounded-xl bg-blue-600 p-2 text-white shadow-sm hover:bg-blue-700">
+                        {isUpdatingName ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} strokeWidth={2.5} />}
+                      </button>
+                      <button type="button" aria-label="Cancel" onClick={() => { setIsEditingName(false); setEditNameValue(userInfo?.username || "Student"); }} className="rounded-xl bg-gray-100 p-2 text-gray-600 hover:bg-gray-200">
+                        <X size={16} strokeWidth={2.5} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button type="button" className="group flex items-center gap-2 focus:outline-none" onClick={startEditingName} aria-label="Edit your name">
+                      <h2 className="truncate text-3xl font-extrabold tracking-tight text-gray-900">{userInfo?.username || "User"}</h2>
+                      <Edit2 size={15} className="text-gray-500 transition-colors group-hover:text-blue-600" />
+                    </button>
+                  )}
+                </div>
+                <p className="mt-1 truncate text-sm font-medium text-gray-500">{userInfo?.email}</p>
+                <div className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+                  {userInfo?.created_at && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-600">
+                      <CalendarDays size={13} strokeWidth={2} />
+                      Joined {new Date(userInfo.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                    </span>
+                  )}
+                  {reward && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f4b400] px-3 py-1 text-xs font-extrabold text-[#14161f]">
+                      <Gift size={13} strokeWidth={2.4} /> Connector
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
-          )}
-        </div>
+
+            <div className="mt-6">
+              <StatsStrip stats={stats} />
+              <button
+                type="button"
+                onClick={handleShareStreak}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border-[1.5px] border-slate-900 bg-[#f4b400] py-3.5 text-[15px] font-extrabold text-[#14161f] shadow-[3px_3px_0_0_#14161f] transition active:translate-x-[1px] active:translate-y-[1px] active:shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+              >
+                <Share size={18} strokeWidth={2.4} /> Share my streak
+              </button>
+            </div>
+          </div>
+        </section>
 
         {/* Action Menu Groups */}
         <div className="space-y-6">
           {/* General Section */}
           <div>
             <h3 className="px-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">General</h3>
-            <div className="bg-white border border-gray-100 rounded-[24px] overflow-hidden shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
+            <div className="bg-white border-[1.5px] border-slate-900 rounded-[24px] overflow-hidden shadow-[4px_4px_0_0_#14161f]">
               <MenuItem icon={Bell} label="Notifications" subLabel="Browser alerts, Telegram, sound and vibration" to="/notifications" />
               <MenuItem icon={Newspaper} label="Updates" to="/updates" badge={unreadUpdatesCount} />
               <MenuItem icon={HelpCircle} label="FAQs" to="/faqs" />
@@ -440,6 +450,8 @@ export default function Profile() {
               <MenuItem icon={Info} label="About App" to="/about" />
             </div>
           </div>
+
+          <FriendsCard myName={userInfo?.username} />
 
           {/* Install on the Home screen (iPhone, Android, desktop) + Android APK */}
           <InstallAppCard />
@@ -450,7 +462,7 @@ export default function Profile() {
           {/* Quick add: what it learned from the person's own category choices (stored on this device only) */}
           <div>
             <h3 className="px-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Quick add</h3>
-            <div className="bg-white border border-gray-100 rounded-[24px] p-4 shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex items-center justify-between gap-4">
+            <div className="bg-white border-[1.5px] border-slate-900 rounded-[24px] p-4 shadow-[4px_4px_0_0_#14161f] flex items-center justify-between gap-4">
               <div className="text-left">
                 <p className="font-medium text-gray-900">Forget what quick add learned</p>
                 <p className="text-xs text-gray-500 mt-0.5">It learns on this device only which category you pick. Your reminders stay as they are.</p>
@@ -471,7 +483,7 @@ export default function Profile() {
           {/* Account Section */}
           <div>
             <h3 className="px-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Account</h3>
-            <div className="bg-white border border-gray-100 rounded-[24px] overflow-hidden shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
+            <div className="bg-white border-[1.5px] border-slate-900 rounded-[24px] overflow-hidden shadow-[4px_4px_0_0_#14161f]">
               
               {/* Logout Toggle */}
               {!showLogoutConfirm ? (

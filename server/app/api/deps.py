@@ -21,6 +21,7 @@ from app.services.announcements import AnnouncementService
 from app.services.auth import AuthService
 from app.services.push import PushService
 from app.services.quick_add import QuickAddService
+from app.services.social import SocialService
 from app.services.tasks import TaskService, build_task_service
 from app.services.users import UserService
 from utils.security import decode_access_token
@@ -106,6 +107,10 @@ def get_quick_add_service(tasks: TaskSvc) -> QuickAddService:
     return QuickAddService(tasks)
 
 
+def get_social_service(db: Db, tasks: TaskSvc) -> SocialService:
+    return SocialService(db, tasks)
+
+
 def get_auth_service(db: Db) -> AuthService:
     return AuthService(db)
 
@@ -125,5 +130,6 @@ def get_push_service(db: Db) -> PushService:
 AuthSvc = Annotated[AuthService, Depends(get_auth_service)]
 UserSvc = Annotated[UserService, Depends(get_user_service)]
 QuickAddSvc = Annotated[QuickAddService, Depends(get_quick_add_service)]
+SocialSvc = Annotated[SocialService, Depends(get_social_service)]
 AnnouncementSvc = Annotated[AnnouncementService, Depends(get_announcement_service)]
 PushSvc = Annotated[PushService, Depends(get_push_service)]

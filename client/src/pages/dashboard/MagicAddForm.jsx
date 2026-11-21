@@ -6,7 +6,7 @@ import useSpeechRecognition from "../../hooks/useSpeechRecognition";
 import { feedback } from "../../feedback/feedback";
 import notify from "../../utils/notify";
 import { describeScheduleLocal, formatDueIst } from "../../utils/date";
-import { parseQuick } from "../../utils/quickParse";
+import { parseQuick, TIME_CHIPS } from "../../utils/quickParse";
 import { useI18n } from "../../i18n/index.jsx";
 import { dateLocale } from "../../i18n/languages";
 import { deleteTask, editTask } from "../../offline/taskStore";
@@ -31,7 +31,7 @@ export default function MagicAddForm({ isOffline, titles = [] }) {
   const { t, lang } = useI18n();
   const [text, setText] = useState("");
   const inputRef = useRef(null);
-  const { add } = useQuickAdd();
+  const { add, habits } = useQuickAdd();
   const [added, setAdded] = useState(null); // the reminder just saved, so it can be undone or fixed for a few seconds
   const [editing, setEditing] = useState(null);
   useEffect(() => {
@@ -56,7 +56,7 @@ export default function MagicAddForm({ isOffline, titles = [] }) {
     if (q.length < 2 || q.length > 40) return [];
     return titles.filter((x) => x.toLowerCase().startsWith(q) && x.toLowerCase() !== q).slice(0, 3);
   }, [text, titles]);
-  const preview = useMemo(() => (text.trim() ? parseQuick(text) : null), [text]);
+  const preview = useMemo(() => (text.trim() ? parseQuick(text, Date.now(), habits) : null), [text, habits]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -130,9 +130,6 @@ export default function MagicAddForm({ isOffline, titles = [] }) {
 
       {/* Live preview, or one-tap examples while the box is empty */}
       <div className="mt-2.5 min-h-[28px] px-1" aria-live="polite">
-        {preview && preview.payload.description && (
-          <p data-no-translate className="mb-1 truncate pl-[23px] text-[12.5px] text-slate-500">{preview.payload.description}</p>
-        )}
         {!preview && added ? (
           <p className="flex min-w-0 items-center gap-2 text-[13px] font-semibold text-slate-700">
             <span className="min-w-0 flex-1 truncate">
@@ -169,6 +166,20 @@ export default function MagicAddForm({ isOffline, titles = [] }) {
                 className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[12.5px] font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 active:scale-95"
               >
                 {example}
+              </button>
+            ))}
+          </div>
+        )}
+        {preview && preview.assumedTime && !listening && (
+          <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label={t("Pick a time")}>
+            {TIME_CHIPS.map((chip) => (
+              <button
+                key={chip.word}
+                type="button"
+                onClick={() => { setText(`${text.trim()} ${chip.word}`); inputRef.current?.focus(); }}
+                className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[12.5px] font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 active:scale-95"
+              >
+                {t(chip.label)}
               </button>
             ))}
           </div>

@@ -3,7 +3,11 @@
 
     "gym every monday and thursday 7am"  -> weekly, Mon + Thu, 07:00
     "kal sham 6 baje maths assignment"   -> once, tomorrow 18:00
-    "submit report"                      -> once, 2 hours from now
+    "submit report"                      -> once, the next clean half-hour slot about 2 hours ahead (never 10:33 pm)
+    "I need to remember to bring my charger for tomorrows exam at 9" -> "Bring charger for exam", tomorrow 09:00
+
+The reminder has a TITLE ONLY (description is always None). The server keeps no "usual times" (habits): those live on the
+device, so the app / website pass them to their own parser only.
 
 Everything is IST (UTC+05:30). Keep this file and the JS parser in step; tests/test_quick_parse.py compares them.
 Regexes use re.ASCII on purpose: JavaScript's \\b, \\w and \\d are ASCII-only and the two parsers must agree.
@@ -23,8 +27,24 @@ MIN = 60 * 1000
 HOUR = 60 * MIN
 DAY = 24 * HOUR
 DEFAULT_LEAD_MS = 2 * HOUR
-LATE_NIGHT_LEAD_MS = 10 * MIN
+SLOT_MS = 30 * MIN  # a default time is always on the hour or half hour
+EARLIEST_DEFAULT_HOUR = 7  # a default reminder never rings before 7 am ...
+LATEST_DEFAULT_HOUR = 22  # ... or from 10 pm on: those wait for 9 am
 DEFAULT_TIME_ON_FUTURE_DAY = (9, 0)
+
+_MOMENTS = {
+    "before breakfast": (7, 30), "after breakfast": (9, 30), "before lunch": (12, 30), "after lunch": (13, 30),
+    "before dinner": (19, 30), "after dinner": (21, 0), "before bed": (22, 30), "end of day": (17, 0),
+}
+_MOMENT_RE = r"\b(?:(before|after)\s+(breakfast|lunch|dinner|supper|bed(?:\s*time)?|sleeping|sleep)|(bed\s*time)|(end\s+of\s+(?:the\s+)?day|eod))\b"
+_KEYWORD_CLOCKS = [
+    (r"\bbreakfast\b", (8, 30)),
+    (r"\blunch\b", (13, 0)),
+    (r"\b(?:dinner|supper)\b", (20, 0)),
+    (r"\b(?:call|phone|ring|movie|party|catch up|hangout)\b", (18, 0)),
+]
+_AM_WORDS = r"\b(?:wake|wakeup|alarm|jog\w*|yoga|breakfast|meditat\w*|school|namaz|puja)\b"
+_PM_WORDS = r"\b(?:dinner|supper|party|movie|concert|date|drinks|netflix|tv)\b"
 
 # ---------------------------------------------------------------------------------------------------
 # Unicode helpers (JS uses \p{L} \p{M} \p{N}; Python's re has no such classes)
@@ -295,16 +315,24 @@ def _spoken_numbers(text: str) -> str:
     return s
 
 
+_UNIT_SHORT_FORMS = {"mins", "min", "mnts", "mnt", "minuts", "minutess", "mints", "hrs", "hr", "hurs", "hrss"}
+
+
 def fix_typos(text: str) -> str:
+    source = str(text or "")
+
     def repair(m: re.Match) -> str:
         word = m.group(0)
         lower = word.lower()
+        # "5 hrs" is a duration, but "send resume to hr" is not: a unit short form needs a number in front of it
+        if lower in _UNIT_SHORT_FORMS and not re.search(r"\d\s*$", source[: m.start()]):
+            return word
         if lower in _ALIASES:
             alias = _ALIASES[lower]
             return word if alias is None else alias
         return _nearest_word(lower) or word
 
-    fixed = re.sub(r"[A-Za-z0-9']+", repair, str(text or ""))
+    fixed = re.sub(r"[A-Za-z0-9']+", repair, source)
     fixed = re.sub(r"\b(\d+)\s*(?:mins?|mnts?)\b", r"\1 minutes", fixed, flags=A | re.I)
     return _spoken_numbers(fixed)
 
@@ -486,7 +514,7 @@ def _to24(hour12: int, meridiem: str) -> int:
     return (hour12 % 12) + 12 if meridiem[:1].lower() == "p" else hour12 % 12
 
 
-def _guess_hour(h: int, minute: int, part: str | None, now_ms: int) -> int:
+def _guess_hour(h: int, minute: int, part: str | None, now_ms: int, bias: str | None = None, future_day: bool = False) -> int:
     if h >= 13:
         return h
     if part == "morning":
@@ -499,8 +527,14 @@ def _guess_hour(h: int, minute: int, part: str | None, now_ms: int) -> int:
         return 0 if h == 12 else (h + 12 if h >= 6 else h)
     if h == 12:
         return 12
+    if bias == "am":
+        return h
+    if bias == "pm":
+        return h + 12
     if 1 <= h <= 6:
         return h + 12
+    if future_day:
+        return h
     now = _ist_parts(now_ms)
     now_min = now["h"] * 60 + now["mi"]
     if now_min < h * 60 + minute:
@@ -546,66 +580,122 @@ def _next_day_of_month(now_p: dict, day: int) -> int | None:
     return None
 
 
-def _default_from_now(now: int) -> int:
-    candidate = now + DEFAULT_LEAD_MS
-    return now + LATE_NIGHT_LEAD_MS if _day_start(candidate) != _day_start(now) else candidate
+def _default_from_now(now: int, said_today: bool = False) -> int:
+    """About 2 hours ahead on the next hour or half hour; before 7 am it waits for 9 am, from 10 pm on for 9 am tomorrow
+    (or, when the person said "today", about 10 minutes on a 5-minute mark)."""
+    slot = -(-(now + DEFAULT_LEAD_MS) // SLOT_MS) * SLOT_MS
+    same_day = _day_start(slot) == _day_start(now)
+    hour = _ist_parts(slot)["h"]
+    if same_day and EARLIEST_DEFAULT_HOUR <= hour < LATEST_DEFAULT_HOUR:
+        return slot
+    if same_day and hour < EARLIEST_DEFAULT_HOUR:
+        return _day_start(now) + 9 * HOUR
+    if said_today:
+        soon = -(-(now + 10 * MIN) // (5 * MIN)) * (5 * MIN)
+        return soon if _day_start(soon) == _day_start(now) else now + 10 * MIN
+    return _day_start(now) + DAY + 9 * HOUR
+
+
+def _moment_key(m: re.Match) -> str:
+    if m.group(4):
+        return "end of day"
+    if m.group(3):
+        return "before bed"
+    what = "bed" if re.match(r"bed|sleep", m.group(2)) else "dinner" if m.group(2) == "supper" else m.group(2)
+    return f"{m.group(1)} {what}"
 
 
 # ---------------------------------------------------------------------------------------------------
 # Title / description
 # ---------------------------------------------------------------------------------------------------
-_FILLER_LEADING = re.compile(
-    r"^(?:(?:please|plz|pls|hey|hi)\s+)?(?:(?:can|could)\s+you\s+)?(?:remind\s+me|reminder|set\s+(?:a\s+)?reminder|mujhe\s+yaad\s+dilao|yaad\s+dilana|add)\s*(?:to|about|for|that|ki|ko|:)?\s*",
-)
+TITLE_MAX_WORDS = 9
+TITLE_MAX_CHARS = 60
+
+# Lead-in words that say "remember this" but are not the thing to remember (see quickParse.js).
+_LEAD_PATTERNS = [re.compile(x, A) for x in (
+    r"^(?:please|plz|pls|kindly|hey|hi|ok|okay|so|also|then|really|just|actually)\s+",
+    r"^(?:can|could|would|will)\s+you\s+(?:please\s+)?",
+    r"^(?:remind\s+me|reminder|set\s+(?:a\s+)?reminder|add\s+(?:a\s+)?reminder|mujhe\s+yaad\s+dilao|yaad\s+dilana|add)\s*(?:to|about|for|that|ki|ko|:)?\s*",
+    r"^(?:i|we)(?:'ll|\s+will)\s+",
+    r"^(?:let\s+me|lemme)\s+",
+    r"^(?:i|we|mujhe|mereko|hume|humein)\s+(?:(?:really|just|also)\s+)?(?:need|must|should|gotta|wanna)(?:\s+(?:really|just|actually|also))?(?:\s+to)?\s+",
+    r"^(?:i|we)\s+(?:have|got|has)\s+(?:an?|the)\s+",
+    r"^(?:i|we|mujhe|mereko|hume|humein)\s+(?:(?:really|just|also)\s+)?(?:have|has|got|want|ought)\s+to\s+",
+    r"^(?:mujhe|mereko|hume|humein)\s+",
+    r"^(?:need|have|has|got|want)\s+to\s+",
+    r"^(?:gotta|must|should|wanna|supposed\s+to)\s+",
+    r"^(?:(?:please\s+)?(?:don'?t|do\s+not|never)\s+forget|remember|yaad\s+se|yaad\s+rakhna|yaad\s+rakho|bhoolna\s+mat|make\s+sure)(?:\s+(?:to|that|ki|i|you))?\s+",
+)]
+_TRAIL_PATTERNS = [re.compile(x, A) for x in (
+    r"\s+(?:(?:please|plz|pls)\s+)?(?:remind\s+me|reminder)$",
+    r"\s+(?:please|plz|pls|thanks|thank\s+you|ok|okay)$",
+    r"\s+(?:hai|hain|hoga|hogi|tha|thi)$",
+    r"\s+(?:yaad\s+se|yaad\s+rakhna|bhoolna\s+mat)$",
+)]
+# A word like "on" / "by" / "before" left standing right before the place where a date or time was taken out
+_DANGLING = re.compile(r"\b(?:on|at|by|before|till|until|due|from|around)\s{2,}", A)
 _FILLER_EDGES = re.compile(
     r"^(?:to|about|for|that|ki|ko|ke liye|at|on|by|in|the|a|and|aur|se|tak|par|pe|per|me|mein)\s+|\s+(?:to|about|for|that|ki|ko|ke liye|at|on|by|in|and|aur|se|tak|par|pe|per|me|mein|from|due|before|till|until|deadline)$",
+    A,
 )
-
-
-def _clean_title(text: str) -> str:
-    t = re.sub(r"\s+", " ", re.sub(r"[,;|]+", " ", text)).strip()
-    t = _FILLER_LEADING.sub("", t, count=1).strip()
-    for _ in range(4):
-        nxt = _FILLER_EDGES.sub("", t, count=1).strip()
-        if nxt == t:
-            break
-        t = nxt
-    return re.sub(r"^[\s.:\-–—]+|[\s.:\-–—]+$", "", t).strip()
+_TRAILING_STOPWORDS = re.compile(r"\s+(?:to|the|a|an|of|for|and|with|in|on|at|by|from|my|your|our|that|this|every|each|all|any|some|aur|ko|ki|ka|ke|se|me|mein)$", A)
+_CLAUSE_BREAK = re.compile(r",|\s(?:because|so that|since|as|but|which|while|kyunki|kyuki|taaki|jab|aur|and)\s", A)
 
 
 def _words_in(t: str) -> int:
     return len([w for w in re.split(r"\s+", t) if w])
 
 
-def _first_detail_break(text: str) -> tuple[int, int] | None:
-    best: tuple[int, int] | None = None
-    for rx in (r"\s[-–—]\s", r"[:;]", r"\(", r"\s(?:because|about|regarding|including|include)\s"):
-        m = re.search(rx, text)
-        if m and (best is None or m.start() < best[0]):
-            best = (m.start(), len(m.group(0)))
-    comma = text.find(",")
-    if comma > 0 and _words_in(text[:comma]) >= 2 and (best is None or comma < best[0]):
-        best = (comma, 1)
-    return best
+def _tidy(t: str) -> str:
+    t = re.sub(r"\s+", " ", t)
+    t = re.sub(r"\s+,", ",", t)
+    t = re.sub(r"(?:,\s*){2,}", ", ", t)
+    t = re.sub(r"^[\s.,:;\-–—]+|[\s.,:;\-–—]+$", "", t)
+    return t.strip()
 
 
-def _split_title_and_description(text: str) -> tuple[str, str | None]:
-    rest = text
-    for _ in range(4):
-        cut = _first_detail_break(rest)
-        if not cut:
-            return _clean_title(rest), None
-        title = _clean_title(rest[: cut[0]])
-        after = rest[cut[0] + cut[1]:]
-        if not title:
-            rest = after
-            continue
-        d = re.sub(r"[()|]", " ", after)
-        d = re.sub(r"\s*,\s*", ", ", d)
-        d = re.sub(r"\s+", " ", d)
-        d = re.sub(r"^[\s.,:;\-–—]+|[\s.,:;\-–—]+$", "", d)
-        return title, (d or None)
-    return _clean_title(rest), None
+def _build_title(text: str, original: str) -> str:
+    """The title from the sentence with its date, time and repeat words already taken out (lower case)."""
+    t = _DANGLING.sub(" ", text)
+    t = re.sub(r"\s*[:;|]\s*", ", ", t)
+    t = re.sub(r"\s[-–—]\s", ", ", t)
+    t = re.sub(r"\s*[()]\s*", ", ", t)
+    t = _tidy(t)
+    for _ in range(6):
+        before = t
+        for rx in _LEAD_PATTERNS:
+            t = rx.sub("", t, count=1).strip()
+        for rx in _TRAIL_PATTERNS:
+            t = rx.sub("", t, count=1).strip()
+        t = _tidy(_FILLER_EDGES.sub("", t, count=1))
+        if t == before:
+            break
+    if not t:
+        return "Reminder"
+    if _words_in(t) > 6:
+        t = re.sub(r"\b(?:my|our)\s+", "", t, flags=A)
+    t = _cap_title(t)
+    t = _restore_case(t, original)
+    return _cap(t)[:200]
+
+
+def _cap_title(t: str) -> str:
+    """A long sentence is cut where one thought ends; with no such place, at the last whole word that fits."""
+    if _words_in(t) <= TITLE_MAX_WORDS and len(t) <= TITLE_MAX_CHARS:
+        return t
+    for m in _CLAUSE_BREAK.finditer(t):
+        left = _tidy(t[: m.start()])
+        if 3 <= _words_in(left) <= TITLE_MAX_WORDS and len(left) <= TITLE_MAX_CHARS:
+            return left
+    out: list[str] = []
+    for w in t.split(" "):
+        if len(out) >= TITLE_MAX_WORDS or len(" ".join([*out, w])) > TITLE_MAX_CHARS:
+            break
+        out.append(w)
+    cut = _tidy(" ".join(out))
+    for _ in range(3):
+        cut = _tidy(_TRAILING_STOPWORDS.sub("", cut, count=1))
+    return cut
 
 
 def _restore_case(text: str, original: str) -> str:
@@ -696,9 +786,9 @@ def parse_quick(text: str, now_ms: int) -> dict[str, Any] | None:
         state.text = re.sub(rf"\b\d{{1,2}}\s*[-–]\s*(\d{{1,2}})\s+({_MONTH_NAME})\b", r"\1 \2", state.text, count=1, flags=A)
         if _take(state, r"\b(?:day after tomorrow|parso|parson|overmorrow)\b"):
             day_ms = _day_start(now) + 2 * DAY
-        elif _take(state, r"\b(?:tomorrow|tmrw|tmr|tomorow|tommorow|kal)\b"):
+        elif _take(state, r"\b(?:tomorrow|tmrw|tmr|tomorow|tommorow)(?:'?s)?\b|\bkal\b"):
             day_ms = _day_start(now) + DAY
-        elif _take(state, r"\b(?:today|aaj|tonight)\b"):
+        elif _take(state, r"\b(?:today(?:'?s)?|aaj|tonight(?:'?s)?)\b"):
             day_ms = _day_start(now)
         elif _take(state, r"\bnext week\b"):
             day_ms = _day_start(now) + 7 * DAY
@@ -731,32 +821,53 @@ def parse_quick(text: str, now_ms: int) -> dict[str, Any] | None:
     clock: tuple[int, int] | None = None
     part_key = part_from_repeat
     clock_from_part = False
+    lower_original = original.lower()
+    am_hit = bool(re.search(_AM_WORDS, lower_original, A))
+    pm_hit = bool(re.search(_PM_WORDS, lower_original, A))
+    bias = ("am" if am_hit else "pm") if am_hit != pm_hit else None
+    # "tomorrow at 9" and "every day at 10" are mornings; "the next time it happens" is only for a one-time reminder today
+    future_day = schedule != "once" or (day_ms is not None and day_ms > _day_start(now))
+
+    def guess(h: int, minute: int) -> int:
+        return _guess_hour(0 if h == 24 else h, minute, part_key, now, bias, future_day)
+
     if re.search(r"\btonight\b", original, A | re.I):
         part_key = "night"
     part_match = re.search(rf"\b({_PART_ANY})\b", state.text, A)
     if part_match and not part_key:
         part_key = _part_key(part_match.group(1))
 
-    m = _take(state, r"\b(?:at\s+|@\s*)?(\d{1,2})(?:[:.](\d{2}))?\s*(a\.?m\.?|p\.?m\.?)(?=\W|$)")
+    moment = _take(state, _MOMENT_RE)
+
+    m = _take(state, r"\b(half\s+past|quarter\s+past|quarter\s+to)\s+(\d{1,2})(?:\s*(a\.?m\.?|p\.?m\.?))?(?=\W|$)")
     if m:
+        h = int(m.group(2))
+        if 1 <= h <= 12:
+            to = m.group(1).endswith("to")
+            hh = (12 if h == 1 else h - 1) if to else h
+            minute = 30 if m.group(1).startswith("half") else 45 if to else 15
+            clock = (_to24(hh, m.group(3)) if m.group(3) else guess(hh, minute), minute)
+    if not clock and (m := _take(state, r"\b(?:at\s+|@\s*)?(\d{1,2})(?:[:.\s](\d{2}))?\s*(a\.?m\.?|p\.?m\.?)(?=\W|$)")):
         h, mi = int(m.group(1)), int(m.group(2) or 0)
         if 1 <= h <= 12 and mi <= 59:
             clock = (_to24(h, m.group(3)), mi)
     if not clock and (m := _take(state, r"\b(?:at\s+|@\s*)?([01]?\d|2[0-3]):([0-5]\d)\b")):
         h, mi = int(m.group(1)), int(m.group(2))
-        clock = (h, mi) if h >= 13 or len(m.group(1)) == 2 or h == 0 else (_guess_hour(h, mi, part_key, now), mi)
+        clock = (h, mi) if h >= 13 or len(m.group(1)) == 2 or h == 0 else (guess(h, mi), mi)
     if not clock and (m := _take(state, r"\b(?:at\s+|@\s*)?(\d{1,2})(?:[:.](\d{2}))?\s*(?:baje|bje|o'?clock|oclock|am|pm)\b")):
         h, mi = int(m.group(1)), int(m.group(2) or 0)
         if 0 <= h <= 24 and mi <= 59:
-            clock = (_guess_hour(0 if h == 24 else h, mi, part_key, now), mi)
+            clock = (guess(h, mi), mi)
     if not clock and (m := _take(state, r"\bat\s+(\d{1,2})(?:[:.](\d{2}))?(?!\d)(?!\s*(?:min|hour|hr|day|week|%))")):
         h, mi = int(m.group(1)), int(m.group(2) or 0)
         if 0 <= h <= 24 and mi <= 59:
-            clock = (_guess_hour(0 if h == 24 else h, mi, part_key, now), mi)
+            clock = (guess(h, mi), mi)
     if not clock and _take(state, r"\b(?:noon|midday|dopahar ko)\b"):
         clock = (12, 0)
     if not clock and _take(state, r"\b(?:midnight|aadhi raat)\b"):
         clock = (0, 0)
+    if not clock and moment:
+        clock = _MOMENTS.get(_moment_key(moment))
     if clock:
         found.append("time")
     if part_match:
@@ -766,7 +877,17 @@ def parse_quick(text: str, now_ms: int) -> dict[str, Any] | None:
         clock_from_part = True
         found.append("part")
 
-    # 5. resolve
+    # 5. title (the title is all there is: no description) and category
+    title = _build_title(state.text, original)
+    category = _pick_category(title, "", _guess_category(lower_original))
+
+    def usual_clock() -> tuple[int, int] | None:
+        for rx, at in _KEYWORD_CLOCKS:
+            if re.search(rx, lower_original, A):
+                return at
+        return None
+
+    # 6. resolve the due date / time_of_day
     payload: dict[str, Any] = {"schedule_type": schedule, "description": None}
     if schedule == "once":
         if relative_ms is not None:
@@ -778,30 +899,25 @@ def parse_quick(text: str, now_ms: int) -> dict[str, Any] | None:
             if due <= now:
                 due += DAY
         elif not clock:
-            due = _default_from_now(now) if day_ms == _day_start(now) else day_ms + (DEFAULT_TIME_ON_FUTURE_DAY[0] * 60 + DEFAULT_TIME_ON_FUTURE_DAY[1]) * MIN
+            at = usual_clock() or DEFAULT_TIME_ON_FUTURE_DAY
+            due = _default_from_now(now, True) if day_ms == _day_start(now) else day_ms + (at[0] * 60 + at[1]) * MIN
         else:
             due = day_ms + (clock[0] * 60 + clock[1]) * MIN
             if clock_from_part and due <= now and day_ms == _day_start(now):
-                due = _default_from_now(now)
+                due = _default_from_now(now, True)
             if part_key == "night" and not clock_from_part and clock[0] < 6 and due <= now and day_ms == _day_start(now):
                 due += DAY
             if bare_past and due <= now:
                 due += 7 * DAY
         payload["due_date"] = due
     else:
-        h, mi = clock or (9, 0)
+        h, mi = clock or usual_clock() or (9, 0)
         payload["time_of_day"] = f"{h:02d}:{mi:02d}"
         if schedule == "weekly":
             payload["weekdays"] = weekdays
 
-    # 6. title, description, category
-    raw_title, description = _split_title_and_description(state.text)
-    title = raw_title or _clean_title(original.lower()) or original
-    title = _cap(_restore_case(title, original))
-    payload["title"] = title[:200]
-    detail = _restore_case(description, original) if description else ""
-    payload["description"] = _cap(detail) if detail else None
-    payload["category"] = _pick_category(payload["title"], payload["description"] or "", _guess_category(original.lower()))
+    payload["title"] = title
+    payload["category"] = category
 
     word_count = len(original.split(" "))
     confidence = "high" if found or word_count <= 3 else "low"

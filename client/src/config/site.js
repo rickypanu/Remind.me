@@ -1,7 +1,7 @@
 // Single source of truth for contact details and links. Change them here and every page updates.
 export const SITE = {
   name: "GetRemindMe",
-  tagline: "Specific, daily and weekly reminders delivered to Telegram and your browser.",
+  tagline: "Forget less. Do more.",
   supportEmail: "rickypanu2005@gmail.com",
   // Add a number in international format (e.g. "+919876543210") to show a tap-to-call link in the footer.
   // Leave empty to hide it: no placeholder number is ever shown.

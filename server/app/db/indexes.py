@@ -79,6 +79,23 @@ INDEX_SPECS: tuple[IndexSpec, ...] = (
         name="ix_users_telegram_chat_id",
         options={"sparse": True},
     ),
+    # Invite codes: unique among the users that have one (most do not until they open "Friends").
+    IndexSpec(
+        collection="users",
+        keys=(("invite_code", 1),),
+        name="uq_users_invite_code",
+        options={"unique": True, "sparse": True},
+        duplicate_pipeline=_duplicates_by("$invite_code", {"$match": {"invite_code": {"$exists": True}}}),
+    ),
+    # --- friendships -------------------------------------------------------------------------
+    IndexSpec(
+        collection="friendships",
+        keys=(("user_id", 1), ("friend_id", 1)),
+        name="uq_friendships_pair",
+        options={"unique": True},
+        duplicate_pipeline=_duplicates_by({"u": "$user_id", "f": "$friend_id"}),
+    ),
+    IndexSpec(collection="friendships", keys=(("friend_id", 1),), name="ix_friendships_friend"),
     # --- tasks -------------------------------------------------------------------------------
     # "my reminders", dashboard buckets
     IndexSpec(collection="tasks", keys=(("user_id", 1), ("due_date", 1)), name="ix_tasks_user_due"),

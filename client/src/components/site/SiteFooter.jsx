@@ -12,7 +12,7 @@ export default function SiteFooter() {
         <div className="rs-footer-grid">
           <div>
             <SiteLogo />
-            <p className="rs-foot-note">{t("Specific, daily and weekly reminders, delivered to Telegram and your browser.")}</p>
+            <p className="rs-foot-note">{t("Forget less. Do more.")}</p>
           </div>
           <div>
             <h4>{t("Service")}</h4>

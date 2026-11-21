@@ -21,6 +21,7 @@ const Home = lazyRoute(() => import("./pages/public/Home"));
 const About = lazyRoute(() => import("./pages/public/About"));
 const FAQ = lazyRoute(() => import("./pages/public/Faqs"));
 const Terms = lazyRoute(() => import("./pages/public/Terms"));
+const Join = lazyRoute(() => import("./pages/public/Join"));
 const NotFound = lazyRoute(() => import("./pages/public/NotFound"));
 const Login = lazyRoute(() => import("./pages/auth/Login"));
 const Register = lazyRoute(() => import("./pages/auth/Register"));
@@ -79,6 +80,7 @@ function App() {
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/faqs" element={<FAQ />} />
                 <Route path="/about" element={<About />} />
+                <Route path="/join/:code" element={<Join />} />
 
                 {/* Protected user routes */}
                 <Route path="/dashboard" element={guarded(<Dashboard />)} />

@@ -3,9 +3,9 @@
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Query, Request, status
+from fastapi import APIRouter, BackgroundTasks, Query, Request, status
 
-from app.api.deps import QuickAddSvc, TaskSvc, UserId
+from app.api.deps import CurrentUser, QuickAddSvc, SocialSvc, TaskSvc, UserId
 from app.core.rate_limit import Limits, limiter
 from schemas.auth import MessageResponse
 from schemas.task import (
@@ -76,8 +76,22 @@ async def edit_task(task_id: str, payload: TaskUpdate, user_id: UserId, tasks: T
 
 
 @router.patch("/{task_id}", response_model=TaskStatusResponse)
-async def set_task_status(task_id: str, payload: TaskStatusUpdate, user_id: UserId, tasks: TaskSvc) -> dict:
-    return await tasks.set_status(user_id, task_id, payload)
+async def set_task_status(
+    task_id: str,
+    payload: TaskStatusUpdate,
+    user_id: UserId,
+    user: CurrentUser,
+    tasks: TaskSvc,
+    social: SocialSvc,
+    background: BackgroundTasks,
+    request: Request,
+) -> dict:
+    result = await tasks.set_status(user_id, task_id, payload)
+    if payload.status == "completed":
+        notifier = getattr(request.app.state, "notifier", None)  # optional: the buddy ping is a bonus, never required
+        if notifier is not None:
+            background.add_task(social.ping_buddies, notifier, user_id, user.get("username", "A friend"))
+    return result
 
 
 @router.delete("/{task_id}", response_model=MessageResponse)

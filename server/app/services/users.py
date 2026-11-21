@@ -13,6 +13,7 @@ from app.repositories import (
     LinkTokenRepository,
     PasswordResetRepository,
     SessionRepository,
+    SocialRepository,
     TaskRepository,
     UserRepository,
 )
@@ -32,6 +33,8 @@ def profile_of(user: dict[str, Any]) -> dict[str, Any]:
         "created_at": user.get("created_at"),
         "avatar_url": user.get("avatar_url"),
         "is_admin": bool(user.get("is_admin", False)),
+        "notify_tone": user.get("notify_tone") or "friendly",
+        "notify_lang": user.get("notify_lang") or "en",
     }
 
 
@@ -42,10 +45,11 @@ class UserService:
         self.avatars = AvatarRepository(db)
 
     async def update_profile(self, user_id: ObjectId, changes: dict[str, Any]) -> dict[str, Any]:
-        """``changes`` is ``UserUpdate.model_dump(exclude_unset=True)``: only username / avatar_url can be here."""
+        """``changes`` is ``UserUpdate.model_dump(exclude_unset=True)``: only the UserUpdate fields can be here."""
         fields = dict(changes)
-        if fields.get("username") is None:
-            fields.pop("username", None)  # an explicit null username is meaningless; keep the old one
+        for name in ("username", "notify_tone", "notify_lang"):
+            if fields.get(name) is None:
+                fields.pop(name, None)  # an explicit null means "no change", never "clear it"
         if not fields:
             raise BadRequest("No valid fields provided for update.")
 
@@ -83,6 +87,7 @@ class UserService:
         """
         await TaskRepository(self.db).delete_all_for_user(user_id)
         await CompletionRepository(self.db).delete_all_for_user(user_id)
+        await SocialRepository(self.db).delete_all_for_user(user_id)
         await self.avatars.delete(str(user_id))
         await SessionRepository(self.db).delete_for_user(str(user_id))
         await PasswordResetRepository(self.db).delete_for_user(str(user_id))

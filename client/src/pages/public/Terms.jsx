@@ -106,6 +106,7 @@ const privacySections = [
       'Profile picture: a photo you upload (stored in our database) or the illustration you choose.',
       'Telegram details, if you connect it: your Telegram chat ID and, only if you choose to share it, your phone number.',
       'Browser notification details, if you enable alerts: a push subscription (an address and encryption keys issued by your browser) for each device you enable.',
+      'Friends, if you use them: your invite code, who you have added, and the buddy you choose. Friends can see your name, profile picture and current streak. A reminder you send to a friend is stored in their account with your name on it.',
       'Technical data: IP address and request logs, which our hosting providers process to run and secure the service.',
     ],
   },

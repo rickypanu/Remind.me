@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
-import { ArrowRight, Globe, Menu, Moon, Sun, X } from "../icons";
+import { ArrowRight, Download, Globe, Menu, Moon, Sun, X } from "../icons";
+import { SITE } from "../../config/site";
 import { LogoMark } from "../Logo";
 import { useTheme } from "../../theme/ThemeContext";
 import { useI18n } from "../../i18n";
@@ -101,6 +102,9 @@ export default function SiteHeader() {
           <button type="button" className="rs-icon-btn" onClick={toggleColorMode} aria-label={modeLabel} title={modeLabel}>
             {isDark ? <Sun size={19} /> : <Moon size={19} />}
           </button>
+          <a href={SITE.apkUrl} className="rs-btn rs-btn--line rs-btn--small rs-hide-sm rs-hide-md" rel="noopener">
+            <Download size={16} /> {t("Android app")}
+          </a>
           {loggedIn ? (
             <Link to="/dashboard" className="rs-btn rs-btn--gold rs-btn--small rs-hide-sm">
               {t("Open dashboard")} <ArrowRight size={16} />
@@ -138,6 +142,9 @@ export default function SiteHeader() {
           ))}
           <div className="rs-sheet-actions">
             <LangSelect />
+            <a href={SITE.apkUrl} className="rs-btn rs-btn--ink" rel="noopener">
+              <Download size={18} /> {t("Get the Android app")}
+            </a>
             {loggedIn ? (
               <Link to="/dashboard" className="rs-btn rs-btn--gold">
                 {t("Open dashboard")}

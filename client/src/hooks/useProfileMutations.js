@@ -32,6 +32,14 @@ export function useSetAvatarUrl() {
   });
 }
 
+export function useSetVoice() {
+  const patch = useProfilePatcher();
+  return useMutation({
+    mutationFn: ({ tone, lang }) => userApi.setVoice(tone, lang),
+    onSuccess: (_data, { tone, lang }) => patch({ notify_tone: tone, notify_lang: lang }),
+  });
+}
+
 export function useUploadAvatar() {
   const patch = useProfilePatcher();
   return useMutation({

@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { Moon, Sun, Palette, Check } from "../../components/icons";
 import { useTheme, ACCENTS } from "../../theme/ThemeContext";
+import { LOOK_OPTIONS, readLook, saveLook } from "../../utils/look";
 
 export function Switch({ checked, onChange, label }) {
   return (
@@ -41,6 +42,39 @@ export function Row({ icon: Icon, label, subLabel, checked, onChange }) {
 }
 
 /** "Appearance" card for the Profile page: dark mode, Minimalism theme and accent colour. */
+function LookPicker({ name }) {
+  const [look, setLook] = useState(readLook);
+  const { label, items } = LOOK_OPTIONS[name];
+  return (
+    <div className="p-4 bg-white border-t border-gray-100">
+      <p className="font-medium text-gray-900">{label}</p>
+      <div role="radiogroup" aria-label={label} className="mt-3 flex flex-wrap gap-2">
+        {items.map((item) => {
+          const on = look[name] === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              title={item.hint}
+              onClick={() => {
+                saveLook(name, item.id);
+                setLook(readLook());
+              }}
+              className={`rounded-xl border-[1.5px] px-3.5 py-2 text-sm font-semibold transition active:scale-95 ${
+                on ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 text-gray-700 hover:border-slate-400"
+              }`}
+            >
+              {item.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function AppearanceSettings() {
   const { isDark, isMinimal, accent, selectAccent, toggleColorMode, toggleThemeStyle } = useTheme();
   const active = isMinimal ? "black" : accent;
@@ -49,7 +83,7 @@ export default function AppearanceSettings() {
   return (
     <div>
       <h3 className="px-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Appearance</h3>
-      <div className="bg-white border border-gray-100 rounded-[24px] overflow-hidden shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
+      <div className="bg-white border-[1.5px] border-slate-900 rounded-[24px] overflow-hidden shadow-[4px_4px_0_0_#14161f]">
         <Row
           icon={isDark ? Moon : Sun}
           label="Dark mode"
@@ -95,6 +129,9 @@ export default function AppearanceSettings() {
             Black uses the Minimalism theme. Colours change buttons, links and highlights across the app.
           </p>
         </div>
+        <LookPicker name="font" />
+        <LookPicker name="cards" />
+        <LookPicker name="density" />
       </div>
     </div>
   );

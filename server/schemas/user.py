@@ -2,7 +2,7 @@
 
 import re
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Literal
 from urllib.parse import unquote
 from xml.etree import ElementTree
 
@@ -77,12 +77,15 @@ AvatarUrl = Annotated[str | None, AfterValidator(check_avatar_url)]
 
 
 class UserUpdate(BaseModel):
-    """PATCH /user/me. Only these two fields can ever be changed here (no is_admin, email, password, ...)."""
+    """PATCH /user/me. Only these fields can ever be changed here (no is_admin, email, password, ...)."""
 
     model_config = ConfigDict(extra="forbid")
 
     username: Username | None = None
     avatar_url: AvatarUrl = None
+    # How notifications talk (Telegram and browser push; the phone app keeps its own copy of the same choice).
+    notify_tone: Literal["friendly", "funny", "strict", "calm"] | None = None
+    notify_lang: Literal["en", "hinglish"] | None = None
 
     @field_validator("username", mode="before")
     @classmethod
@@ -101,6 +104,8 @@ class UserResponse(BaseModel):
     created_at: datetime | None = None
     avatar_url: str | None = None
     is_admin: bool = False
+    notify_tone: str = "friendly"
+    notify_lang: str = "en"
 
 
 class ProfileUpdateResponse(BaseModel):

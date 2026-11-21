@@ -13,6 +13,7 @@ from app.repositories.completions import CompletionRepository
 from app.repositories.locks import LockRepository
 from app.repositories.password_resets import PasswordResetRepository
 from app.repositories.sessions import SessionRepository
+from app.repositories.social import SocialRepository
 from app.repositories.tasks import TaskRepository
 from app.repositories.telegram_tokens import LinkTokenRepository
 from app.repositories.users import UserRepository
@@ -25,6 +26,7 @@ __all__ = [
     "LockRepository",
     "PasswordResetRepository",
     "SessionRepository",
+    "SocialRepository",
     "TaskRepository",
     "UserRepository",
 ]

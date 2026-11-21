@@ -138,6 +138,7 @@ class TaskService:
             "schedule_type": task.schedule_type,
             "time_of_day": task.time_of_day,
             "weekdays": task.weekdays,
+            "interval_days": task.interval_days,
             "ends_on": task.ends_on,
             "completed_count": 0,
             "priority": task.priority,
@@ -148,7 +149,7 @@ class TaskService:
         if task.client_id:
             doc["client_id"] = task.client_id
         if task.schedule_type in RECURRING_TYPES:
-            first = next_occurrence(task.schedule_type, task.time_of_day, task.weekdays, self._clock(), task.ends_on)
+            first = next_occurrence(task.schedule_type, task.time_of_day, task.weekdays, self._clock(), task.ends_on)  # a new series starts at the next daily slot
             if first is None:
                 raise Unprocessable(NO_UPCOMING)
             doc["due_date"] = first
@@ -258,7 +259,8 @@ class TaskService:
                 raise Unprocessable(str(exc)) from None
             time_of_day = f"{parsed.hour:02d}:{parsed.minute:02d}"
             upcoming = next_occurrence(
-                schedule_type, time_of_day, task.get("weekdays"), self._clock(), task.get("ends_on")
+                schedule_type, time_of_day, task.get("weekdays"), self._clock(), task.get("ends_on"),
+                int(task.get("interval_days") or 1), self._clock(),
             )
             if upcoming is None:
                 raise Unprocessable(NO_UPCOMING)

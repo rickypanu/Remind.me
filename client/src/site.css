@@ -109,6 +109,10 @@ html.dark .rs {
   .rs-nav { display: flex; }
   .rs-burger { display: none; }
   .rs-header-end .rs-hide-sm { display: inline-flex; }
+  .rs-header-end .rs-hide-sm.rs-hide-md { display: none; } /* the header is tight until there is room for the Android link */
+}
+@media (min-width: 1180px) {
+  .rs-header-end .rs-hide-sm.rs-hide-md { display: inline-flex; }
 }
 
 /* ---------- section scaffolding ---------- */
@@ -136,6 +140,8 @@ html.dark .rs {
 .rs-hero h1 { font-size: clamp(2.6rem, 6.2vw, 4.9rem); margin-top: 22px; letter-spacing: -0.04em; line-height: 1.02; }
 .rs-hero-sub { margin-top: 22px; font-size: 19px; line-height: 1.55; color: var(--rs-ink-2); max-width: 50ch; }
 .rs-cta-row { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 14px; }
+.rs-hero-note { margin: 16px 0 0; font-size: 14.5px; color: var(--rs-ink-2); }
+.rs-hero-note a { color: var(--rs-ink); font-weight: 650; text-decoration: underline; text-underline-offset: 3px; }
 .rs-facts { margin-top: 34px; display: flex; flex-wrap: wrap; gap: 10px 26px; font-size: 14.5px; font-weight: 600; color: var(--rs-ink-2); }
 .rs-facts li { display: inline-flex; align-items: center; gap: 8px; }
 .rs-facts svg { color: var(--rs-blue); }
@@ -325,3 +331,7 @@ html.dark .rs {
 /* Brand mark (the RM monogram, drawn from /rm-mark.png so it follows the colour of its tile) */
 .rm-mark { display: inline-flex; align-items: center; justify-content: center; flex: none; background: var(--rs-blue, #2a47d9); border-radius: 24%; position: relative; }
 .rm-mark::after { content: ""; width: 64%; height: 64%; background: #fff; -webkit-mask: url(/rm-mark.png) center / contain no-repeat; mask: url(/rm-mark.png) center / contain no-repeat; }
+
+/* No visible vertical scrollbar anywhere on the site; scrolling itself (wheel, touch, keys) is unchanged. */
+html { scrollbar-width: none; -ms-overflow-style: none; }
+html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0; height: 0; display: none; }

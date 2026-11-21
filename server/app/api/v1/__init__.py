@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from app.api.v1 import admin, auth, tasks, telegram, updates, users, webpush
+from app.api.v1 import admin, auth, social, tasks, telegram, updates, users, webpush
 from schemas.auth import ErrorResponse
 
 _ERRORS = {
@@ -17,6 +17,7 @@ api_router = APIRouter(prefix="/v1", responses=_ERRORS)
 api_router.include_router(auth.router, prefix="/auth")
 api_router.include_router(users.router, prefix="/user")
 api_router.include_router(tasks.router, prefix="/tasks")
+api_router.include_router(social.router, prefix="/social")
 api_router.include_router(updates.router, prefix="/updates")
 api_router.include_router(telegram.router, prefix="/integrations/telegram")
 api_router.include_router(webpush.router, prefix="/integrations/webpush")

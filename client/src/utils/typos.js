@@ -96,11 +96,15 @@ function spokenNumbers(text) {
   return s;
 }
 
+const UNIT_SHORT_FORMS = new Set(['mins', 'min', 'mnts', 'mnt', 'minuts', 'minutess', 'mints', 'hrs', 'hr', 'hurs', 'hrss']);
+
 /** The text with typing mistakes in date / time words repaired. Same text back when there is nothing to repair. */
 export function fixTypos(text) {
   const input = String(text ?? '');
-  const fixed = input.replace(/[A-Za-z0-9']+/g, (word) => {
+  const fixed = input.replace(/[A-Za-z0-9']+/g, (word, offset) => {
     const lower = word.toLowerCase();
+    // "5 hrs" is a duration, but "send resume to hr" is not: a unit short form needs a number in front of it
+    if (UNIT_SHORT_FORMS.has(lower) && !/\d\s*$/.test(input.slice(0, offset))) return word;
     if (Object.prototype.hasOwnProperty.call(ALIASES, lower)) return ALIASES[lower] === null ? word : ALIASES[lower];
     const near = nearestWord(lower);
     return near || word;

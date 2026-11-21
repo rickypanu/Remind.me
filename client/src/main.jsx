@@ -9,7 +9,9 @@ import { ThemeProvider } from './theme/ThemeContext.jsx'
 import { I18nProvider } from './i18n/index.jsx'
 import { warmUpServer } from './utils/warmup'
 import { initInstallCapture } from './utils/install'
+import { applyLook } from './utils/look'
 
+applyLook() // font, card style and spacing the visitor chose
 initInstallCapture() // catch the browser's one-time install offer before React starts
 warmUpServer() // wake a sleeping API now, while the page is still loading
 

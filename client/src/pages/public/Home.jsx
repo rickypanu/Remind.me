@@ -115,19 +115,22 @@ export default function Home() {
               A reminder service for students and busy people
             </span>
             <h1>
-              Reminders that reach you <span className="rs-mark-hl">before</span> the deadline does.
+              Forget less. <span className="rs-mark-hl">Do more.</span>
             </h1>
             <p className="rs-hero-sub">
-              Tell GetRemindMe what to remember in plain words. We read the date, time and repeat, then deliver it to Telegram and your browser, right on schedule.
+              Say what to remember in plain words. GetRemindMe reads the date, time and repeat, then rings you on your phone, Telegram and browser, right on schedule.
             </p>
             <div className="rs-cta-row">
               <Link to="/register" className="rs-btn rs-btn--gold">
                 Start free <ArrowRight size={18} />
               </Link>
-              <a href="#services" className="rs-btn rs-btn--line">
-                See the services
+              <a href={SITE.apkUrl} className="rs-btn rs-btn--ink" rel="noopener">
+                <Download size={18} /> Get the Android app
               </a>
             </div>
+            <p className="rs-hero-note">
+              <a href="#services">See the services</a> &middot; Free APK, no Play Store needed
+            </p>
             <ul className="rs-facts">
               <li>
                 <Sparkles size={17} /> Free to use

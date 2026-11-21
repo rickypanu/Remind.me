@@ -14,6 +14,7 @@ export function buildNewTask(payload, userId, now = Date.now()) {
   const type = payload.schedule_type || 'once';
   const weekdays = type === 'weekly' ? payload.weekdays || [] : [];
   const recurring = type !== 'once';
+  const interval = type === 'daily' ? Math.min(30, Math.max(1, Math.floor(Number(payload.interval_days) || 1))) : 1;
   return {
     id: `local_${newId()}`,
     clientId: newId(),
@@ -28,11 +29,12 @@ export function buildNewTask(payload, userId, now = Date.now()) {
     schedule_type: type,
     time_of_day: recurring ? payload.time_of_day : null,
     weekdays,
+    interval_days: interval,
     ends_on: recurring ? payload.ends_on || null : null,
     due_date: recurring
       ? nextOccurrenceIso(type, payload.time_of_day, weekdays, now, payload.ends_on || null)
       : payload.due_date,
-    schedule_label: describeScheduleLocal(type, payload.time_of_day, weekdays),
+    schedule_label: describeScheduleLocal(type, payload.time_of_day, weekdays, interval),
     completed_count: 0,
     created_at: new Date(now).toISOString(),
     needsSync: true,
@@ -61,8 +63,8 @@ export function applyEdit(task, changes, now = Date.now()) {
   if (!isRecurring(task) && changes.due_date) next.due_date = changes.due_date;
   if (isRecurring(task) && changes.time_of_day) {
     next.time_of_day = changes.time_of_day;
-    next.due_date = nextOccurrenceIso(task.schedule_type, changes.time_of_day, task.weekdays, now, task.ends_on);
-    next.schedule_label = describeScheduleLocal(task.schedule_type, changes.time_of_day, task.weekdays);
+    next.due_date = nextOccurrenceIso(task.schedule_type, changes.time_of_day, task.weekdays, now, task.ends_on, task.interval_days || 1, now);
+    next.schedule_label = describeScheduleLocal(task.schedule_type, changes.time_of_day, task.weekdays, task.interval_days || 1);
   }
   return markDirty(next, { fieldsDirty: true });
 }
@@ -75,7 +77,7 @@ export function applyStatus(task, status, now = Date.now()) {
   if (isRecurring(task)) {
     if (status !== 'completed') return task;
     const due = task.due_date ? new Date(task.due_date).getTime() : now;
-    const nextDue = nextOccurrenceIso(task.schedule_type, task.time_of_day, task.weekdays, Math.max(now, due), task.ends_on);
+    const nextDue = nextOccurrenceIso(task.schedule_type, task.time_of_day, task.weekdays, Math.max(now, due), task.ends_on, task.interval_days || 1, due);
     return markDirty(task, {
       status: nextDue ? 'pending' : 'completed',
       due_date: nextDue || task.due_date,
@@ -128,6 +130,7 @@ export const toCreatePayload = (t) => {
   else {
     p.time_of_day = t.time_of_day;
     if (t.schedule_type === 'weekly') p.weekdays = t.weekdays;
+    if (t.schedule_type === 'daily' && t.interval_days > 1) p.interval_days = t.interval_days;
     if (t.ends_on) p.ends_on = t.ends_on;
   }
   return p;

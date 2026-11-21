@@ -7,8 +7,9 @@
 :root {
   /* Tailwind multiplies every padding, margin, gap and size by this. 0.25rem is the default; 0.222rem tightens the whole site by about 11%. */
   --spacing: 0.222rem;
-  --font-sans: "Schibsted Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Noto Sans", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Arabic", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: "Instrument Sans", "Schibsted Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Noto Sans", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Arabic", Roboto, "Helvetica Neue", Arial, sans-serif;
   --default-font-family: var(--font-sans);
+  --font-display: "Bricolage Grotesque", "Instrument Sans", "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif;
 
   /* Shape: one calm scale. Controls 10px, cards 14px, large panels 18px. */
   --radius-md: 0.5rem;
@@ -104,7 +105,7 @@ body {
 .font-bold { font-weight: 650; }
 .font-semibold { font-weight: 600; }
 .font-medium { font-weight: 500; }
-h1, h2, h3, h4 { text-wrap: balance; }
+h1, h2, h3, h4 { text-wrap: balance; font-family: var(--font-display); }
 h1, h2 { letter-spacing: -0.028em; line-height: 1.12; }
 h3, h4 { letter-spacing: -0.016em; }
 p, li { text-wrap: pretty; }
@@ -186,3 +187,18 @@ html.dark:not([data-theme="minimal"]) {
 }
 html.dark:not([data-theme="minimal"]) .rm-ios-card,
 html.dark:not([data-theme="minimal"]) .bg-white.border { border-color: rgba(255, 255, 255, 0.07); box-shadow: none; }
+
+
+/* ---------------------------------------------------------------------------------------------------------
+ * Look: what the visitor picked in Profile > Look (utils/look.js). Defaults match the public site.
+ * ------------------------------------------------------------------------------------------------------- */
+html[data-font="clean"] { --font-sans: "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif; --font-display: "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif; --rs-display: var(--font-display); --rs-body: var(--font-sans); }
+html[data-font="system"] { --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Arial, sans-serif; --font-display: var(--font-sans); --rs-display: var(--font-sans); --rs-body: var(--font-sans); }
+html[data-font="serif"] { --font-display: ui-serif, Georgia, "Iowan Old Style", "Times New Roman", serif; --rs-display: var(--font-display); }
+html[data-font="serif"] h1, html[data-font="serif"] h2, html[data-font="serif"] h3 { font-weight: 650; letter-spacing: -0.015em; }
+
+html[data-density="compact"] { --spacing: 0.19rem; }
+
+/* Cards: Solid is the app's own style, so only the other two override it. */
+html[data-cards="soft"]:not([data-theme="minimal"]) [class*="shadow-[4px_4px_0_0"] { box-shadow: var(--shadow-md); border-width: 1px; border-color: var(--color-slate-200); }
+html[data-cards="flat"]:not([data-theme="minimal"]) [class*="shadow-[4px_4px_0_0"] { box-shadow: none; }

@@ -89,8 +89,9 @@ class ConversionTests(unittest.TestCase):
 
     def test_defaults_are_applied_and_stored_as_the_same_instant_in_utc(self):
         task = understand_text("buy milk", now=at(10, 15))
-        self.assertEqual(task.due_date, at(12, 15).replace(microsecond=0))
-        self.assertEqual(to_utc(task.due_date), datetime(2026, 10, 24, 6, 45, tzinfo=UTC))
+        # the sentence parser rounds a default up to a clean half hour (the AI-path rules above keep exact minutes)
+        self.assertEqual(task.due_date, at(12, 30).replace(microsecond=0))
+        self.assertEqual(to_utc(task.due_date), datetime(2026, 10, 24, 7, 0, tzinfo=UTC))
 
     def test_a_named_day_without_a_time_gets_nine_am(self):
         task = understand_text("submit report tomorrow", now=at(10, 0))

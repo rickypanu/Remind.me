@@ -78,6 +78,7 @@ export default function CreateTask() {
   });
   const [scheduleType, setScheduleType] = useState("once");
   const [weekdays, setWeekdays] = useState([]);
+  const [intervalDays, setIntervalDays] = useState(1);
   const [extras, setExtras] = useState({ priority: "normal", subtasks: [], alertOffsets: null });
 
   const [customCategory, setCustomCategory] = useState("");
@@ -140,6 +141,7 @@ export default function CreateTask() {
     } else {
       if (!formData.time_of_day) return fail("Please choose a time for the reminder.");
       payload.time_of_day = formData.time_of_day; // HH:MM in IST
+      if (scheduleType === "daily" && intervalDays > 1) payload.interval_days = intervalDays;
       if (scheduleType === "weekly") {
         if (weekdays.length === 0) return fail("Pick at least one day of the week.");
         payload.weekdays = weekdays;
@@ -287,6 +289,14 @@ export default function CreateTask() {
             {/* Daily / weekly */}
             {scheduleType !== "once" && (
               <div className="space-y-4">
+                {scheduleType === "daily" && (
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-medium text-slate-500 ml-0.5">Repeat</span>
+                    <button type="button" aria-label="Fewer days between reminders" onClick={() => setIntervalDays((n) => Math.max(1, n - 1))} className="h-9 w-9 rounded-full border border-slate-200 bg-white text-lg font-bold text-slate-700 hover:bg-slate-50">-</button>
+                    <span className="min-w-[8rem] text-center text-sm font-bold text-slate-900" aria-live="polite">{intervalDays > 1 ? `Every ${intervalDays} days` : "Every day"}</span>
+                    <button type="button" aria-label="More days between reminders" onClick={() => setIntervalDays((n) => Math.min(30, n + 1))} className="h-9 w-9 rounded-full border border-slate-200 bg-white text-lg font-bold text-slate-700 hover:bg-slate-50">+</button>
+                  </div>
+                )}
                 {scheduleType === "weekly" && (
                   <fieldset>
                     <legend className="block text-xs font-medium text-slate-500 mb-1.5 ml-0.5">Repeat on</legend>
@@ -352,7 +362,7 @@ export default function CreateTask() {
                 </div>
                 <p className="text-xs text-slate-500 leading-relaxed">
                   {scheduleType === "daily"
-                    ? "You'll be reminded every day at this time until you delete it."
+                    ? intervalDays > 1 ? `You'll be reminded every ${intervalDays} days at this time until you delete it.` : "You'll be reminded every day at this time until you delete it."
                     : "You'll be reminded at this time on each chosen day until you delete it."}{" "}
                   Ticking it off only finishes that day&apos;s reminder.
                 </p>

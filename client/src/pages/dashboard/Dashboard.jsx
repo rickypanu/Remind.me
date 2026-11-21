@@ -9,6 +9,9 @@ import { isLoggedIn } from "../../utils/auth";
 import usePageMeta from "../../utils/usePageMeta";
 import useOfflineTasks from "../../offline/useOfflineTasks";
 import { createTask } from "../../offline/taskStore";
+import confetti from "../../utils/confetti";
+import { takePendingInvite } from "../../utils/invite";
+import { socialApi } from "../../api";
 import { PENDING_KEY } from "../../components/site/TryIt";
 import useMe, { userIdOf } from "../../hooks/useMe";
 import useDashboardTasks from "../../hooks/useDashboardTasks";
@@ -77,11 +80,27 @@ export default function Dashboard() {
     } catch { /* ignore a malformed value */ }
   }, [userId, t]);
 
+  // A friend's invite link (/join/CODE) is used once the person is signed in.
+  useEffect(() => {
+    if (!userId) return;
+    const code = takePendingInvite();
+    if (!code) return;
+    socialApi.join(code).then(
+      (res) => notify.success(res.message),
+      (error) => notify.error(error, "That invite code could not be used."),
+    );
+  }, [userId]);
+
   const handleToggle = useCallback(
     async (task) => {
       const result = await toggleTask(task);
       const next = result?.task;
       if (next) {
+        if (task.status !== "completed" && (next.status === "completed" || next.schedule_type !== "once")) {
+          // Everything due today is now done: the big one. Otherwise a small burst.
+          const lastOne = today.filter((x) => x.id !== task.id && x.status !== "completed").length === 0 && today.some((x) => x.id === task.id);
+          confetti({ big: lastOne });
+        }
         let message = next.status === "completed" ? t("Task marked complete!") : t("Task moved back to pending");
         if (next.schedule_type !== "once" && task.status !== "completed") {
           message =
@@ -93,7 +112,7 @@ export default function Dashboard() {
       }
       return result;
     },
-    [toggleTask, t]
+    [toggleTask, t, today]
   );
 
   const handleDelete = useCallback(

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Bell, BellRing, BellOff, Loader2, Send, ChevronRight, Play, ShieldAlert, Smartphone } from "../../components/icons";
 import AppPage from "../../components/AppPage";
 import FeedbackSettings from "../../components/FeedbackSettings";
+import VoiceSettings from "../../components/VoiceSettings";
 import usePush from "../../utils/usePush";
 import usePageMeta from "../../utils/usePageMeta";
 import { feedback } from "../../feedback/feedback";
@@ -95,7 +96,12 @@ export default function Notifications() {
           </div>
         </section>
 
-        {/* 3. Sound & vibration */}
+        {/* 3. How notifications talk */}
+        <section aria-label="Notification tone">
+          <VoiceSettings />
+        </section>
+
+        {/* 4. Sound & vibration */}
         <section aria-label="Sound and vibration">
           <FeedbackSettings />
           <button

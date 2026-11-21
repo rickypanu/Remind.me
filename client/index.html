@@ -52,6 +52,11 @@
           var accent = localStorage.getItem("remindme-accent");
           if (["blue", "indigo", "violet", "pink", "orange", "green", "teal"].indexOf(accent) === -1) accent = "blue";
           var root = document.documentElement;
+          var look = { font: ["brand", "clean", "system", "serif"], cards: ["solid", "soft", "flat"], density: ["cozy", "compact"] };
+          for (var k in look) {
+            var v = localStorage.getItem("remindme-look-" + k);
+            root.setAttribute("data-" + k, look[k].indexOf(v) === -1 ? look[k][0] : v);
+          }
           if (mode === "dark") root.classList.add("dark");
           root.setAttribute("data-theme", style);
           root.setAttribute("data-accent", accent);
