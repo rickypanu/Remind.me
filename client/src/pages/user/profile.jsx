@@ -380,7 +380,7 @@ export default function Profile() {
 
               <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
 
-              <div className="mt-3 min-w-0 flex-1 sm:mb-1">
+              <div className="mt-12 min-w-0 flex-1 sm:mb-1">
                 <div className="flex h-10 items-center justify-center sm:justify-start">
                   {isEditingName ? (
                     <div className="flex items-center gap-2">
