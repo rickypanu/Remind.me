@@ -1,5 +1,5 @@
 import React from "react";
-import { Moon, Sun, Palette, Check } from "lucide-react";
+import { Moon, Sun, Palette, Check } from "../../components/icons";
 import { useTheme, ACCENTS } from "../../theme/ThemeContext";
 
 export function Switch({ checked, onChange, label }) {

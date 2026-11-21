@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, UploadCloud } from "lucide-react";
+import { X, UploadCloud } from "../../components/icons";
 import Modal from "../../components/Modal";
 
 // ---------- DiceBear styles (generated avatars) ----------

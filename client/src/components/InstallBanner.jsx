@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Download, Share, X } from "lucide-react";
+import { Download, Share, X } from "./icons";
 import useInstall, { dismissInstallBanner, installBannerDismissed, promptInstall } from "../utils/install";
 import InstallSheet from "./InstallSheet";
 import notify from "../utils/notify";

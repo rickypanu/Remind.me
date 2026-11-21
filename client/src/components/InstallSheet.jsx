@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { Share, SquarePlus, CheckCircle2, X, Compass } from "lucide-react";
+import { Share, SquarePlus, CheckCircle2, X, Compass } from "./icons";
 import Modal from "./Modal";
 
 /**

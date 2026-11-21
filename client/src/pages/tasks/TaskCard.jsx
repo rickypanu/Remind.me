@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CheckCircle2, Circle, Trash2, Pencil, Clock, Loader2, Repeat, CloudOff, Flame, Timer, ListChecks } from 'lucide-react';
+import { CheckCircle2, Circle, Trash2, Pencil, Clock, Loader2, Repeat, CloudOff, Flame, Timer, ListChecks } from '../../components/icons';
 import FocusTimerDialog from '../../components/FocusTimerDialog';
 import { getRelativeTime, formatDueIst } from '../../utils/date';
 import { feedback } from '../../feedback/feedback';

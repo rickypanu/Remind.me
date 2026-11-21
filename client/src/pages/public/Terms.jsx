@@ -1,7 +1,5 @@
-import React, { useEffect } from 'react';
-import { Shield, FileText } from 'lucide-react';
-import PublicLayout from '../../components/PublicLayout';
-import PageHeader from '../../components/PageHeader';
+import React from 'react';
+import SiteLayout from '../../components/site/SiteLayout';
 import usePageMeta from '../../utils/usePageMeta';
 import { routeMeta } from "../../seo/routes";
 import { SITE } from '../../config/site';
@@ -14,7 +12,7 @@ const EMAIL_RE = /([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/g;
 function linkify(text) {
   return String(text).split(EMAIL_RE).map((part, i) =>
     i % 2 === 1 ? (
-      <a key={i} href={`mailto:${part}`} className="font-semibold text-blue-600 underline underline-offset-2 hover:text-blue-700 break-all">
+      <a key={i} href={`mailto:${part}`} style={{ overflowWrap: "anywhere" }}>
         {part}
       </a>
     ) : (
@@ -63,10 +61,10 @@ const termsSections = [
       'You can opt out at any time: unsubscribe a device with the "Subscribed" button in the top bar, disconnect Telegram from the Telegram setup page (or stop or block the bot), or turn off notifications in your browser or device settings.',
   },
   {
-    title: '6. Magic Add and AI Features',
+    title: '6. Magic Add (Quick Add)',
     body: [
-      'Magic Add uses artificial intelligence to turn the sentence you type or speak into a task (title, due date and category). AI output can be wrong or misinterpret dates and times, so please check every task it creates.',
-      'The text you enter into Magic Add is sent to a third-party AI provider for processing (see the Privacy Policy). Do not enter passwords, financial details or other sensitive personal information.',
+      'Magic Add turns the sentence you type or speak into a task (title, due date and category) using GetRemindMe\'s own built-in rules. It can still misread dates and times, so please check every task it creates.',
+      'The text you enter into Magic Add is not sent to any AI service. Even so, do not enter passwords, financial details or other sensitive personal information into a reminder.',
     ],
   },
   {
@@ -82,7 +80,7 @@ const termsSections = [
   },
   {
     title: '9. Disclaimer and Limitation of Liability',
-    body: 'GetRemindMe is provided on an "as is" and "as available" basis. We do not guarantee that notifications will be delivered on time, that Magic Add will be accurate, or that the service will be uninterrupted or error-free. To the fullest extent permitted by law, we are not liable for any missed deadlines, exams or events, financial loss, or other damages resulting from failed or late reminders, incorrect AI output, or service downtime. Please do not rely on GetRemindMe as your only reminder for critical deadlines.',
+    body: 'GetRemindMe is provided on an "as is" and "as available" basis. We do not guarantee that notifications will be delivered on time, that Magic Add will be accurate, or that the service will be uninterrupted or error-free. To the fullest extent permitted by law, we are not liable for any missed deadlines, exams or events, financial loss, or other damages resulting from failed or late reminders, incorrect Magic Add results, or service downtime. Please do not rely on GetRemindMe as your only reminder for critical deadlines.',
   },
   {
     title: '10. Account Termination',
@@ -122,7 +120,6 @@ const privacySections = [
       'Vercel (frontend hosting), Render (backend hosting) and MongoDB Atlas (database storage).',
       'Telegram, which delivers Telegram reminders and is subject to its own privacy policy.',
       'Brevo, which sends our account emails (password reset and password-changed confirmation).',
-      'Google (Gemini API), which processes the text you enter in Magic Add to extract task details. Reminders you create with the regular form, and the text of notifications we send you, are not sent to Gemini.',
       'Your browser vendor\'s push service (for example Google, Mozilla, Apple or Microsoft), which delivers browser notifications to your device.',
       'DiceBear, which serves some illustration avatars. When such an avatar is shown, your browser requests the image from DiceBear\'s servers, which can see your IP address.',
       'Your browser\'s speech recognition, if you use voice input. Depending on your browser, audio may be processed by the browser vendor. GetRemindMe does not receive or store your audio, only the resulting text.',
@@ -166,20 +163,18 @@ function Block({ section }) {
   const paragraphs = Array.isArray(section.body) ? section.body : [section.body];
   return (
     <div>
-      <h3 className="text-lg font-semibold text-gray-900 mb-2">{section.title}</h3>
-      <div className="space-y-3">
-        {paragraphs.map((text, i) => (
-          <p key={i}>{linkify(text)}</p>
-        ))}
-        {section.list && (
-          <ul className="list-disc pl-5 space-y-1.5 marker:text-blue-400">
-            {section.list.map((item, i) => (
-              <li key={i}>{linkify(item)}</li>
-            ))}
-          </ul>
-        )}
-        {section.after && <p>{linkify(section.after)}</p>}
-      </div>
+      <h3>{section.title}</h3>
+      {paragraphs.map((text, i) => (
+        <p key={i}>{linkify(text)}</p>
+      ))}
+      {section.list && (
+        <ul>
+          {section.list.map((item, i) => (
+            <li key={i}>{linkify(item)}</li>
+          ))}
+        </ul>
+      )}
+      {section.after && <p>{linkify(section.after)}</p>}
     </div>
   );
 }
@@ -187,63 +182,40 @@ function Block({ section }) {
 export default function Terms() {
   usePageMeta(routeMeta("/terms"));
 
-  // Scroll to top when page loads
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
-
   return (
-    <PublicLayout>
-      <div className="pt-6 sm:pt-8 pb-16 px-4 sm:px-6">
-        {/* Main Container - Keeps everything centered and aligned */}
-        <div className="max-w-3xl mx-auto">
-          <PageHeader backTo />
+    <SiteLayout>
+      <section className="rs-page-head">
+        <div className="rs-wrap">
+          <span className="rs-eyebrow">
+            <b>Legal</b> Last updated {LAST_UPDATED}
+          </span>
+          <h1>Terms of Service and Privacy Policy</h1>
+          <p className="rs-lede">What you can expect from us, and what we ask of you. Written to be read.</p>
+          <nav aria-label="On this page" className="rs-cta-row">
+            <a href="#terms" className="rs-btn rs-btn--line rs-btn--small">Terms of Service</a>
+            <a href="#privacy" className="rs-btn rs-btn--line rs-btn--small">Privacy Policy</a>
+          </nav>
+        </div>
+      </section>
 
-          {/* Content Card */}
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-            <div className="bg-blue-600 px-6 sm:px-8 py-10 text-center text-white">
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">Legal &amp; Privacy</h1>
-              <p className="text-blue-100 font-medium">Last updated: {LAST_UPDATED}</p>
-            </div>
-
-            <div className="p-5 sm:p-12 space-y-12 text-gray-700 break-words">
-              {/* Quick jump links */}
-              <nav aria-label="On this page" className="flex flex-wrap gap-3 text-sm font-semibold">
-                <a href="#terms" className="px-4 py-2 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors">
-                  Terms of Service
-                </a>
-                <a href="#privacy" className="px-4 py-2 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors">
-                  Privacy Policy
-                </a>
-              </nav>
-
-              <section id="terms" className="scroll-mt-24">
-                <div className="flex items-center gap-3 mb-6 border-b pb-4">
-                  <FileText className="text-blue-600 shrink-0" size={28} />
-                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Terms of Service</h2>
-                </div>
-                <div className="space-y-6 text-sm leading-relaxed">
-                  {termsSections.map((section) => (
-                    <Block key={section.title} section={section} />
-                  ))}
-                </div>
-              </section>
-
-              <section id="privacy" className="scroll-mt-24">
-                <div className="flex items-center gap-3 mb-6 border-b pb-4">
-                  <Shield className="text-blue-600 shrink-0" size={28} />
-                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Privacy Policy</h2>
-                </div>
-                <div className="space-y-6 text-sm leading-relaxed">
-                  {privacySections.map((section) => (
-                    <Block key={section.title} section={section} />
-                  ))}
-                </div>
-              </section>
-            </div>
+      <div className="rs-page-body">
+        <div className="rs-wrap">
+          <div className="rs-prose">
+            <section id="terms" style={{ scrollMarginTop: 90 }}>
+              <h2 style={{ marginTop: 0 }}>Terms of Service</h2>
+              {termsSections.map((section) => (
+                <Block key={section.title} section={section} />
+              ))}
+            </section>
+            <section id="privacy" style={{ scrollMarginTop: 90 }}>
+              <h2 style={{ marginTop: 56 }}>Privacy Policy</h2>
+              {privacySections.map((section) => (
+                <Block key={section.title} section={section} />
+              ))}
+            </section>
           </div>
         </div>
       </div>
-    </PublicLayout>
+    </SiteLayout>
   );
 }

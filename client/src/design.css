@@ -26,43 +26,67 @@
   --shadow-2xl: 0 12px 24px rgb(15 23 42 / .06), 0 36px 72px -16px rgb(15 23 42 / .22);
 
   /* Neutrals: cool slate greys that sit well with the blue brand colour. */
-  --color-slate-50: #f8fafc;
-  --color-slate-100: #f1f5f9;
-  --color-slate-200: #e2e8f0;
-  --color-slate-300: #cbd5e1;
-  --color-slate-400: #94a3b8;
-  --color-slate-500: #64748b;
-  --color-slate-600: #475569;
-  --color-slate-700: #334155;
-  --color-slate-800: #1e293b;
-  --color-slate-900: #0f172a;
-  --color-slate-950: #020617;
-  --color-gray-50: #f8fafc;
-  --color-gray-100: #f1f5f9;
-  --color-gray-200: #e2e8f0;
-  --color-gray-300: #cbd5e1;
-  --color-gray-400: #94a3b8;
-  --color-gray-500: #64748b;
-  --color-gray-600: #475569;
-  --color-gray-700: #334155;
-  --color-gray-800: #1e293b;
-  --color-gray-900: #0f172a;
-  --color-gray-950: #020617;
+  --color-slate-50: #faf7f0;
+  --color-slate-100: #f1ede2;
+  --color-slate-200: #e4dfd1;
+  --color-slate-300: #cfc9b8;
+  --color-slate-400: #a19c8d;
+  --color-slate-500: #77736a;
+  --color-slate-600: #55524b;
+  --color-slate-700: #3b3a38;
+  --color-slate-800: #25262c;
+  --color-slate-900: #14161f;
+  --color-slate-950: #0b0c12;
+  --color-gray-50: #faf7f0;
+  --color-gray-100: #f1ede2;
+  --color-gray-200: #e4dfd1;
+  --color-gray-300: #cfc9b8;
+  --color-gray-400: #a19c8d;
+  --color-gray-500: #77736a;
+  --color-gray-600: #55524b;
+  --color-gray-700: #3b3a38;
+  --color-gray-800: #25262c;
+  --color-gray-900: #14161f;
+  --color-gray-950: #0b0c12;
+
+  /* Brand: ultramarine replaces Tailwind blue / sky everywhere (accent choices in Profile still override it). */
+  --color-blue-50: #eef1ff;
+  --color-blue-100: #e0e6ff;
+  --color-blue-200: #c4cfff;
+  --color-blue-300: #9badff;
+  --color-blue-400: #6f86fa;
+  --color-blue-500: #4262ee;
+  --color-blue-600: #2a47d9;
+  --color-blue-700: #2038b8;
+  --color-blue-800: #1b2f94;
+  --color-blue-900: #182a75;
+  --color-blue-950: #101a4a;
+  --color-sky-50: #eef1ff;
+  --color-sky-100: #e0e6ff;
+  --color-sky-200: #c4cfff;
+  --color-sky-300: #9badff;
+  --color-sky-400: #6f86fa;
+  --color-sky-500: #4262ee;
+  --color-sky-600: #2a47d9;
+  --color-sky-700: #2038b8;
+  --color-sky-800: #1b2f94;
+  --color-sky-900: #182a75;
+  --color-sky-950: #101a4a;
 }
 
 /* Page surfaces (light, classic): off-white page, white cards, tinted soft fills that follow the accent. */
 html:not(.dark):not([data-theme="minimal"]) {
-  --rm-page: #f8fafc;
-  --rm-soft: #f1f5f9;
-  --rm-soft-2: #e2e8f4;
-  --rm-hero-top: #eff6ff;
-  --rm-ink: #0f172a;
+  --rm-page: #f6f2e9;
+  --rm-soft: #efe9dc;
+  --rm-soft-2: #e6dfcf;
+  --rm-hero-top: #f6f2e9;
+  --rm-ink: #14161f;
   --rm-accent: var(--color-blue-600);
   --rm-icon-bg: var(--color-blue-100);
   --rm-cta-1: var(--color-blue-50);
-  --rm-cta-2: #f1f5f9;
-  --rm-cta-3: #f1f6f4;
-  --rm-toast-bg: #0f172a;
+  --rm-cta-2: #efe9dc;
+  --rm-cta-3: #f6f2e9;
+  --rm-toast-bg: #14161f;
 }
 html.dark:not([data-theme="minimal"]) { --rm-accent: var(--color-blue-400); }
 

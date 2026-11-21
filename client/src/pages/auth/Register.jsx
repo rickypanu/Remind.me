@@ -1,7 +1,7 @@
 import React from "react";
 import { LogoMark } from "../../components/Logo";
 import { useNavigate, Link } from "react-router-dom";
-import { AlertCircle, ArrowLeft, CheckCircle, Eye, EyeOff, Loader2, Lock, Mail, User } from "lucide-react";
+import { AlertCircle, ArrowLeft, CheckCircle, Eye, EyeOff, Loader2, Lock, Mail, User } from "../../components/icons";
 import FormField from "../../components/forms/FormField";
 import useRegisterForm from "../../hooks/useRegisterForm";
 import usePageMeta from "../../utils/usePageMeta";

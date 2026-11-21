@@ -1,352 +1,110 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
-import PublicLayout from "../../components/PublicLayout";
-import PageHeader from "../../components/PageHeader";
-import Logo from "../../components/Logo";
+import { ArrowRight, Bug, Code, ExternalLink, Lock, Mail, Repeat, Send, Smartphone, Edit } from "../../components/icons";
+import SiteLayout from "../../components/site/SiteLayout";
 import usePageMeta from "../../utils/usePageMeta";
 import { routeMeta } from "../../seo/routes";
 import useApiHealth from "../../hooks/useApiHealth";
-import { isLoggedIn as hasSession } from "../../utils/auth";
 import { SITE, mailto } from "../../config/site";
-import {
-  ArrowRight,
-  Lock,
-  BellRing,
-  Sparkles,
-  Smartphone,
-  Code,
-  Mail,
-  Bug,
-  ExternalLink,
-  Zap,
-  Send,
-  PlusCircle,
-  Megaphone,
-  MessageCircleQuestion,
-  Shield,
-} from "lucide-react";
 
 const APP_VERSION = "v021126";
-const REPO_URL = SITE.repoUrl;
 
-// ---- Live service status (useApiHealth pings the backend's /health endpoint) ----
-const STATUS_UI = {
-  checking: {
-    label: "Checking status…",
-    wrap: "bg-gray-50 border-gray-200 text-gray-600",
-    dot: "bg-gray-400",
-    ping: false,
-  },
-  waking: {
-    label: "Connecting…",
-    wrap: "bg-amber-50 border-amber-200 text-amber-700",
-    dot: "bg-amber-500",
-    ping: true,
-    pingColor: "bg-amber-400",
-  },
-  ok: {
-    label: "Systems Operational",
-    wrap: "bg-emerald-50 border-emerald-200 text-emerald-700",
-    dot: "bg-emerald-500",
-    ping: true,
-    pingColor: "bg-emerald-400",
-  },
-  down: {
-    label: "Connection issue",
-    wrap: "bg-red-50 border-red-200 text-red-700",
-    dot: "bg-red-500",
-    ping: false,
-  },
+// Live service status (useApiHealth pings the backend's /health endpoint)
+const STATUS = {
+  checking: "Checking status…",
+  waking: "Connecting…",
+  ok: "All systems operational",
+  down: "Connection issue",
 };
 
-// ---- Content ----
-const features = [
-  {
-    icon: Sparkles,
-    tone: "bg-purple-50 text-purple-600",
-    title: "Magic Add (AI)",
-    text: "Type or speak “DBMS assignment tomorrow 5pm” or “gym every Monday at 7am” and AI fills in the title, schedule and category for you.",
-  },
-  {
-    icon: BellRing,
-    tone: "bg-blue-50 text-blue-600",
-    title: "Specific, Daily & Weekly Reminders",
-    text: "Set one-time deadlines or repeat reminders every day or on chosen weekdays, delivered through browser Web Push and Telegram.",
-  },
-  {
-    icon: Lock,
-    tone: "bg-indigo-50 text-indigo-600",
-    title: "Private by Design",
-    text: "Your reminder titles, notes and categories are encrypted before they are stored, and inappropriate content is screened out automatically.",
-  },
-  {
-    icon: Smartphone,
-    tone: "bg-emerald-50 text-emerald-600",
-    title: "Installable Web App",
-    text: "Add GetRemindMe to your home screen and use it like a native app on your phone or laptop, synced across devices.",
-  },
+const FEATURES = [
+  { icon: Edit, title: "Magic Add", text: "Type or say “DBMS assignment tomorrow 5pm” or “gym every Monday at 7am”. GetRemindMe's own rules fill in the title, schedule and category. No AI service is involved." },
+  { icon: Repeat, title: "Specific, daily and weekly", text: "One-time deadlines, or repeats every day or on chosen weekdays, delivered through browser push and Telegram." },
+  { icon: Lock, title: "Private by design", text: "Reminder titles, notes and categories are encrypted before they are stored, and unsafe content is screened out automatically." },
+  { icon: Smartphone, title: "Installable and offline", text: "Add it to your home screen, or use the Android app. Changes are saved on your device first and synced when you are online." },
 ];
 
-const quickActions = [
-  {
-    to: "/create-task",
-    label: "Create Task",
-    icon: PlusCircle,
-    tone: "bg-blue-50 text-blue-600 group-hover:bg-blue-100",
-    hover: "hover:border-blue-300",
-  },
-  {
-    to: "/updates",
-    label: "See Updates",
-    icon: Megaphone,
-    tone: "bg-purple-50 text-purple-600 group-hover:bg-purple-100",
-    hover: "hover:border-purple-300",
-  },
-  {
-    to: "/faqs",
-    label: "Help & FAQs",
-    icon: MessageCircleQuestion,
-    tone: "bg-amber-50 text-amber-600 group-hover:bg-amber-100",
-    hover: "hover:border-amber-300",
-  },
-  {
-    to: "/terms",
-    label: "Terms & Privacy",
-    icon: Shield,
-    tone: "bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100",
-    hover: "hover:border-emerald-300",
-  },
-];
-
-const supportLinks = [
-  {
-    href: REPO_URL,
-    external: true,
-    icon: Code,
-    tone: "bg-gray-100 text-gray-700 group-hover:bg-gray-200",
-    title: "Source Repository",
-    text: "Explore code, architecture, & releases on GitHub",
-  },
-  {
-    href: mailto("Hello from the GetRemindMe site"),
-    icon: Mail,
-    tone: "bg-blue-50 text-blue-600 group-hover:bg-blue-100",
-    title: "Contact Developer",
-    text: "Collaborations, inquiries, and feedback",
-  },
-  {
-    href: mailto("Bug Report - GetRemindMe App"),
-    icon: Bug,
-    tone: "bg-orange-50 text-orange-500 group-hover:bg-orange-100",
-    title: "Report an Issue",
-    text: "File bug reports or submit feature requests",
-  },
+const LINKS = [
+  { href: SITE.repoUrl, external: true, icon: Code, title: "Source repository", text: "Code, architecture and releases on GitHub" },
+  { href: mailto("Hello from the GetRemindMe site"), icon: Mail, title: "Contact the developer", text: "Collaborations, enquiries and feedback" },
+  { href: mailto("Bug Report - GetRemindMe App"), icon: Bug, title: "Report an issue", text: "File a bug report or request a feature" },
 ];
 
 export default function About() {
   const status = useApiHealth();
-  const ui = STATUS_UI[status];
-  const isLoggedIn = hasSession();
   usePageMeta(routeMeta("/about"));
-  // Only show shortcuts the visitor can actually open
-  const actions = isLoggedIn
-    ? quickActions
-    : [
-        {
-          to: "/register",
-          label: "Create account",
-          icon: PlusCircle,
-          tone: "bg-blue-50 text-blue-600 group-hover:bg-blue-100",
-          hover: "hover:border-blue-300",
-        },
-        ...quickActions.filter((a) => a.to === "/faqs" || a.to === "/terms"),
-      ];
 
   return (
-    <PublicLayout>
-      <div className="pb-16 text-slate-800">
-        {/* Main Content */}
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8">
-          <PageHeader backTo />
-          {/* Header Hero Card */}
-          <div className="relative overflow-hidden bg-white p-8 rounded-3xl border border-gray-200 shadow-sm mb-6 text-center group transition-colors">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-400"></div>
-
-            <div className="flex justify-center mb-5">
-              <Logo to={isLoggedIn ? "/dashboard" : "/"} size="lg" />
-            </div>
-
-            <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-2">
-              About <span className="text-blue-600">GetRemindMe</span>
-            </h1>
-
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-full mb-4 border border-blue-200/60">
-              <span>{APP_VERSION}</span>
-              <span className="text-blue-300">•</span>
-              <span>Production Release</span>
-            </div>
-            <div
-              className={`ml-2 inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold rounded-full mb-4 border ${ui.wrap}`}
-              role="status"
-            >
-              <span className="relative flex h-2 w-2">
-                {ui.ping && (
-                  <span
-                    className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${ui.pingColor}`}
-                  ></span>
-                )}
-                <span
-                  className={`relative inline-flex h-2 w-2 rounded-full ${ui.dot}`}
-                ></span>
-              </span>
-              {ui.label}
-            </div>
-
-            <p className="text-gray-600 leading-relaxed max-w-md mx-auto text-sm sm:text-base">
-              Built to remove friction from student productivity. GetRemindMe
-              sends specific, daily and weekly reminders through Web Push and
-              Telegram, and lets you add them just by typing or speaking.
-            </p>
+    <SiteLayout>
+      <section className="rs-page-head">
+        <div className="rs-wrap">
+          <span className="rs-eyebrow">
+            <b>About</b> {APP_VERSION}
+          </span>
+          <h1>A reminder service built to remove friction.</h1>
+          <p className="rs-lede">
+            GetRemindMe began as a student productivity project. It sends specific, daily and weekly reminders through browser push and Telegram, and lets you add them just by typing or speaking.
+          </p>
+          <div className="rs-cta-row" style={{ alignItems: "center" }}>
+            <span className="rs-status" data-s={status} role="status">
+              <i /> {STATUS[status] || STATUS.checking}
+            </span>
           </div>
+        </div>
+      </section>
 
-          {/* --- Quick App Navigation --- */}
-          <div className="mb-3 px-1 flex items-center justify-between mt-8">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500">
-              Quick Actions
-            </h3>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 mb-8">
-            {actions.map(({ to, label, icon: Icon, tone, hover }) => (
-              <Link
-                key={to}
-                to={to}
-                className={`bg-white p-4 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md ${hover} transition-all flex items-center gap-3 active:scale-[0.98] group`}
-              >
-                <div className={`p-2.5 rounded-xl transition-colors ${tone}`}>
-                  <Icon size={20} strokeWidth={2.5} />
-                </div>
-                <span className="font-semibold text-gray-900 text-sm">
-                  {label}
-                </span>
-              </Link>
-            ))}
-          </div>
-
-          {/* Features Grid */}
-          <div className="mb-3 px-1 flex items-center justify-between">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500">
-              What&apos;s Inside
-            </h3>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-            {features.map(({ icon: Icon, tone, title, text }) => (
-              <div
-                key={title}
-                className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-all flex flex-col gap-3 group"
-              >
-                <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform ${tone}`}
-                >
-                  <Icon size={20} strokeWidth={2.5} />
-                </div>
-                <div>
-                  <h4 className="font-bold text-gray-900">{title}</h4>
-                  <p className="text-sm text-gray-500 mt-1.5 leading-relaxed">
-                    {text}
-                  </p>
-                </div>
-              </div>
-            ))}
-
-            {/* Telegram CTA */}
-            <div className="sm:col-span-2 bg-gradient-to-r from-sky-500/10 via-blue-500/10 to-indigo-500/10 border border-sky-200 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3.5">
-                <div className="p-3 bg-sky-500 text-white rounded-xl shadow-md shadow-sky-500/20">
-                  <Send size={20} />
-                </div>
-                <div>
-                  <h4 className="font-bold text-gray-900 text-sm">
-                    Telegram Reminders
-                  </h4>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    Get deadline pings straight to the Telegram app, even when
-                    the website is closed.
-                  </p>
-                </div>
-              </div>
-              <Link
-                to="/telegram-setup"
-                className="shrink-0 px-3.5 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-xl transition-all shadow-sm active:scale-95 flex items-center gap-1.5"
-              >
-                Setup Now <ArrowRight size={13} />
-              </Link>
-            </div>
-          </div>
-
-          {/* Links & Resources */}
-          <div className="mb-3 px-1">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500">
-              Project &amp; Support
-            </h3>
-          </div>
-
-          <div className="space-y-3">
-            {supportLinks.map(
-              ({ href, external, icon: Icon, tone, title, text }) => (
-                <a
-                  key={title}
-                  href={href}
-                  {...(external
-                    ? { target: "_blank", rel: "noopener noreferrer" }
-                    : {})}
-                  className="group w-full flex items-center justify-between p-4 bg-white border border-gray-200 rounded-2xl hover:border-gray-300 hover:shadow-sm transition-all active:scale-[0.99]"
-                >
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={`p-2.5 rounded-xl flex items-center justify-center transition-colors ${tone}`}
-                    >
-                      <Icon size={20} />
-                    </div>
-                    <div className="text-left">
-                      <span className="font-semibold text-gray-900 text-sm block">
-                        {title}
-                      </span>
-                      <span className="text-xs text-gray-500">{text}</span>
-                    </div>
+      <div className="rs-page-body">
+        <div className="rs-wrap" style={{ display: "grid", gap: 56 }}>
+          <div>
+            <h2 style={{ fontSize: 30, marginBottom: 22 }}>What&apos;s inside</h2>
+            <div className="rs-grid-2">
+              {FEATURES.map(({ icon: Icon, title, text }) => (
+                <article key={title} className="rs-card">
+                  <span className="rs-card-ic">
+                    <Icon size={22} />
+                  </span>
+                  <h3>{title}</h3>
+                  <p>{text}</p>
+                </article>
+              ))}
+              <article className="rs-card" style={{ gridColumn: "1 / -1", background: "var(--rs-gold-soft)", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 18 }}>
+                <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                  <span className="rs-card-ic" style={{ background: "var(--rs-card)" }}>
+                    <Send size={22} />
+                  </span>
+                  <div>
+                    <h3 style={{ margin: 0 }}>Telegram reminders</h3>
+                    <p>Deadline alerts in the Telegram app, even when the website is closed.</p>
                   </div>
-                  <ExternalLink
-                    size={18}
-                    className="text-gray-500 group-hover:text-gray-600 transition-colors"
-                  />
-                </a>
-              ),
-            )}
+                </div>
+                <Link to="/telegram-setup" className="rs-btn rs-btn--ink rs-btn--small">
+                  Set up Telegram <ArrowRight size={16} />
+                </Link>
+              </article>
+            </div>
           </div>
 
-          {/* Footer */}
-          <div className="text-center mt-12 mb-4">
-            <div className="flex items-center justify-center gap-1.5 text-sm text-gray-500 font-medium">
-              <Zap size={14} className="text-amber-500 fill-amber-500" />
-              <p>
-                Designed &amp; Developed by{" "}
-                <a
-                  href="https://rickypanu.vercel.app"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 hover:underline"
-                >
-                  Ricky Panu
+          <div>
+            <h2 style={{ fontSize: 30, marginBottom: 22 }}>Project and support</h2>
+            <div className="rs-rowlinks">
+              {LINKS.map(({ href, external, icon: Icon, title, text }) => (
+                <a key={title} href={href} className="rs-rowlink" {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                    <span className="rs-card-ic" style={{ background: "var(--rs-card)" }}>
+                      <Icon size={22} />
+                    </span>
+                    <span>
+                      <b>{title}</b>
+                      <span>{text}</span>
+                    </span>
+                  </span>
+                  <ExternalLink size={20} />
                 </a>
-              </p>
+              ))}
             </div>
-            <p className="text-xs text-gray-500 mt-2">
-              © {new Date().getFullYear()} GetRemindMe • All rights reserved.
-            </p>
           </div>
         </div>
       </div>
-    </PublicLayout>
+    </SiteLayout>
   );
 }

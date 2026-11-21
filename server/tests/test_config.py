@@ -58,7 +58,7 @@ class RequiredSecretsTests(unittest.TestCase):
         self.assertEqual(s.cors_origins, ["http://localhost:5173", "http://127.0.0.1:5173"])
         self.assertEqual(s.algorithm, "HS256")
         self.assertEqual(s.rate_limit_storage_uri, "memory://")
-        self.assertFalse(s.telegram_enabled or s.push_enabled or s.email_enabled or s.ai_enabled)
+        self.assertFalse(s.telegram_enabled or s.push_enabled or s.email_enabled)
 
     def test_missing_secret_key_is_rejected_there_is_no_default(self):
         env = {k: v for k, v in DEV.items() if k != "SECRET_KEY"}
@@ -244,11 +244,9 @@ class IntegrationGroupTests(unittest.TestCase):
         self.assertTrue(s.push_enabled)
         self.assertEqual(s.vapid_claims, {"sub": "mailto:ops@remindme.app"})
 
-    def test_gemini_keys_are_merged_and_deduplicated(self):
-        s = load({**DEV, "GEMINI_API_KEYS": "key-a, key-b,key-a", "GEMINI_API_KEY": "key-c", "GEMINI_MODELS": "m1,m2"})
-        self.assertEqual(s.gemini_keys, ["key-a", "key-b", "key-c"])
-        self.assertEqual(s.gemini_models, ["m1", "m2"])
-        self.assertTrue(s.ai_enabled)
+    def test_old_gemini_variables_are_ignored(self):
+        s = load({**DEV, "GEMINI_API_KEYS": "key-a", "GEMINI_MODELS": "m1"})
+        self.assertFalse(hasattr(s, "gemini_keys"))
 
     def test_rate_limit_format_is_validated(self):
         self.assertEqual(load({**DEV, "RATE_LIMIT_LOGIN": " 10/Minute "}).rate_limit_login, "10/minute")

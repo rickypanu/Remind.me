@@ -21,12 +21,13 @@ import {
   ChevronDown,
   Share,
   CheckCircle2,
-} from "lucide-react";
+} from "../../components/icons";
 import { logoutFromServer } from "../../api";
 import useMe from "../../hooks/useMe";
 import { useDeleteAccount, useRenameUser, useSetAvatarUrl, useUploadAvatar } from "../../hooks/useProfileMutations";
 import { useUnreadUpdates } from "../../hooks/useUpdates";
 import notify from "../../utils/notify";
+import { forgetLearning } from "../../utils/learning";
 import usePageMeta from "../../utils/usePageMeta";
 import { clearSession } from "../../utils/auth";
 import { resolveAvatarSrc } from "../../utils/avatar";
@@ -445,6 +446,27 @@ export default function Profile() {
 
           {/* Appearance: dark mode + Minimalism theme toggles */}
           <AppearanceSettings />
+
+          {/* Quick add: what it learned from the person's own category choices (stored on this device only) */}
+          <div>
+            <h3 className="px-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Quick add</h3>
+            <div className="bg-white border border-gray-100 rounded-[24px] p-4 shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex items-center justify-between gap-4">
+              <div className="text-left">
+                <p className="font-medium text-gray-900">Forget what quick add learned</p>
+                <p className="text-xs text-gray-500 mt-0.5">It learns on this device only which category you pick. Your reminders stay as they are.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  forgetLearning();
+                  notify.success("Quick add has forgotten your category choices.");
+                }}
+                className="shrink-0 rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Forget
+              </button>
+            </div>
+          </div>
 
           {/* Account Section */}
           <div>

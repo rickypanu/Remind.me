@@ -1,4 +1,4 @@
-import { BellRing, LayoutGrid, ListTodo, Rocket, SlidersHorizontal, UserCog } from "lucide-react";
+import { BellRing, LayoutGrid, ListTodo, Rocket, SlidersHorizontal, UserCog } from "../../../components/icons";
 
 export const CATEGORY_ICONS = {
   All: LayoutGrid,

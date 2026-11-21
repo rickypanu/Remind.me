@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { Calendar } from "lucide-react";
+import { Calendar } from "../../components/icons";
 
 /**
  * Calendar icon next to the Today / Upcoming tabs. It opens the browser's own date picker (accessible, localised,

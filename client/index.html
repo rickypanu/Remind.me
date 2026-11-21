@@ -30,11 +30,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400..800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Sans:wght@400..700&family=Schibsted+Grotesk:wght@400..800&display=swap"
     />
 
     <!-- PWA & Mobile Display Settings -->
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#f6f2e9" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -46,7 +46,7 @@
         try {
           var mode = localStorage.getItem("remindme-color-mode");
           if (mode !== "light" && mode !== "dark") {
-            mode = "dark"; /* dark unless the visitor chose light */
+            mode = "light"; /* light paper unless the visitor chose dark */
           }
           var style = localStorage.getItem("remindme-theme-style") === "minimal" ? "minimal" : "classic";
           var accent = localStorage.getItem("remindme-accent");
@@ -55,7 +55,7 @@
           if (mode === "dark") root.classList.add("dark");
           root.setAttribute("data-theme", style);
           root.setAttribute("data-accent", accent);
-          var colors = { "classic-light": "#ffffff", "classic-dark": "#0d0f12", "minimal-light": "#fafafa", "minimal-dark": "#0a0a0a" };
+          var colors = { "classic-light": "#f6f2e9", "classic-dark": "#0d0f12", "minimal-light": "#fafafa", "minimal-dark": "#0a0a0a" };
           var meta = document.querySelector('meta[name="theme-color"]');
           if (meta) meta.setAttribute("content", colors[style + "-" + mode]);
         } catch (e) {}

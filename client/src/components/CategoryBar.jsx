@@ -1,8 +1,7 @@
 import React from "react";
-import { Layers, List } from "lucide-react";
 
-/** "All" plus one chip per category in use, and a switch between one list and groups by category. */
-export default function CategoryBar({ categories, value, onChange, grouped, onToggleGrouped }) {
+/** "All" plus one chip per category in use. */
+export default function CategoryBar({ categories, value, onChange }) {
   if (!categories.length) return null;
   const total = categories.reduce((n, c) => n + c.count, 0);
   const chip = (id, label, count) => {
@@ -28,18 +27,6 @@ export default function CategoryBar({ categories, value, onChange, grouped, onTo
         {chip(null, "All", total)}
         {categories.map((c) => chip(c.name, c.name, c.count))}
       </div>
-      <button
-        type="button"
-        onClick={onToggleGrouped}
-        aria-pressed={grouped}
-        aria-label={grouped ? "Show as one list" : "Group by category"}
-        title={grouped ? "Show as one list" : "Group by category"}
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-          grouped ? "border-blue-600 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:text-slate-900"
-        }`}
-      >
-        {grouped ? <List size={17} strokeWidth={2.4} /> : <Layers size={17} strokeWidth={2.4} />}
-      </button>
     </div>
   );
 }

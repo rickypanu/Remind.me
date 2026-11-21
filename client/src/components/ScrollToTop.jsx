@@ -13,8 +13,14 @@ export default function ScrollToTop() {
   }, []);
 
   useEffect(() => {
-    if (hash) return; // let the browser jump to the #anchor
+    if (hash) {
+      // In-app navigation never makes the browser jump to an #anchor, so do it here once the page has rendered.
+      const id = decodeURIComponent(hash.slice(1));
+      const timer = window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ block: "start" }), 60);
+      return () => window.clearTimeout(timer);
+    }
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    return undefined;
   }, [pathname, hash]);
 
   return null;

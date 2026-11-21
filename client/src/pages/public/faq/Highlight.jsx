@@ -6,13 +6,5 @@ export default function Highlight({ text, query }) {
   if (!q) return text;
   const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const parts = text.split(new RegExp(`(${escaped})`, "gi"));
-  return parts.map((part, index) =>
-    part.toLowerCase() === q.toLowerCase() ? (
-      <mark key={index} className="bg-indigo-100 text-indigo-900 rounded px-0.5">
-        {part}
-      </mark>
-    ) : (
-      part
-    )
-  );
+  return parts.map((part, index) => (part.toLowerCase() === q.toLowerCase() ? <mark key={index}>{part}</mark> : part));
 }

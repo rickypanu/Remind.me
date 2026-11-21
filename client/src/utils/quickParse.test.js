@@ -131,3 +131,17 @@ describe('title and description', () => {
     expect(at('call mom in 30 min').assumedTime).toBe(false);
   });
 });
+
+describe('Indian-language sentences', () => {
+  const at = (s) => parseQuick(s, NOW);
+  it('understands Hindi, Marathi, Tamil and Urdu day / time words', () => {
+    expect(at('कल शाम 6 बजे जिम').payload.title).toBe('जिम');
+    expect(ist(at('कल शाम 6 बजे जिम').payload.due_date)).toBe('2026-10-31 18:00');
+    expect(ist(at('उद्या सकाळी 7 वाजता व्यायाम').payload.due_date)).toBe('2026-10-31 07:00');
+    expect(ist(at('நாளை மாலை 6 மணிக்கு ஜிம்').payload.due_date)).toBe('2026-10-31 18:00');
+    expect(ist(at('کل شام 6 بجے جم').payload.due_date)).toBe('2026-10-31 18:00');
+  });
+  it('reads native digits and repeats', () => {
+    expect(at('हर दिन सुबह ८ बजे पानी पीना').payload).toMatchObject({ schedule_type: 'daily', time_of_day: '08:00' });
+  });
+});

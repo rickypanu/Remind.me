@@ -7,6 +7,8 @@ export const SITE = {
   // Leave empty to hide it: no placeholder number is ever shown.
   supportPhone: "",
   repoUrl: "https://github.com/rickypanu/Remind.me",
+  // Latest Android build (GitHub Release asset), the same link the mobile app shares.
+  apkUrl: "https://github.com/rickypanu/Remind.me/releases/latest/download/remindme.apk",
 };
 
 export const mailto = (subject) =>

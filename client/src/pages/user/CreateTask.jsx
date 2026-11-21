@@ -13,7 +13,7 @@ import {
   Repeat,
   CalendarClock,
   CalendarDays,
-} from "lucide-react";
+} from "../../components/icons";
 import { createTask } from "../../offline/taskStore";
 import AppPage from "../../components/AppPage";
 import notify from "../../utils/notify";

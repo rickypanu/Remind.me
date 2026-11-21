@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2 } from "./icons";
 import Modal from "./Modal";
 
 /** "Delete reminder?" modal shared by the task card and the tablet detail panel. */

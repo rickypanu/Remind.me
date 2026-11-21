@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { Volume2, Vibrate, Play, Upload, Trash2, Check, Music } from "lucide-react";
+import { Volume2, Vibrate, Play, Upload, Trash2, Check, Music } from "./icons";
 import { Row } from "../pages/components/AppearanceSettings";
 import { useFeedbackSettings, updateSettings } from "../feedback/settings";
 import { hapticsSupported, vibrate } from "../feedback/haptics";

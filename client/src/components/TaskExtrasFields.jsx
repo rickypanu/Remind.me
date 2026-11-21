@@ -1,5 +1,5 @@
 import React from "react";
-import { Flame, Plus, X } from "lucide-react";
+import { Flame, Plus, X } from "./icons";
 import { ALERT_CHOICES, MAX_STEPS, newStepId } from "../utils/taskExtras";
 
 const chip = (on) =>

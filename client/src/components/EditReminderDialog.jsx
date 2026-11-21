@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { X, Check, Repeat, Loader2 } from "lucide-react";
+import { X, Check, Repeat, Loader2 } from "./icons";
 import Modal from "./Modal";
 import { istInputToUtcIso, utcToIstInput } from "../utils/date";
 import notify from "../utils/notify";

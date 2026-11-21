@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check } from "../../components/icons";
 
 export default function RegisterSuccess() {
   return (

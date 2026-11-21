@@ -1,28 +1,25 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Coffee, Sun, CalendarDays, X, Search, Download } from "lucide-react";
-import { APP_TIMEZONE, formatDueIst, formatIstDayLabel, getIstHour, istDateKey } from "../../utils/date";
+import { Coffee, Sun, CalendarDays, X, Search } from "../../components/icons";
+import { APP_TIMEZONE, formatDueIst, formatIstDayLabel, getIstHour } from "../../utils/date";
 import TaskCard from "../tasks/TaskCard";
 import Header from "../components/Header";
 import notify from "../../utils/notify";
 import { isLoggedIn } from "../../utils/auth";
 import usePageMeta from "../../utils/usePageMeta";
 import useOfflineTasks from "../../offline/useOfflineTasks";
+import { createTask } from "../../offline/taskStore";
+import { PENDING_KEY } from "../../components/site/TryIt";
 import useMe, { userIdOf } from "../../hooks/useMe";
 import useDashboardTasks from "../../hooks/useDashboardTasks";
-import useTaskStats from "../../hooks/useTaskStats";
 import { filterByIstDate, greetingForHour } from "./buckets";
 import CompletedArchive from "./CompletedArchive";
 import DashboardTabs from "./DashboardTabs";
 import CalendarPopover from "./CalendarPopover";
 import CategoryBar from "../../components/CategoryBar";
-import { categoryCounts, dayCounts, downloadText, exportText, groupByCategory } from "../../utils/taskExtras";
+import { categoryCounts, dayCounts } from "../../utils/taskExtras";
 import EmptyState from "./EmptyState";
 import MagicAddForm from "./MagicAddForm";
-import InstallBanner from "../../components/InstallBanner";
-import NextDeadline from "./NextDeadline";
-import MotivationCard from "./MotivationCard";
-import { effectiveStreak } from "./motivation";
 import TaskGroups from "./TaskGroups";
 import OverdueBanner from "./OverdueBanner";
 import TaskSkeleton from "./TaskSkeleton";
@@ -47,7 +44,6 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("today");
   const [selectedDate, setSelectedDate] = useState(null); // "YYYY-MM-DD" (an IST day) or null
   const [catFilter, setCatFilter] = useState(null);
-  const [grouped, setGrouped] = useState(false);
   const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -65,8 +61,21 @@ export default function Dashboard() {
   // Reminders: read from IndexedDB, written to IndexedDB first, uploaded in the background
   const { tasks, ready, toggleTask, editTask, removeTask } = useOfflineTasks(userId);
   const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
-  const { missed, today, upcoming, upcomingGroups, completed, doneTodayCount } = useDashboardTasks(tasks);
-  const stats = useTaskStats({ enabled: !!userId && !isOffline });
+  const { missed, today, upcoming, upcomingGroups, completed } = useDashboardTasks(tasks);
+
+  // A reminder typed into the public home-page demo is saved here once the person has signed in.
+  useEffect(() => {
+    if (!userId) return;
+    let raw = null;
+    try { raw = sessionStorage.getItem(PENDING_KEY); sessionStorage.removeItem(PENDING_KEY); } catch { /* storage blocked */ }
+    if (!raw) return;
+    try {
+      const { payload, savedAt } = JSON.parse(raw);
+      if (payload?.title && Date.now() - savedAt < 24 * 3600 * 1000) {
+        createTask(payload).then(() => notify.success(t("Your reminder was added.")), () => {});
+      }
+    } catch { /* ignore a malformed value */ }
+  }, [userId, t]);
 
   const handleToggle = useCallback(
     async (task) => {
@@ -120,8 +129,8 @@ export default function Dashboard() {
   }, [searching, needle, tasks, byCat, statusFilter]);
   const displayedTasks = byCat(activeTab === "upcoming" ? upcoming : today);
   const filteredUpcomingGroups = useMemo(
-    () => (grouped ? [] : upcomingGroups.map((g) => ({ ...g, tasks: byCat(g.tasks) })).filter((g) => g.tasks.length)),
-    [upcomingGroups, byCat, grouped]
+    () => upcomingGroups.map((g) => ({ ...g, tasks: byCat(g.tasks) })).filter((g) => g.tasks.length),
+    [upcomingGroups, byCat]
   );
   const empty = EMPTY_STATES[activeTab];
 
@@ -133,18 +142,6 @@ export default function Dashboard() {
     setSelectedDate(null); // choosing Today / Upcoming leaves the date filter
     setActiveTab(id);
   }, []);
-
-  // Motivation card inputs
-  const dayKey = istDateKey();
-  const motivation = useMemo(() => {
-    const localDone = Math.max(doneTodayCount, 0);
-    const serverToday = stats.data?.completed_today ?? 0;
-    return {
-      streak: effectiveStreak(stats.data, localDone),
-      bestStreak: stats.data?.best_streak ?? 0,
-      doneToday: Math.max(localDone, serverToday),
-    };
-  }, [stats.data, doneTodayCount]);
 
   return (
     <div className="min-h-screen bg-[color:var(--rm-page)] pb-28 text-slate-900 antialiased font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Text','Helvetica_Neue',sans-serif] relative overflow-x-hidden">
@@ -162,23 +159,7 @@ export default function Dashboard() {
           </h1>
         </div>
 
-        <NextDeadline tasks={tasks} />
-
         <MagicAddForm isOffline={isOffline} titles={titles} />
-
-        <InstallBanner />
-
-        <MotivationCard
-          name={userInfo?.username}
-          userId={userId || undefined}
-          dayKey={dayKey}
-          hour={getIstHour()}
-          streak={motivation.streak}
-          bestStreak={motivation.bestStreak}
-          doneToday={motivation.doneToday}
-          pendingToday={today.length}
-          overdue={missed.length}
-        />
 
         <OverdueBanner tasks={byCat(missed)} cardProps={cardProps} />
 
@@ -196,15 +177,6 @@ export default function Dashboard() {
             className={`min-w-[48px] self-stretch rounded-2xl border px-3 flex items-center justify-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${searching ? "bg-blue-600 border-blue-600 text-white" : "bg-slate-200/60 border-transparent text-slate-600 hover:text-slate-900"}`}
           >
             <Search size={19} strokeWidth={2.25} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            onClick={() => downloadText("deadline-reminders.txt", exportText(tasks))}
-            aria-label={t("Export my reminders")}
-            title={t("Export my reminders")}
-            className="min-w-[48px] self-stretch rounded-2xl border border-transparent bg-slate-200/60 px-3 flex items-center justify-center text-slate-600 transition-colors hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-          >
-            <Download size={19} strokeWidth={2.25} aria-hidden="true" />
           </button>
         </div>
 
@@ -229,7 +201,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        <CategoryBar categories={categories} value={catFilter} onChange={setCatFilter} grouped={grouped} onToggleGrouped={() => setGrouped((g) => !g)} />
+        <CategoryBar categories={categories} value={catFilter} onChange={setCatFilter} />
 
         {selectedDate && (
           <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-2.5">
@@ -265,14 +237,6 @@ export default function Dashboard() {
                 <EmptyState Icon={Search} title={t("No matches")} body={t("Try a different word.")} cta={t("Add a reminder")} />
               ) : (
                 <TaskGroups groups={[{ key: "search", label: `${searchHits.length} ${t("found")}`, tasks: searchHits }]} cardProps={cardProps} />
-              )}
-            </div>
-          ) : grouped && !selectedDate ? (
-            <div className="mb-8">
-              {displayedTasks.length === 0 && activeTab === "today" ? (
-                <EmptyState Icon={empty.Icon} title={t(empty.title)} body={t(empty.body)} cta={t(empty.cta)} />
-              ) : (
-                <TaskGroups groups={groupByCategory(activeTab === "upcoming" ? byCat(upcoming) : displayedTasks)} cardProps={cardProps} />
               )}
             </div>
           ) : selectedDate ? (

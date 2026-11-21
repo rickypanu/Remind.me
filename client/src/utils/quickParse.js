@@ -14,6 +14,10 @@
 // server/utils/quick_defaults.py.
 // ---------------------------------------------------------------------------
 
+import { normalizeLocal } from './localWords.js';
+import { fixTypos } from './typos.js';
+import { pickCategory } from './categoryModel.js';
+
 const IST_OFFSET_MS = 330 * 60 * 1000;
 const MIN = 60 * 1000;
 const HOUR = 60 * MIN;
@@ -130,7 +134,7 @@ function guessHour(h, minute, partKey, nowMs) {
  * @returns {{ payload: object, confidence: 'high'|'low', found: string[] } | null} null for empty input
  */
 export function parseQuick(input, nowMs = Date.now()) {
-  const original = String(input ?? '').replace(/\s+/g, ' ').trim();
+  const original = fixTypos(normalizeLocal(String(input ?? '').replace(/\s+/g, ' ').trim()));
   if (!original) return null;
   const now = floorMinute(nowMs);
   const nowP = istParts(now);
@@ -302,7 +306,7 @@ export function parseQuick(input, nowMs = Date.now()) {
   payload.title = title.slice(0, 200);
   const detail = description ? restoreCase(description, original) : '';
   payload.description = detail ? detail.charAt(0).toUpperCase() + detail.slice(1) : null;
-  payload.category = guessCategory(original.toLowerCase());
+  payload.category = pickCategory(payload.title, payload.description || '', guessCategory(original.toLowerCase()));
 
   const wordCount = original.split(' ').length;
   const confidence = found.length > 0 || wordCount <= 3 ? 'high' : 'low';

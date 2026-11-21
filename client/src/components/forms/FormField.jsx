@@ -1,5 +1,5 @@
 import React from "react";
-import { Check, XCircle } from "lucide-react";
+import { Check, XCircle } from "../icons";
 
 const INPUT_BASE =
   "w-full py-3.5 pl-12 pr-12 bg-[color:var(--rm-soft)] border-2 rounded-2xl text-[color:var(--rm-ink)] font-medium placeholder:text-slate-500 placeholder:font-normal focus:bg-white focus:outline-none focus:ring-4 transition-all";

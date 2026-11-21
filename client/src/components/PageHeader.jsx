@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "./icons";
 
 /**
  * Title block used at the top of every inner page: optional back link, page title, subtitle and an

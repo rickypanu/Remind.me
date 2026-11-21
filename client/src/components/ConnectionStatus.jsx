@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { WifiOff, Loader2, CloudOff } from "lucide-react";
+import { WifiOff, Loader2, CloudOff } from "./icons";
 import useSyncStatus from "../offline/useSyncStatus";
 import notify from "../utils/notify";
 

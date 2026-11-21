@@ -54,7 +54,7 @@ export const FAQS = [
     category: 'Tasks',
     question: 'What is Magic Add and how do I get the best results?',
     answer:
-      'Magic Add reads a normal sentence, like "Submit DBMS assignment tomorrow 5pm", and fills in the title, deadline and category for you using AI. Mention the day and time to get an accurate deadline, and check the new task on your dashboard afterwards. Task titles are saved in English.',
+      'Magic Add reads a normal sentence, like "Submit DBMS assignment tomorrow 5pm", and fills in the title, deadline and category for you, instantly, without AI. Mention the day and time to get an accurate deadline, and check the new task on your dashboard afterwards. The title stays in the language you typed.',
   },
   {
     id: 26,
@@ -266,7 +266,7 @@ export const FAQS = [
     category: 'Account & Privacy',
     question: 'Are my reminders private?',
     answer:
-      'Yes. The title, notes and category of every reminder are encrypted before they are saved, with a separate key for each user, so the database only holds unreadable ciphertext. They are decrypted only for you after you log in, and briefly on our server to deliver your own notifications. Reminders made with the form are never sent to an AI service; text you type into Magic Add is sent to Google Gemini to be understood.',
+      'Yes. The title, notes and category of every reminder are encrypted before they are saved, with a separate key for each user, so the database only holds unreadable ciphertext. They are decrypted only for you after you log in, and briefly on our server to deliver your own notifications. Quick Add is understood by GetRemindMe\'s own rules, and no reminder text is sent to any AI service.',
     link: { to: '/terms', label: 'Read the Privacy Policy' },
   },
   {

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Play, Square } from "lucide-react";
+import { Play, Square } from "./icons";
 import Modal from "./Modal";
 import notify from "../utils/notify";
 

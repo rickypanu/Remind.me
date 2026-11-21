@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Send, CheckCircle2, AlertCircle, Loader2, MessageCircle } from 'lucide-react';
+import { Send, CheckCircle2, AlertCircle, Loader2, MessageCircle } from '../../components/icons';
 import useMe, { userIdOf } from '../../hooks/useMe';
 import { useTelegramDisconnect, useTelegramLink, useTelegramStatus } from '../../hooks/useTelegram';
 import notify from '../../utils/notify';

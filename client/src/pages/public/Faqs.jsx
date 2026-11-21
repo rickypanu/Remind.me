@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
-import PublicLayout from "../../components/PublicLayout";
-import PageHeader from "../../components/PageHeader";
+import SiteLayout from "../../components/site/SiteLayout";
 import usePageMeta from "../../utils/usePageMeta";
 import { FAQS, FAQ_CATEGORIES } from "../../data/faqs.data";
 import { routeMeta } from "../../seo/routes";
@@ -34,26 +33,32 @@ export default function FAQ() {
   };
 
   return (
-    <PublicLayout>
-      <div className="pt-6 sm:pt-8 pb-16 px-4 sm:px-6 font-sans selection:bg-indigo-100 selection:text-indigo-900">
-        <div className="max-w-3xl mx-auto space-y-8">
-          <PageHeader
-            backTo
-            title="How can we help?"
-            subtitle="Answers about reminders, offline use, notifications, themes and your account."
-          />
+    <SiteLayout>
+      <section className="rs-page-head">
+        <div className="rs-wrap">
+          <span className="rs-eyebrow">
+            <b>FAQ</b> Help centre
+          </span>
+          <h1>How can we help?</h1>
+          <p className="rs-lede">Answers about reminders, offline use, notifications, themes and your account.</p>
+        </div>
+      </section>
 
-          <FaqSearch value={searchQuery} onChange={search} onClear={() => search("")} />
-          <FaqCategoryTabs faqs={FAQS} categories={FAQ_CATEGORIES} active={activeCategory} onChange={chooseCategory} />
+      <div className="rs-page-body">
+        <div className="rs-wrap" style={{ maxWidth: 860 }}>
+          <div className="rs-faq-tools">
+            <FaqSearch value={searchQuery} onChange={search} onClear={() => search("")} />
+            <FaqCategoryTabs faqs={FAQS} categories={FAQ_CATEGORIES} active={activeCategory} onChange={chooseCategory} />
+          </div>
 
           {/* Announced to screen readers whenever the list changes */}
-          <p role="status" className={trimmed ? "text-sm text-slate-600 font-medium -mt-4" : "sr-only"}>
+          <p role="status" className={trimmed ? "rs-note" : "sr-only"} style={trimmed ? { marginBottom: 12 } : undefined}>
             {trimmed || activeCategory !== "All"
               ? `${filtered.length} result${filtered.length === 1 ? "" : "s"}${trimmed ? ` for “${trimmed}”` : ""}`
               : ""}
           </p>
 
-          <div className="space-y-3 min-h-[300px]">
+          <div className="rs-faq" style={{ minHeight: 300 }}>
             {filtered.length === 0 ? (
               <FaqEmpty query={searchQuery} onReset={reset} />
             ) : (
@@ -73,6 +78,6 @@ export default function FAQ() {
           <SupportCta />
         </div>
       </div>
-    </PublicLayout>
+    </SiteLayout>
   );
 }

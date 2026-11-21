@@ -2,13 +2,14 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Bell, BellOff, BellRing, Plus, CircleUser, Loader2, Menu, X,
   LayoutDashboard, Newspaper, Info, HelpCircle, Home as HomeIcon, LogIn, UserPlus,
-} from 'lucide-react';
+} from '../../components/icons';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import usePush from '../../utils/usePush';
 import { resolveAvatarSrc } from '../../utils/avatar';
 import { isLoggedIn as hasSession } from '../../utils/auth';
 import Logo from '../../components/Logo';
 import ThemeToggle from '../../components/ThemeToggle';
+import NotificationBell from '../../components/NotificationBell';
 import LanguageSwitcher from '../../components/LanguageSwitcher';
 import { useI18n } from '../../i18n';
 
@@ -163,6 +164,7 @@ const Header = () => {
             </>
           ) : (
             <>
+              <NotificationBell />
               <PushButton pushStatus={pushStatus} onClick={toggle} />
               <Link
                 to="/create-task"
@@ -208,6 +210,7 @@ const Header = () => {
               <Plus size={22} strokeWidth={2.75} />
             </Link>
           )}
+          {isLoggedIn && <NotificationBell />}
           <ThemeToggle />
           <button
             ref={menuButtonRef}

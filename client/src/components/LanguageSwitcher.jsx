@@ -1,5 +1,5 @@
 import React from "react";
-import { Globe } from "lucide-react";
+import { Globe } from "./icons";
 import { useI18n } from "../i18n";
 
 /** A native <select>: works with every keyboard and screen reader, and opens the phone's own picker. */

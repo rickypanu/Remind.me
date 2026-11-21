@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { AlertCircle, ChevronDown } from "lucide-react";
+import { AlertCircle, ChevronDown } from "../../components/icons";
 import TaskCard from "../tasks/TaskCard";
 import { useI18n } from "../../i18n/index.jsx";
 

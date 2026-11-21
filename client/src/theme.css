@@ -1007,12 +1007,12 @@ html[data-theme="classic"][data-accent="teal"].dark {
    Light mode: slate-400 (#94a3b8) is only 2.6:1 on white and slate-500 (#64748b) drops under 4.5:1 on tinted
    cards. Darken both a little; dark mode and Minimalism already have their own readable values above. */
 html:not(.dark):not([data-theme="minimal"]) .text-slate-400,
-html:not(.dark):not([data-theme="minimal"]) .text-gray-400 { color: #5f6b80; }
+html:not(.dark):not([data-theme="minimal"]) .text-gray-400 { color: #6a665c; }
 html:not(.dark):not([data-theme="minimal"]) .text-slate-500,
-html:not(.dark):not([data-theme="minimal"]) .text-gray-500 { color: #4d5a70; }
+html:not(.dark):not([data-theme="minimal"]) .text-gray-500 { color: #57534b; }
 html:not(.dark):not([data-theme="minimal"]) .text-slate-600,
-html:not(.dark):not([data-theme="minimal"]) .text-gray-600 { color: #3f4b61; }
-html:not(.dark):not([data-theme="minimal"]) ::placeholder { color: #5d697e; opacity: 1; }
+html:not(.dark):not([data-theme="minimal"]) .text-gray-600 { color: #44413b; }
+html:not(.dark):not([data-theme="minimal"]) ::placeholder { color: #6a665c; opacity: 1; }
 html:not(.dark)[data-theme="minimal"] .text-slate-400, html:not(.dark)[data-theme="minimal"] .text-gray-400 { color: #6b6b6b; }
 html:not(.dark)[data-theme="minimal"] .text-slate-500, html:not(.dark)[data-theme="minimal"] .text-gray-500 { color: #595959; }
 html:not(.dark)[data-theme="minimal"] ::placeholder { color: #6b6b6b; opacity: 1; }
@@ -1029,7 +1029,7 @@ button:disabled.bg-blue-600, button:disabled.bg-indigo-600 { background-color: v
 button:disabled { cursor: not-allowed; }
 
 /* ---- 2. Accent colours: solid buttons keep the chosen colour in dark mode and pass AA with white text ----- */
-html { --rm-solid: #2563eb; --rm-solid-hover: #1d4ed8; }
+html { --rm-solid: #2a47d9; --rm-solid-hover: #2038b8; }
 html[data-accent="indigo"] { --rm-solid: #4f46e5; --rm-solid-hover: #4338ca; }
 html[data-accent="violet"] { --rm-solid: #7c3aed; --rm-solid-hover: #6d28d9; }
 html[data-accent="pink"] { --rm-solid: #be185d; --rm-solid-hover: #9d174d; }

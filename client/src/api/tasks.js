@@ -4,7 +4,7 @@ const TIMEOUT = { timeout: 20000 };
 
 /**
  * Reminder endpoints. The app reads and writes reminders through the offline store (src/offline); only the
- * sync engine calls the CRUD functions below. `magicAdd` is online-only (the server's AI reads the sentence).
+ * sync engine calls the CRUD functions below. `magicAdd` is online-only (the server reads the sentence with the same rules as the app).
  */
 export const tasksApi = {
   /** Delta sync page: `{ cursor?, limit? }` -> `{ items, deleted, next_cursor, has_more, snapshot, server_time }`. */
@@ -17,6 +17,4 @@ export const tasksApi = {
   /** `{ streak, best_streak, completed_today }` on IST calendar days, for the motivation card. */
   stats: () => api.get("/tasks/stats", { timeout: 10000 }).then((r) => r.data),
   magicAdd: (text) => api.post("/tasks/magic-add", { text }, { timeout: 20000 }).then((r) => r.data),
-  /** Same AI reading as magicAdd, but nothing is saved: `{ title, category, schedule_type, due_date | time_of_day, ... }`. */
-  magicParse: (text) => api.post("/tasks/magic-parse", { text }, { timeout: 15000 }).then((r) => r.data),
 };

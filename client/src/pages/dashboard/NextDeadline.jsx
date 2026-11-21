@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Timer } from "lucide-react";
+import { Timer } from "../../components/icons";
 import { formatDueIst } from "../../utils/date";
 import { useI18n } from "../../i18n/index.jsx";
 

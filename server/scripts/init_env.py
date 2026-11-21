@@ -44,7 +44,6 @@ def main() -> int:
     TARGET.write_text(text, encoding="utf-8")
     print(f"Wrote {TARGET}")  # noqa: T201
     print("Back up REMINDER_ENCRYPTION_KEY: without it saved reminders cannot be read again.")  # noqa: T201
-    print("Optional: add GEMINI_API_KEYS=... for Quick Add (AI).")  # noqa: T201
     return 0
 
 

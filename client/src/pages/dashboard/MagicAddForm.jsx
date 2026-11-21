@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Sparkles, ArrowUp, Mic, MicOff, CalendarClock, Repeat } from "lucide-react";
+import { Sparkles, ArrowUp, Mic, MicOff, CalendarClock, Repeat } from "../../components/icons";
 import useAutosizeTextarea from "../../hooks/useAutosizeTextarea";
 import useQuickAdd from "../../hooks/useQuickAdd";
 import useSpeechRecognition from "../../hooks/useSpeechRecognition";
@@ -8,10 +8,12 @@ import notify from "../../utils/notify";
 import { describeScheduleLocal, formatDueIst } from "../../utils/date";
 import { parseQuick } from "../../utils/quickParse";
 import { useI18n } from "../../i18n/index.jsx";
+import { dateLocale } from "../../i18n/languages";
 import { deleteTask, editTask } from "../../offline/taskStore";
 import EditReminderDialog from "../../components/EditReminderDialog";
 
-const VOICE_LANG = "en-IN";
+// The microphone listens in the language chosen for the website (Hinglish is Hindi spoken, so it uses the Hindi model).
+const voiceLang = (lang) => (lang === "en" ? "en-IN" : lang === "hinglish" ? "hi-IN" : dateLocale(lang));
 const MAX_LENGTH = 500;
 const EXAMPLES = ["Gym tomorrow 7am", "Call mom in 30 min", "Revise every day 8pm", "kal sham 6 baje assignment"];
 
@@ -26,7 +28,7 @@ function whenLabel(payload) {
  * (see hooks/useQuickAdd.js), so it works in about a second, even offline or while the server is waking up.
  */
 export default function MagicAddForm({ isOffline, titles = [] }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [text, setText] = useState("");
   const inputRef = useRef(null);
   const { add } = useQuickAdd();
@@ -40,7 +42,7 @@ export default function MagicAddForm({ isOffline, titles = [] }) {
   useAutosizeTextarea(inputRef, text);
 
   const { listening, toggle } = useSpeechRecognition({
-    lang: VOICE_LANG,
+    lang: voiceLang(lang),
     getBaseText: () => text,
     onText: setText,
     onUnsupported: () =>
@@ -161,7 +163,7 @@ export default function MagicAddForm({ isOffline, titles = [] }) {
                 key={example}
                 type="button"
                 onClick={() => {
-                  setText(example);
+                  setText(t(example));
                   inputRef.current?.focus();
                 }}
                 className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[12.5px] font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 active:scale-95"

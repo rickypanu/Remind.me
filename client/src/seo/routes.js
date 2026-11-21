@@ -42,7 +42,7 @@ export const PUBLIC_ROUTES = {
   "/about": {
     title: "About",
     description:
-      "About GetRemindMe: a reminder app for specific, daily and weekly reminders with Magic Add AI, Telegram and browser notifications, and encrypted private reminders.",
+      "About GetRemindMe: a reminder service for specific, daily and weekly reminders with Magic Add, Telegram and browser notifications, and encrypted private reminders.",
     priority: "0.6",
   },
   "/faqs": {

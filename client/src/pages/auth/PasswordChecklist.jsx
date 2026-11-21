@@ -1,5 +1,5 @@
 import React from "react";
-import { CheckCircle, Circle } from "lucide-react";
+import { CheckCircle, Circle } from "../../components/icons";
 import { PASSWORD_CRITERIA } from "./registerValidation";
 
 /** Strength bar and requirement checklist. Changes are announced politely (finding X6). */

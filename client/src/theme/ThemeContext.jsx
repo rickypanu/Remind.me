@@ -14,7 +14,7 @@ export const ACCENT_KEY = "remindme-accent";
 
 /** Accent colours offered in Profile. "black" is not an accent: it switches on the Minimalism theme. */
 export const ACCENTS = [
-  { id: "blue", label: "Blue", swatch: "#2563eb" },
+  { id: "blue", label: "Ultramarine", swatch: "#2a47d9" },
   { id: "indigo", label: "Indigo", swatch: "#4f46e5" },
   { id: "violet", label: "Violet", swatch: "#7c3aed" },
   { id: "pink", label: "Pink", swatch: "#db2777" },
@@ -25,7 +25,7 @@ export const ACCENTS = [
 const ACCENT_IDS = ACCENTS.map((a) => a.id);
 
 const META_COLORS = {
-  "classic-light": "#ffffff",
+  "classic-light": "#f6f2e9",
   "classic-dark": "#0d0f12",
   "minimal-light": "#fafafa",
   "minimal-dark": "#0a0a0a",
@@ -50,8 +50,8 @@ const write = (key, value) => {
 const getInitialColorMode = () => {
   const saved = read(COLOR_MODE_KEY);
   if (saved === "light" || saved === "dark") return saved;
-  // No choice made yet: dark (the visitor can switch to light in Profile).
-  return "dark";
+  // No choice made yet: light paper (the visitor can switch to dark in Profile or from the header).
+  return "light";
 };
 
 const getInitialThemeStyle = () => (read(THEME_STYLE_KEY) === "minimal" ? "minimal" : "classic");

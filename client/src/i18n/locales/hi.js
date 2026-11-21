@@ -1005,4 +1005,12 @@ export default {
 "Stop": "रोकें",
 "Previous month": "पिछला महीना",
 "Next month": "अगला महीना",
+"You are all caught up.": "आप सब देख चुके हैं।",
+"Soon": "जल्द",
+"Just now": "अभी",
+"Your week ahead": "आपका आने वाला हफ़्ता",
+"{n} due this coming week": "इस हफ़्ते {n} बाकी",
+"{n} overdue": "{n} देर हो चुकी",
+"Due in {n} min": "{n} मिनट में समय",
+"You missed this one": "यह छूट गया",
 };

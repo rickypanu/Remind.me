@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Bell, BellRing, BellOff, Loader2, Send, ChevronRight, Play, ShieldAlert, Smartphone } from "lucide-react";
+import { Bell, BellRing, BellOff, Loader2, Send, ChevronRight, Play, ShieldAlert, Smartphone } from "../../components/icons";
 import AppPage from "../../components/AppPage";
 import FeedbackSettings from "../../components/FeedbackSettings";
 import usePush from "../../utils/usePush";

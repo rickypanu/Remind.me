@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Lock, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
+import { Lock, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2 } from '../../components/icons';
 import { useResetPassword } from '../../hooks/useAuthMutations';
 import FormField from '../../components/forms/FormField';
 import ThemeToggle from '../../components/ThemeToggle';

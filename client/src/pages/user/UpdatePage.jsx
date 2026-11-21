@@ -8,7 +8,7 @@ import {
   CheckCircle2,
   Edit3,
   Megaphone,
-} from "lucide-react";
+} from "../../components/icons";
 import Modal from "../../components/Modal";
 import useMe from "../../hooks/useMe";
 import { useCreateUpdate, useDeleteUpdate, useUpdates } from "../../hooks/useUpdates";

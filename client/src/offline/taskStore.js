@@ -1,4 +1,5 @@
 import { feedback } from '../feedback/feedback';
+import { rememberCategory } from '../utils/learning';
 import { emitTasksChanged, getDB, getMeta, idAliases, putTask } from './db';
 import { requestSync, isInFlight } from './sync';
 import { applyDelete, applyEdit, applyStatus, buildNewTask, isRecurring } from './taskModel';
@@ -27,8 +28,10 @@ async function mutate(id, change) {
   return { current, next };
 }
 
-export async function createTask(payload, { silent = false } = {}) {
+/** `learn: false` for reminders the app filled in itself (quick add), so its own guesses are never taken as the person's choice. */
+export async function createTask(payload, { silent = false, learn = true } = {}) {
   const task = buildNewTask(payload, await getMeta('ownerId'));
+  if (learn && payload.category && payload.category !== 'Other') rememberCategory(payload.title, payload.category);
   await putTask(task);
   emitTasksChanged();
   requestSync();
@@ -36,8 +39,10 @@ export async function createTask(payload, { silent = false } = {}) {
   return task;
 }
 
-export async function editTask(id, changes, { silent = false } = {}) {
-  const { next } = await mutate(id, (t) => applyEdit(t, changes));
+export async function editTask(id, changes, { silent = false, learn = true } = {}) {
+  const { current, next } = await mutate(id, (t) => applyEdit(t, changes));
+  // The person changed the category: remember it, so the next reminder like this one gets it right
+  if (learn && next && current && changes.category && changes.category !== current.category) rememberCategory(next.title, changes.category);
   if (next && !silent) feedback.updated();
   return next;
 }

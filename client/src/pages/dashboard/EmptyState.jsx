@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Plus } from "lucide-react";
+import { Plus } from "../../components/icons";
 
 export default function EmptyState({ Icon, title, body, cta }) {
   return (

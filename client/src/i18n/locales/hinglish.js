@@ -815,4 +815,13 @@ export default {
 "Stop": "Stop",
 "Previous month": "Pichla mahina",
 "Next month": "Agla mahina",
+"Notifications": "Notifications",
+"You are all caught up.": "Aap sab dekh chuke hain.",
+"Soon": "Jaldi",
+"Just now": "Abhi",
+"Your week ahead": "Aapka aane wala hafta",
+"{n} due this coming week": "Is hafte {n} due",
+"{n} overdue": "{n} overdue",
+"Due in {n} min": "{n} min mein due",
+"You missed this one": "Ye miss ho gaya",
 };

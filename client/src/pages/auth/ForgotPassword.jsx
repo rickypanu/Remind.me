@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Loader2, AlertCircle, ArrowLeft, KeyRound, MailCheck } from 'lucide-react';
+import { Mail, Loader2, AlertCircle, ArrowLeft, KeyRound, MailCheck } from '../../components/icons';
 import { useForgotPassword } from '../../hooks/useAuthMutations';
 import FormField from '../../components/forms/FormField';
 import ThemeToggle from '../../components/ThemeToggle';

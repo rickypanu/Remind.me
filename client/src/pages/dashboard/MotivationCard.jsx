@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Flame, Quote, RefreshCw } from "lucide-react";
+import { Flame, Quote, RefreshCw } from "../../components/icons";
 import { buildMotivation } from "./motivation";
 
 /**

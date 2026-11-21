@@ -1,28 +1,22 @@
 import React from "react";
-import { Search, X } from "lucide-react";
+import { Search, X } from "../../../components/icons";
 
 export default function FaqSearch({ value, onChange, onClear }) {
   return (
-    <div className="relative group" role="search">
-      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-        <Search className="h-5 w-5 text-slate-500 group-focus-within:text-indigo-500 transition-colors" aria-hidden="true" />
-      </div>
+    <div role="search" style={{ position: "relative" }}>
+      <Search size={20} style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", color: "var(--rs-ink-3)", pointerEvents: "none" }} />
       <input
         type="search"
         aria-label="Search the FAQs"
         placeholder="Search for answers..."
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full pl-11 pr-11 py-3.5 bg-white border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 shadow-sm transition-all"
+        className="rs-field"
+        style={{ paddingLeft: 46, paddingRight: 46 }}
       />
       {value && (
-        <button
-          type="button"
-          onClick={onClear}
-          aria-label="Clear search"
-          className="absolute inset-y-0 right-3 my-auto h-8 w-8 flex items-center justify-center rounded-full text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-        >
-          <X className="w-4 h-4" aria-hidden="true" />
+        <button type="button" onClick={onClear} aria-label="Clear search" className="rs-icon-btn" style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", width: 38, height: 38, border: 0 }}>
+          <X size={18} />
         </button>
       )}
     </div>

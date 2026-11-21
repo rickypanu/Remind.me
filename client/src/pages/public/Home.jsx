@@ -1,632 +1,323 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React from "react";
+import { Link } from "react-router-dom";
 import {
-  ArrowRight, Send, Mic, Clock, Check, Repeat, Bell,
-  Keyboard, ClipboardList, Sparkles, Download,
-} from "lucide-react";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
+  ArrowRight, BellRing, ChevronDown, Download, Edit, Lock, Mail, Repeat, Send, Smartphone, Sparkles,
+} from "../../components/icons";
+import SiteLayout from "../../components/site/SiteLayout";
+import TryIt, { PushBanner } from "../../components/site/TryIt";
 import usePageMeta from "../../utils/usePageMeta";
+import useInstall, { promptInstall } from "../../utils/install";
 import { routeMeta } from "../../seo/routes";
+import { FAQS } from "../../data/faqs.data";
+import { SITE, mailto } from "../../config/site";
 
-/* ---------------------------------------------------------------
-   Tiny natural-language parser, runs fully in the browser so
-   visitors can try the product without signing up.
----------------------------------------------------------------- */
-const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-const WD_RE = "(sunday|monday|tuesday|wednesday|thursday|friday|saturday)";
-
-const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
-
-function nextWeekday(from, idx, includeToday) {
-  const d = new Date(from);
-  d.setHours(0, 0, 0, 0);
-  let diff = (idx - d.getDay() + 7) % 7;
-  if (diff === 0 && !includeToday) diff = 7;
-  d.setDate(d.getDate() + diff);
-  return d;
-}
-
-function parseReminder(raw) {
-  const original = (raw || "").trim();
-  if (!original) return null;
-
-  let t = " " + original + " ";
-  const strip = (re) => { t = t.replace(re, " "); };
-  const now = new Date();
-  const eveningWords = /\b(tonight|evening|night)\b/i.test(t);
-
-  let repeat = "Once";
-  let day = null;
-  let hour = null;
-  let minute = 0;
-  let relDate = null;
-  let m;
-
-  // Repeats
-  if ((m = t.match(new RegExp(`\\bevery ${WD_RE}s?\\b`, "i")))) {
-    const idx = WEEKDAYS.indexOf(m[1].toLowerCase());
-    day = nextWeekday(now, idx, true);
-    repeat = `Weekly, ${cap(m[1].slice(0, 3).toLowerCase())}`;
-    strip(m[0]);
-  } else if (/\b(every day|everyday|daily|every morning|every evening|every night)\b/i.test(t)) {
-    repeat = "Daily";
-    strip(/\b(every day|everyday|daily)\b/gi);
-    strip(/\bevery\b/gi);
-  }
-
-  // Relative: "in 10 minutes"
-  if ((m = t.match(/\bin (\d+)\s*(minutes?|mins?|hours?|hrs?|days?)\b/i))) {
-    const n = +m[1];
-    const u = m[2].toLowerCase();
-    const ms = u.startsWith("m") ? n * 60000 : u.startsWith("h") ? n * 3600000 : n * 86400000;
-    relDate = new Date(now.getTime() + ms);
-    strip(m[0]);
-  }
-
-  // Day
-  if (!day && !relDate) {
-    if (/\btomorrow\b/i.test(t)) {
-      day = new Date(now); day.setDate(day.getDate() + 1); day.setHours(0, 0, 0, 0);
-      strip(/\btomorrow\b/gi);
-    } else if ((m = t.match(new RegExp(`\\b(?:on |next |this )?${WD_RE}\\b`, "i")))) {
-      day = nextWeekday(now, WEEKDAYS.indexOf(m[1].toLowerCase()), false);
-      strip(m[0]);
-    } else if ((m = t.match(/\b(?:on )?(?:the )?(\d{1,2})(?:st|nd|rd|th)\b/i))) {
-      const dom = +m[1];
-      day = new Date(now.getFullYear(), now.getMonth(), dom);
-      if (day < new Date(now.getFullYear(), now.getMonth(), now.getDate())) day = new Date(now.getFullYear(), now.getMonth() + 1, dom);
-      strip(m[0]);
-    } else if (/\b(today|tonight)\b/i.test(t)) {
-      day = new Date(now); day.setHours(0, 0, 0, 0);
-      strip(/\btoday\b/gi);
-    }
-  }
-
-  // Time
-  if (!relDate) {
-    let tm = t.match(/\b(?:at |@ ?)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i);
-    if (!tm) tm = t.match(/\bat (\d{1,2})(?::(\d{2}))?\b/i);
-    if (!tm) tm = t.match(/\b(\d{1,2}):(\d{2})\b/);
-    if (tm) {
-      let h = +tm[1];
-      minute = +(tm[2] || 0);
-      const mer = (tm[3] || "").toLowerCase();
-      if (mer === "pm" && h < 12) h += 12;
-      else if (mer === "am" && h === 12) h = 0;
-      else if (!mer && h >= 1 && h <= 6) h += 12;
-      else if (!mer && h >= 7 && h <= 11 && eveningWords) h += 12;
-      hour = h;
-      strip(tm[0]);
-    } else if (/\bnoon\b/i.test(t)) { hour = 12; }
-    else if (/\bmorning\b/i.test(t)) { hour = 9; }
-    else if (/\bafternoon\b/i.test(t)) { hour = 14; }
-    else if (/\bevening\b/i.test(t)) { hour = 18; }
-    else if (/\btonight\b/i.test(t)) { hour = 20; }
-    else if (/\bnight\b/i.test(t)) { hour = 21; }
-  }
-
-  // Task text
-  strip(/\b(this )?(morning|afternoon|evening|tonight|night|noon|tomorrow|today)\b/gi);
-  t = t.trim().replace(/^(please\s+)?(remind me\s+(to|about|that)?\s*|reminder\s+(to|for)?\s*|to\s+)/i, "");
-  for (let i = 0; i < 4; i++) {
-    t = t.replace(/^(at|on|in|by|every|next|this|the|and)\s+/i, "").replace(/\s+(at|on|in|by|every|next|this|the|and)$/i, "");
-  }
-  const task = cap(t.replace(/\s+/g, " ").trim()) || "Reminder";
-
-  // Build date
-  let date;
-  let defaulted = false;
-  let note = "";
-  if (relDate) {
-    date = relDate;
-  } else if (hour === null && !day && repeat === "Once") {
-    date = new Date(now.getTime() + 3600000);
-    date.setMinutes(0, 0, 0);
-    defaulted = true;
-  } else {
-    date = day ? new Date(day) : new Date(now);
-    date.setHours(hour === null ? 9 : hour, minute, 0, 0);
-    if (hour === null) defaulted = true;
-    if (date <= now) {
-      date.setDate(date.getDate() + (repeat.startsWith("Weekly") ? 7 : 1));
-      note = "That time has already passed, so this is set for the next one.";
-    }
-  }
-  return { task, date, repeat, defaulted, note };
-}
-
-const fmtTime = (d) => d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-function fmtWhen(d) {
-  const now = new Date();
-  const tmr = new Date(now); tmr.setDate(now.getDate() + 1);
-  let day;
-  if (d.toDateString() === now.toDateString()) day = "Today";
-  else if (d.toDateString() === tmr.toDateString()) day = "Tomorrow";
-  else day = d.toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short" });
-  return `${day}, ${fmtTime(d)}`;
-}
-function relIn(d) {
-  const mins = Math.round((d - new Date()) / 60000);
-  if (mins < 1) return "any moment now";
-  if (mins < 60) return `in ${mins} min`;
-  const h = Math.floor(mins / 60);
-  const r = mins % 60;
-  if (h < 24) return `in ${h}h${r ? ` ${r}m` : ""}`;
-  const days = Math.round(h / 24);
-  return `in ${days} day${days > 1 ? "s" : ""}`;
-}
-
-const pad = (n) => String(n).padStart(2, "0");
-const toDateInput = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-const toTimeInput = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-
-/* --------------------------------------------------------------- */
-
-const MODES = [
-  { id: "type", label: "Type", icon: Keyboard },
-  { id: "speak", label: "Speak", icon: Mic },
-  { id: "form", label: "Form", icon: ClipboardList },
+const SERVICES = [
+  {
+    icon: Edit,
+    title: "Plain-language reminders",
+    text: "Type or say “DBMS assignment tomorrow 5pm”. We pick out the title, date, time and category, in English, Hindi or Hinglish.",
+    tags: ["Type", "Voice", "Hinglish"],
+  },
+  {
+    icon: Send,
+    title: "Delivery where you already look",
+    text: "Alerts reach your phone and laptop through the browser, and your Telegram chat. Use one, or both at once.",
+    tags: ["Web Push", "Telegram"],
+  },
+  {
+    icon: BellRing,
+    title: "Deadline alerts",
+    text: "A heads-up before it is due. Pick 1 day, 3 hours, 1 hour, 10 minutes or 1 minute ahead, separately for each reminder.",
+    tags: ["1 day", "1 hour", "10 min", "1 min"],
+  },
+  {
+    icon: Repeat,
+    title: "Daily and weekly routines",
+    text: "Set a habit once. It repeats every day, or on the weekdays you choose, and rolls forward on its own after each tick.",
+    tags: ["Daily", "Weekly", "Weekdays"],
+  },
+  {
+    icon: Lock,
+    title: "Private by design",
+    text: "Titles, notes and categories are encrypted before they are stored, with a separate key for every user. Unsafe content is screened out.",
+    tags: ["AES-256-GCM", "Per-user keys"],
+  },
+  {
+    icon: Smartphone,
+    title: "Offline, and installable",
+    text: "Everything is saved on your device first and synced when you are back online. Add it to your home screen, or get the Android app.",
+    tags: ["Offline first", "Web app", "Android"],
+  },
 ];
 
-const PLACEHOLDERS = [
-  "Remind me to push code at 6 PM",
-  "Call mom tomorrow morning",
-  "Pay rent on the 1st",
-  "Gym every Friday at 7 AM",
-  "Take medicine in 30 minutes",
+const STEPS = [
+  {
+    title: "Tell us",
+    text: "Type it, say it, or use the short form. Your sentence is read on your device in a few milliseconds, so there is nothing to wait for.",
+    eg: ["gym every monday and thursday 7am", "Every Mon, Thu at 7:00 AM"],
+  },
+  {
+    title: "Choose where",
+    text: "Turn on browser alerts and connect Telegram once. Each channel keeps its own record, so one alert is never sent twice.",
+    eg: ["Channels", "Browser alerts + Telegram"],
+  },
+  {
+    title: "We remind you",
+    text: "Alerts arrive ahead of the deadline. Tick it done and a repeating reminder rolls to its next time by itself.",
+    eg: ["DBMS assignment", "Due in 10 minutes. Time to wrap it up."],
+  },
 ];
 
-const CHIPS = ["Call mom tomorrow morning", "Submit report Friday 5 pm", "Drink water in 10 minutes", "Gym every Monday at 7 am"];
-
-const AUTO_MSGS = [
-  { when: "8:00 AM, every morning", text: "Morning. You have 3 things today: push code, call mom, send invoice." },
-  { when: "2 days before a due date", text: "Rent is due on the 1st. Want an extra reminder the day before?", actions: ["Yes", "No"] },
-  { when: "When a task is still open", text: "Did you push the code? Reply Done, or I'll check again in an hour.", actions: ["Done", "Snooze 1h"] },
+const CASES = [
+  {
+    title: "Students",
+    text: "Assignments, labs, vivas and exam weeks, sorted by what is due next.",
+    egs: ["DBMS assignment Friday 5pm", "Revise physics every weekday 7pm", "Lab record tomorrow morning"],
+  },
+  {
+    title: "Placements and internships",
+    text: "Tests, interview slots and follow-ups that must not slip.",
+    egs: ["Online test Sunday 10am", "Send resume to HR by Monday 6pm", "Interview prep every day 8pm"],
+  },
+  {
+    title: "Everyday life",
+    text: "Bills, habits and the small things that are easy to forget.",
+    egs: ["Pay rent on the 1st", "Gym every Friday 7am", "Call mom in 30 minutes"],
+  },
 ];
 
-// Web app install (PWA). Needs a web manifest + service worker in your project.
-function useInstall() {
-  const [evt, setEvt] = useState(null);
-  const [installed, setInstalled] = useState(false);
-  useEffect(() => {
-    const standalone =
-      (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone;
-    if (standalone) setInstalled(true);
-    const onPrompt = (e) => { e.preventDefault(); setEvt(e); };
-    const onInstalled = () => { setInstalled(true); setEvt(null); };
-    window.addEventListener("beforeinstallprompt", onPrompt);
-    window.addEventListener("appinstalled", onInstalled);
-    return () => {
-      window.removeEventListener("beforeinstallprompt", onPrompt);
-      window.removeEventListener("appinstalled", onInstalled);
-    };
-  }, []);
-  const install = async () => {
-    if (!evt) return;
-    evt.prompt();
-    await evt.userChoice;
-    setEvt(null);
-  };
-  return { canPrompt: !!evt, installed, install };
-}
+const FAQ_IDS = [2, 3, 12, 27];
 
-function InstallButton() {
-  const { canPrompt, installed, install } = useInstall();
-  const [help, setHelp] = useState(false);
-  if (installed) return null;
+function InstallAction() {
+  const install = useInstall();
+  if (!install.canPrompt) return null;
   return (
-    <div className="flex flex-col items-center md:items-start">
-      <button
-        type="button"
-        onClick={() => (canPrompt ? install() : setHelp(!help))}
-        className="inline-flex items-center gap-2.5 px-5 py-3 rounded-2xl font-semibold bg-white hover:bg-slate-50 text-[color:var(--rm-ink)] border border-slate-300 transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
-      >
-        <Download size={18} /> Install web app
-      </button>
-      {help && !canPrompt && (
-        <ul className="mt-3 text-sm leading-relaxed space-y-1 text-left max-w-xs text-slate-600">
-          <li><strong>iPhone (Safari):</strong> tap Share, then Add to Home Screen.</li>
-          <li><strong>Android (Chrome):</strong> open the menu, then Install app.</li>
-          <li><strong>Desktop:</strong> click the install icon in the address bar.</li>
-        </ul>
-      )}
-    </div>
-  );
-}
-
-function PushBanner({ title = "TaskBot", body, time = "now" }) {
-  return (
-    <div className="flex items-start gap-3 rounded-2xl bg-white border border-slate-200 px-3.5 py-3 shadow-sm">
-      <span className="w-8 h-8 rounded-lg bg-[color:var(--rm-icon-bg)] text-[color:var(--rm-accent)] flex items-center justify-center flex-shrink-0">
-        <Bell size={15} />
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="flex justify-between text-xs">
-          <span className="font-bold text-slate-800">{title}</span>
-          <span className="text-slate-500">{time}</span>
-        </div>
-        <p className="text-[13px] text-slate-700 leading-snug mt-0.5">{body}</p>
-      </div>
-    </div>
+    <button type="button" className="rs-btn rs-btn--line" onClick={promptInstall}>
+      <Download size={18} /> Install web app
+    </button>
   );
 }
 
 export default function Home() {
-  const navigate = useNavigate();
   usePageMeta(routeMeta("/"));
-  const [mode, setMode] = useState("type");
-  const [text, setText] = useState("");
-  const [phIdx, setPhIdx] = useState(0);
-  const [, setTick] = useState(0);
-
-  const initDate = new Date(Date.now() + 3600000);
-  const [form, setForm] = useState({ task: "", date: toDateInput(initDate), time: toTimeInput(new Date(initDate.setMinutes(0))), repeat: "Once" });
-
-  const [listening, setListening] = useState(false);
-  const [voiceErr, setVoiceErr] = useState("");
-  const recRef = useRef(null);
-
-  const [test, setTest] = useState("idle"); // idle | waiting | done
-  const [testNote, setTestNote] = useState("");
-
-  useEffect(() => {
-    const a = setInterval(() => setPhIdx((i) => (i + 1) % PLACEHOLDERS.length), 2600);
-    const b = setInterval(() => setTick((n) => n + 1), 30000);
-    return () => { clearInterval(a); clearInterval(b); if (recRef.current) recRef.current.abort(); };
-  }, []);
-
-  // Current result
-  let result = null;
-  if (mode === "form") {
-    const d = new Date(`${form.date}T${form.time}`);
-    if (form.task.trim() && !isNaN(d)) {
-      result = { task: cap(form.task.trim()), date: d, repeat: form.repeat, defaulted: false, note: d <= new Date() ? "That time is in the past. Pick a later time." : "" };
-    }
-  } else {
-    result = parseReminder(text);
-  }
-
-  const toggleListen = () => {
-    setVoiceErr("");
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) {
-      setVoiceErr("Voice input isn't supported in this browser. Try Chrome, or use the Type tab.");
-      return;
-    }
-    if (listening && recRef.current) { recRef.current.stop(); return; }
-    const r = new SR();
-    r.lang = "en-IN";
-    r.interimResults = true;
-    r.onresult = (e) => setText(Array.from(e.results).map((x) => x[0].transcript).join(""));
-    r.onend = () => setListening(false);
-    r.onerror = () => { setListening(false); setVoiceErr("Couldn't hear you. Check mic permission, or type instead."); };
-    recRef.current = r;
-    setText("");
-    r.start();
-    setListening(true);
-  };
-
-  const sendTest = async () => {
-    if (!result) return;
-    setTestNote("");
-    setTest("waiting");
-    let granted = false;
-    try {
-      if ("Notification" in window) {
-        let perm = Notification.permission;
-        if (perm === "default") perm = await Notification.requestPermission();
-        granted = perm === "granted";
-      }
-    } catch (e) { /* ignore */ }
-    if (!granted) setTestNote("Browser notifications are off, so here's a preview of how it would look.");
-    setTimeout(() => {
-      const body = `Time for: ${result.task}`;
-      if (granted) { try { new Notification("TaskBot", { body }); } catch (e) { /* ignore */ } }
-      setTest("done");
-    }, 3500);
-  };
-
-  const saveAndSignUp = () => {
-    if (result) {
-      try {
-        sessionStorage.setItem(
-          "pendingReminder",
-          JSON.stringify({ task: result.task, when: result.date.toISOString(), repeat: result.repeat, via: mode })
-        );
-      } catch (e) { /* ignore */ }
-    }
-    navigate("/register");
-  };
+  const faqs = FAQ_IDS.map((id) => FAQS.find((f) => f.id === id)).filter(Boolean);
 
   return (
-    <div className="rm-display min-h-screen w-full bg-[color:var(--rm-page)] text-[color:var(--rm-ink)] antialiased overflow-x-hidden flex flex-col">
-
-      <Header />
-
-      <main className="flex-grow">
-        {/* Hero + live try-it */}
-        <div className="bg-gradient-to-b from-[color:var(--rm-hero-top)] to-[color:var(--rm-page)]">
-        <section className="max-w-6xl mx-auto px-6 pt-12 pb-16 md:pt-20 md:pb-24 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)] lg:gap-14 lg:items-center">
+    <SiteLayout>
+      {/* Hero */}
+      <section className="rs-hero">
+        <div className="rs-wrap rs-hero-grid">
           <div>
-            <h1 className="text-4xl md:text-5xl lg:text-[3.4rem] font-bold tracking-tight leading-[1.08]">
-              Tell it what to remember. It nudges you on time.
+            <span className="rs-badge">
+              <i>
+                <BellRing size={14} />
+              </i>
+              A reminder service for students and busy people
+            </span>
+            <h1>
+              Reminders that reach you <span className="rs-mark-hl">before</span> the deadline does.
             </h1>
-            <p className="mt-5 text-lg text-slate-600 max-w-lg leading-relaxed">
-              Set a one-time reminder, or repeat it every day or every week. Try it right here without signing up: type it, say it, or fill a short form, then send yourself a real test notification.
+            <p className="rs-hero-sub">
+              Tell GetRemindMe what to remember in plain words. We read the date, time and repeat, then deliver it to Telegram and your browser, right on schedule.
             </p>
-            <ul className="mt-7 grid gap-2.5 text-[15px] text-slate-700">
-              {["Alerts arrive on Telegram and in your browser", "Daily and weekly repeats, set in one sentence", "Saved on your phone first, so it works offline"].map((line) => (
-                <li key={line} className="flex items-start gap-2.5">
-                  <Check size={17} className="mt-0.5 shrink-0 text-blue-600" aria-hidden="true" />
-                  <span>{line}</span>
-                </li>
-              ))}
+            <div className="rs-cta-row">
+              <Link to="/register" className="rs-btn rs-btn--gold">
+                Start free <ArrowRight size={18} />
+              </Link>
+              <a href="#services" className="rs-btn rs-btn--line">
+                See the services
+              </a>
+            </div>
+            <ul className="rs-facts">
+              <li>
+                <Sparkles size={17} /> Free to use
+              </li>
+              <li>
+                <Smartphone size={17} /> Works offline
+              </li>
+              <li>
+                <Lock size={17} /> Encrypted at rest
+              </li>
             </ul>
           </div>
-
-          <div className="mt-10 lg:mt-0 rounded-3xl bg-white border border-slate-200 p-4 md:p-6 text-left shadow-xl">
-            {/* Tabs */}
-            <div role="tablist" aria-label="How you add a reminder" className="grid grid-cols-3 gap-1 p-1 rounded-full bg-[color:var(--rm-soft)] mb-5">
-              {MODES.map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  role="tab"
-                  aria-selected={mode === id}
-                  type="button"
-                  onClick={() => setMode(id)}
-                  className={`inline-flex items-center justify-center gap-1.5 py-2.5 rounded-full text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-sky-300 ${
-                    mode === id ? "bg-white text-[color:var(--rm-accent)] shadow-sm" : "text-slate-600 hover:text-slate-900"
-                  }`}
-                >
-                  <Icon size={15} /> {label}
-                </button>
-              ))}
-            </div>
-
-            {/* Type */}
-            {mode === "type" && (
-              <div>
-                <input
-                  type="text"
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  placeholder={PLACEHOLDERS[phIdx]}
-                  aria-label="Type your reminder"
-                  className="w-full rounded-2xl bg-[color:var(--rm-soft)] px-5 py-4 text-lg font-medium placeholder:text-slate-500 focus:outline-none focus:ring-4 focus:ring-sky-200"
-                />
-                {!text && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <span className="text-sm text-slate-500 py-1.5">Try:</span>
-                    {CHIPS.map((c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => setText(c)}
-                        className="px-3.5 py-1.5 rounded-full text-sm font-semibold border border-slate-200 text-slate-700 hover:border-blue-600 hover:text-[color:var(--rm-ink)] transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
-                      >
-                        {c}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Speak */}
-            {mode === "speak" && (
-              <div className="flex flex-col items-center gap-4 py-2">
-                <button
-                  type="button"
-                  onClick={toggleListen}
-                  aria-label={listening ? "Stop listening" : "Start listening"}
-                  className={`w-20 h-20 rounded-full flex items-center justify-center text-white transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-sky-300 ${
-                    listening ? "bg-[#0D9488] ring-8 ring-teal-100" : "bg-blue-600 hover:bg-blue-700"
-                  }`}
-                >
-                  <Mic size={28} />
-                </button>
-                {listening ? (
-                  <div className="flex items-center gap-1 h-7" aria-hidden="true">
-                    {[0, 0.15, 0.3, 0.1, 0.25, 0.05, 0.2, 0.35, 0.12].map((d, i) => (
-                      <span key={i} className="rm-bar" style={{ animationDelay: `${d}s` }} />
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-slate-500">Tap and say: "Remind me to call mom tomorrow at 9"</p>
-                )}
-                <p className="min-h-[1.75rem] text-lg font-medium text-center break-words">{text}</p>
-                {voiceErr && <p className="text-sm text-rose-600 text-center">{voiceErr}</p>}
-              </div>
-            )}
-
-            {/* Form */}
-            {mode === "form" && (
-              <div className="grid grid-cols-2 gap-3">
-                <label className="col-span-2 text-sm font-semibold text-slate-600">
-                  Task
-                  <input
-                    type="text"
-                    value={form.task}
-                    onChange={(e) => setForm({ ...form, task: e.target.value })}
-                    placeholder="What should I remind you about?"
-                    className="mt-1 w-full rounded-xl bg-[color:var(--rm-soft)] px-4 py-3 text-base font-medium text-[color:var(--rm-ink)] placeholder:text-slate-500 focus:outline-none focus:ring-4 focus:ring-sky-200"
-                  />
-                </label>
-                <label className="text-sm font-semibold text-slate-600">
-                  Date
-                  <input
-                    type="date"
-                    value={form.date}
-                    onChange={(e) => setForm({ ...form, date: e.target.value })}
-                    className="mt-1 w-full rounded-xl bg-[color:var(--rm-soft)] px-4 py-3 text-base font-medium text-[color:var(--rm-ink)] focus:outline-none focus:ring-4 focus:ring-sky-200"
-                  />
-                </label>
-                <label className="text-sm font-semibold text-slate-600">
-                  Time
-                  <input
-                    type="time"
-                    value={form.time}
-                    onChange={(e) => setForm({ ...form, time: e.target.value })}
-                    className="mt-1 w-full rounded-xl bg-[color:var(--rm-soft)] px-4 py-3 text-base font-medium text-[color:var(--rm-ink)] focus:outline-none focus:ring-4 focus:ring-sky-200"
-                  />
-                </label>
-                <label className="col-span-2 text-sm font-semibold text-slate-600">
-                  Repeat
-                  <select
-                    value={form.repeat}
-                    onChange={(e) => setForm({ ...form, repeat: e.target.value })}
-                    className="mt-1 w-full rounded-xl bg-[color:var(--rm-soft)] px-4 py-3 text-base font-medium text-[color:var(--rm-ink)] focus:outline-none focus:ring-4 focus:ring-sky-200"
-                  >
-                    {["Once", "Daily", "Weekly"].map((r) => <option key={r}>{r}</option>)}
-                  </select>
-                </label>
-              </div>
-            )}
-
-            {/* Result */}
-            {result && (
-              <div key={result.task + result.date.getTime()} className="rm-lift mt-5" aria-live="polite">
-                <div className="flex items-center gap-4 rounded-2xl border border-slate-200 p-4">
-                  <span className="w-6 h-6 rounded-full border-2 border-blue-600 flex-shrink-0" />
-                  <div className="min-w-0">
-                    <p className="font-bold text-lg leading-tight break-words">{result.task}</p>
-                    <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center gap-1.5 text-sm font-semibold bg-[#FFE27A] text-[#3b2f00] px-2.5 py-0.5 rounded-full">
-                        <Clock size={13} /> {fmtWhen(result.date)}
-                      </span>
-                      <span className="text-sm font-medium text-slate-500">{relIn(result.date)}</span>
-                      {result.repeat !== "Once" && (
-                        <span className="inline-flex items-center gap-1 text-sm font-semibold text-blue-600">
-                          <Repeat size={13} /> {result.repeat}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <span className="ml-auto hidden sm:inline-flex text-xs font-semibold text-emerald-700 items-center gap-1">
-                    <Check size={14} /> Understood
-                  </span>
-                </div>
-                {(result.defaulted || result.note) && (
-                  <p className="mt-2 text-sm text-slate-500">
-                    {result.note || "No time found, so I picked a default. Add something like \"at 6 pm\" to change it."}
-                  </p>
-                )}
-
-                <div className="mt-4 flex flex-col sm:flex-row gap-3">
-                  <button
-                    type="button"
-                    onClick={saveAndSignUp}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3.5 rounded-full font-semibold inline-flex items-center justify-center gap-2 transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
-                  >
-                    <Send size={16} /> Send this to my Telegram
-                  </button>
-                  <button
-                    type="button"
-                    onClick={sendTest}
-                    disabled={test === "waiting"}
-                    className="flex-1 bg-white border border-slate-300 hover:border-slate-500 disabled:opacity-60 text-[color:var(--rm-ink)] px-6 py-3.5 rounded-full font-semibold inline-flex items-center justify-center gap-2 transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
-                  >
-                    <Bell size={16} /> {test === "waiting" ? "Sending in a few seconds…" : "Test a notification now"}
-                  </button>
-                </div>
-
-                {test === "done" && (
-                  <div className="rm-lift mt-4 rounded-2xl bg-[color:var(--rm-soft-2)] p-3">
-                    <PushBanner body={`Time for: ${result.task}`} />
-                    <p className="mt-2 px-1 text-sm text-slate-600">
-                      {testNote || "That's what it looks like. Create a free account to get it at the real time."}
-                    </p>
-                  </div>
-                )}
-                <p className="mt-3 text-xs text-slate-500">A free account is only needed to save it and deliver it later.</p>
-              </div>
-            )}
-          </div>
-        </section>
+          <TryIt />
         </div>
+      </section>
 
-        {/* Autonomous messages */}
-        <section className="bg-white border-y border-slate-200">
-          <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-20 md:py-24 lg:grid lg:grid-cols-2 lg:gap-16 lg:items-center">
-            <div className="mb-12 lg:mb-0">
-              <p className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600">
-                <Sparkles size={16} /> Autonomous messages
-              </p>
-              <h2 className="mt-3 text-3xl md:text-4xl font-extrabold tracking-tight">It messages you first.</h2>
-              <p className="mt-4 text-slate-600 text-lg max-w-md leading-relaxed">
-                You don't have to ask. TaskBot sends a morning summary, a heads-up before something is due, and a follow-up when a task is still open.
-              </p>
-            </div>
-
-            <div className="rounded-[2rem] bg-[color:var(--rm-soft-2)] p-5 md:p-6 space-y-5">
-              {AUTO_MSGS.map((m) => (
-                <div key={m.when}>
-                  <p className="text-xs font-semibold text-slate-600 mb-2 ml-1">{m.when}</p>
-                  <div className="rounded-2xl rounded-tl-sm bg-white px-4 py-3 shadow-sm max-w-[92%]">
-                    <p className="text-[15px] text-slate-800 leading-snug">{m.text}</p>
-                    {m.actions && (
-                      <div className="mt-3 flex gap-2">
-                        {m.actions.map((a) => (
-                          <span key={a} className="px-3 py-1 rounded-full bg-[color:var(--rm-soft)] border border-slate-200 text-xs font-semibold text-slate-700">{a}</span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+      {/* Services */}
+      <section id="services" className="rs-sec">
+        <div className="rs-wrap">
+          <div className="rs-sec-head">
+            <span className="rs-eyebrow">
+              <b>01</b> Services
+            </span>
+            <h2 className="rs-h2">What GetRemindMe does for you</h2>
+            <p className="rs-lede">Six things, done properly, so a deadline never depends on your memory.</p>
+          </div>
+          <div className="rs-services">
+            {SERVICES.map(({ icon: Icon, title, text, tags }, i) => (
+              <article key={title} className="rs-service">
+                <div className="rs-service-top">
+                  <Icon size={30} strokeWidth={1.7} />
+                  <span className="rs-service-num">0{i + 1}</span>
                 </div>
-              ))}
-            </div>
+                <h3>{title}</h3>
+                <p>{text}</p>
+                <ul className="rs-tags">
+                  {tags.map((t) => (
+                    <li key={t}>{t}</li>
+                  ))}
+                </ul>
+              </article>
+            ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Channels */}
-        <section className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-20 md:py-24 lg:grid lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
-          <div className="mb-10 lg:mb-0">
-            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Reaches you where you already look.</h2>
-            <p className="mt-4 text-slate-600 text-lg max-w-md leading-relaxed">
-              Get a push notification from the web app, a message in Telegram, or both.
-            </p>
+      {/* Process */}
+      <section id="how" className="rs-sec rs-sec--paper2">
+        <div className="rs-wrap">
+          <div className="rs-sec-head">
+            <span className="rs-eyebrow">
+              <b>02</b> How it works
+            </span>
+            <h2 className="rs-h2">From a sentence to a nudge, in three steps</h2>
           </div>
-          <div className="grid sm:grid-cols-2 gap-6">
-            <div className="rounded-3xl bg-white border border-slate-200 p-6">
-              <p className="font-bold text-lg mb-4">Push notification</p>
-              <PushBanner body="Review deployment logs. Scheduled for 2:00 PM." time="2:00 PM" />
-              <p className="mt-4 text-sm text-slate-600">Works on phone and desktop once you install the web app.</p>
+          <ol className="rs-steps">
+            {STEPS.map(({ title, text, eg }, i) => (
+              <li key={title} className="rs-step">
+                <span className="rs-step-n">{i + 1}</span>
+                <h3>{title}</h3>
+                <div>
+                  <p>{text}</p>
+                  <p className="rs-step-eg">
+                    <b>{eg[0]}</b> → {eg[1]}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* Use cases */}
+      <section id="use-cases" className="rs-sec">
+        <div className="rs-wrap">
+          <div className="rs-sec-head">
+            <span className="rs-eyebrow">
+              <b>03</b> Who it&apos;s for
+            </span>
+            <h2 className="rs-h2">Built around real deadlines</h2>
+            <p className="rs-lede">Whatever you are keeping track of, you say it the way you would tell a friend.</p>
+          </div>
+          <div className="rs-cases">
+            {CASES.map(({ title, text, egs }) => (
+              <article key={title} className="rs-case">
+                <h3>{title}</h3>
+                <p>{text}</p>
+                <ul className="rs-egs">
+                  {egs.map((e) => (
+                    <li key={e}>{e}</li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Channels */}
+      <section className="rs-sec rs-sec--night">
+        <div className="rs-wrap">
+          <div className="rs-sec-head">
+            <span className="rs-eyebrow">
+              <b>04</b> Delivery
+            </span>
+            <h2 className="rs-h2">It finds you, wherever you are</h2>
+            <p className="rs-lede">A push in the browser, a message in Telegram, or an alarm from the Android app. Pick what suits you.</p>
+          </div>
+          <div className="rs-channels">
+            <div className="rs-device">
+              <h3>Browser push</h3>
+              <PushBanner title="DBMS assignment" body="Due in 1 hour. Time to lock in." time="4:00 PM" />
+              <p className="rs-device-note">Works on phone and laptop once you allow notifications or install the web app.</p>
             </div>
-            <div className="rounded-3xl bg-white border border-slate-200 p-6">
-              <p className="font-bold text-lg mb-4">Telegram</p>
-              <div className="rounded-2xl bg-[color:var(--rm-soft-2)] p-3">
-                <div className="rounded-2xl rounded-tl-sm bg-white px-3.5 py-2.5 text-[13px] shadow-sm inline-block">
-                  <span className="block text-xs font-bold text-blue-600 mb-0.5">TaskBot</span>
-                  It's 2:00 PM. Time to review those deployment logs.
+            <div className="rs-device">
+              <h3>Telegram</h3>
+              <div className="rs-chat">
+                <div className="rs-bubble">
+                  <b>GetRemindMe</b>Due in 10 minutes. &lsquo;DBMS assignment&rsquo; is due in 10 minutes. Time to wrap it up.
+                </div>
+                <div className="rs-bubble rs-bubble--sched">
+                  <b>Today&apos;s check-in</b>You have 3 tasks today. Let&apos;s keep the momentum going.
                 </div>
               </div>
-              <p className="mt-4 text-sm text-slate-600">No app needed. Connect your Telegram once.</p>
+              <p className="rs-device-note">No extra app needed. Connect your Telegram once from your dashboard.</p>
+            </div>
+            <div className="rs-device">
+              <h3>Android app</h3>
+              <p className="rs-device-note" style={{ color: "#f6f2e9", fontSize: 17 }}>
+                Alarm-style alerts with your own sound, a home-screen widget for the next deadline, and full offline use.
+              </p>
+              <a href={SITE.apkUrl} className="rs-btn rs-btn--gold rs-btn--small" style={{ justifySelf: "start" }}>
+                <Download size={17} /> Download the APK
+              </a>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* CTA */}
-        <section className="px-6 md:px-12 lg:px-20 pb-24">
-          <div className="max-w-7xl mx-auto rounded-[2rem] bg-gradient-to-br from-[color:var(--rm-cta-1)] via-[color:var(--rm-cta-2)] to-[color:var(--rm-cta-3)] border border-sky-100 text-[color:var(--rm-ink)] px-8 py-14 md:px-16 md:py-20 text-center md:text-left md:flex md:items-center md:justify-between gap-10">
-            <div>
-              <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight">Liked what you tried?</h2>
-              <p className="mt-3 text-slate-600 text-lg max-w-md mx-auto md:mx-0">Create a free account and your first reminder is live in under a minute.</p>
+      {/* FAQ */}
+      <section className="rs-sec">
+        <div className="rs-wrap rs-split">
+          <div className="rs-sec-head" style={{ marginBottom: 0 }}>
+            <span className="rs-eyebrow">
+              <b>05</b> Questions
+            </span>
+            <h2 className="rs-h2">Quick answers</h2>
+            <p className="rs-lede">The short version. The full list covers notifications, offline use and your account.</p>
+            <div style={{ marginTop: 8 }}>
+              <Link to="/faqs" className="rs-btn rs-btn--line">
+                All FAQs <ArrowRight size={17} />
+              </Link>
             </div>
-            <div className="mt-8 md:mt-0 flex flex-col gap-4 items-center md:items-start flex-shrink-0">
-              <Link
-                to="/register"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-full font-bold text-lg inline-flex items-center gap-2 transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
-              >
+          </div>
+          <div className="rs-faq">
+            {faqs.map((f) => (
+              <details key={f.id}>
+                <summary>
+                  {f.question} <ChevronDown size={22} />
+                </summary>
+                <p>{f.answer}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Closing */}
+      <section id="contact" className="rs-sec rs-sec--night">
+        <div className="rs-wrap rs-close">
+          <div>
+            <h2>Your next deadline is already on its way.</h2>
+            <p className="rs-lede">Create a free account and your first reminder is live in under a minute.</p>
+            <div className="rs-cta-row">
+              <Link to="/register" className="rs-btn rs-btn--gold">
                 Create free account <ArrowRight size={18} />
               </Link>
-              <InstallButton />
+              <InstallAction />
             </div>
           </div>
-        </section>
-      </main>
-
-      <Footer />
-    </div>
+          <div className="rs-close-card">
+            <Mail size={26} color="#f4b400" />
+            <h3 style={{ fontSize: 22 }}>Questions, or something custom?</h3>
+            <small>Write to the developer. Feedback, bug reports and ideas are all welcome.</small>
+            <a className="rs-mail" href={mailto("Hello from the GetRemindMe site")}>
+              {SITE.supportEmail}
+            </a>
+          </div>
+        </div>
+      </section>
+    </SiteLayout>
   );
 }

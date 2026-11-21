@@ -7,7 +7,7 @@ from tests import auth_stubs  # noqa: F401  (must stay first: it prepares the te
 
 # isort: split
 
-from app.services.quick_add import _to_task_create  # noqa: E402
+from app.services.quick_add import understand_text  # noqa: E402
 from utils.quick_defaults import parse_date, parse_time, resolve_due_ist  # noqa: E402
 from utils.timezone import IST, UTC, to_utc  # noqa: E402
 
@@ -88,21 +88,23 @@ class ConversionTests(unittest.TestCase):
         return base
 
     def test_defaults_are_applied_and_stored_as_the_same_instant_in_utc(self):
-        task = _to_task_create(self.reply(), now=at(10, 15))
+        task = understand_text("buy milk", now=at(10, 15))
         self.assertEqual(task.due_date, at(12, 15).replace(microsecond=0))
         self.assertEqual(to_utc(task.due_date), datetime(2026, 10, 24, 6, 45, tzinfo=UTC))
 
-    def test_legacy_complete_deadline_is_still_accepted(self):
-        task = _to_task_create(self.reply(due_date="2026-10-30T17:00:00+05:30"), now=at(10, 0))
-        self.assertEqual(task.due_date, datetime(2026, 10, 30, 17, 0, tzinfo=IST))
+    def test_a_named_day_without_a_time_gets_nine_am(self):
+        task = understand_text("submit report tomorrow", now=at(10, 0))
+        self.assertEqual(task.due_date, datetime(2026, 10, 25, 9, 0, tzinfo=IST))
 
     def test_recurring_reminders_ignore_the_one_time_defaults(self):
-        task = _to_task_create(self.reply(schedule_type="daily", time_of_day="07:30"), now=at(10, 0))
+        task = understand_text("gym every day 7:30 am", now=at(10, 0))
         self.assertIsNone(task.due_date)
+        self.assertEqual(task.schedule_type, "daily")
         self.assertEqual(task.time_of_day, "07:30")
 
-    def test_unknown_schedule_type_falls_back_to_once(self):
-        self.assertEqual(_to_task_create(self.reply(schedule_type="hourly"), now=at(10, 0)).schedule_type, "once")
+    def test_weekly_keeps_its_weekdays(self):
+        task = understand_text("yoga every monday and thursday 6am", now=at(10, 0))
+        self.assertEqual((task.schedule_type, task.weekdays, task.time_of_day), ("weekly", [0, 3], "06:00"))
 
 
 if __name__ == "__main__":

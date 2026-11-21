@@ -10,7 +10,7 @@ import {
   EyeOff,
   ArrowLeft,
   ArrowRight,
-} from "lucide-react";
+} from "../../components/icons";
 import { useLogin } from "../../hooks/useAuthMutations";
 import { isLoggedIn } from "../../utils/auth";
 import FormField from "../../components/forms/FormField";

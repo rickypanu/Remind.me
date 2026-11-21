@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { ArrowUpDown, CheckCircle2, ChevronDown } from "lucide-react";
+import { ArrowUpDown, CheckCircle2, ChevronDown } from "../../components/icons";
 import TaskCard from "../tasks/TaskCard";
 import { COMPLETED_SORTS, sortCompleted } from "./buckets";
 

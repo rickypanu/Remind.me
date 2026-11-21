@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from "react";
-import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight } from "../../components/icons";
 import Modal from "../../components/Modal";
 import { istDateKey } from "../../utils/date";
 import { monthGrid } from "../../utils/taskExtras";

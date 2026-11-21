@@ -241,12 +241,6 @@ class Settings(BaseSettings):
     vapid_public_key: str | None = None
     vapid_email: str | None = None
 
-    # ---- gemini --------------------------------------------------------------------------
-    gemini_api_keys: Annotated[list[SecretStr], NoDecode] = Field(default_factory=list)
-    gemini_api_key: SecretStr | None = None
-    gemini_models: Annotated[list[str], NoDecode] = Field(default_factory=list)
-    gemini_timeout_seconds: float = Field(default=20.0, ge=1, le=120)
-
     # =======================================================================================
     # Field-level parsing and validation
     # =======================================================================================
@@ -267,8 +261,6 @@ class Settings(BaseSettings):
 
     @field_validator(
         "cors_origins",
-        "gemini_models",
-        "gemini_api_keys",
         "reminder_encryption_key_previous",
         mode="before",
     )
@@ -442,14 +434,6 @@ class Settings(BaseSettings):
         return "memory://"  # in-process counters: no extra service; run ONE worker (the free Render setup does)
 
     @property
-    def gemini_keys(self) -> list[str]:
-        """GEMINI_API_KEYS and GEMINI_API_KEY merged, de-duplicated, order preserved."""
-        keys = [key.get_secret_value() for key in self.gemini_api_keys]
-        if self.gemini_api_key is not None:
-            keys.append(self.gemini_api_key.get_secret_value())
-        return list(dict.fromkeys(key for key in keys if key))
-
-    @property
     def vapid_claims(self) -> dict[str, str] | None:
         return {"sub": f"mailto:{self.vapid_email}"} if self.push_enabled and self.vapid_email else None
 
@@ -465,10 +449,6 @@ class Settings(BaseSettings):
     def email_enabled(self) -> bool:
         return self.brevo_api_key is not None and self.email_sender_address is not None
 
-    @property
-    def ai_enabled(self) -> bool:
-        return bool(self.gemini_keys)
-
     def safe_summary(self) -> dict[str, Any]:
         """Non-secret snapshot for the startup log."""
         return {
@@ -479,7 +459,6 @@ class Settings(BaseSettings):
             "telegram": self.telegram_enabled,
             "web_push": self.push_enabled,
             "email": self.email_enabled,
-            "ai_magic_add": self.ai_enabled,
         }
 
 
