@@ -55,7 +55,7 @@ export default function SegmentClock({ className = "" }) {
         {/* The label changes once a minute; the moving digits are hidden from screen readers. */}
         <span className="rs-sr">Current time {label}</span>
         <svg viewBox="0 0 372 100" aria-hidden="true" focusable="false" className="rs-clock-svg">
-          <g transform="skewX(-5)" style={{ transformOrigin: "0 100px" }}>
+          <g>
             <Digit value={h1 === 0 ? null : h1} x={0} />
             <Digit value={h2} x={68} />
             <g className={colonOn ? "rs-colon rs-colon--on" : "rs-colon"}>

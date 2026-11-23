@@ -43,7 +43,7 @@ export default function VoiceSettings() {
               >
                 <span>
                   <span className="block font-medium text-gray-900">{t.label}</span>
-                  <span className="mt-0.5 block text-sm text-gray-500">“{t[lang]}”</span>
+                  <span data-no-translate className="mt-0.5 block text-sm text-gray-500">“{t[lang]}”</span>
                 </span>
                 <span className={`h-5 w-5 shrink-0 rounded-full border-2 ${on ? "border-slate-900 bg-slate-900 shadow-[inset_0_0_0_3px_#fff]" : "border-slate-300"}`} />
               </button>

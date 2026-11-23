@@ -337,28 +337,28 @@ html { scrollbar-width: none; -ms-overflow-style: none; }
 html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0; height: 0; display: none; }
 
 
-/* ---- LED alarm clock ---- */
+/* ---- Seven-segment clock: light, flat and simple ---- */
 .rs-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.rs-clock { --led: #ff3b30; --led-off: rgba(255, 59, 48, 0.09); margin-bottom: 18px; }
+.rs-clock { --seg: #2f8f87; --seg-off: rgba(20, 22, 31, 0.07); --face: #fffdf8; margin-bottom: 18px; }
 .rs-clock-face {
   position: relative;
-  padding: 26px 28px 30px;
-  border-radius: 26px;
-  background: radial-gradient(120% 140% at 50% 0%, #2a2524 0%, #151211 62%, #0d0b0b 100%);
-  border: 1.5px solid #000;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -18px 30px rgba(255, 59, 48, 0.05), 0 18px 36px -14px rgba(20,22,31,.4);
+  padding: 22px 26px 18px;
+  border-radius: 22px;
+  background: var(--face);
+  border: 1px solid var(--rs-line);
+  box-shadow: 0 1px 2px rgba(20, 22, 31, .05), 0 10px 26px -14px rgba(20, 22, 31, .18);
 }
+html.dark .rs-clock { --face: #1d1918; --seg: #5fd0c4; --seg-off: rgba(243, 239, 228, 0.07); }
 .rs-clock-svg { display: block; width: 100%; height: auto; overflow: visible; }
-.rs-seg { fill: var(--led-off); }
-.rs-seg--on { fill: var(--led); filter: drop-shadow(0 0 5px rgba(255, 59, 48, 0.75)) drop-shadow(0 0 14px rgba(255, 59, 48, 0.35)); }
-.rs-colon rect { fill: var(--led-off); }
-.rs-colon--on rect { fill: var(--led); filter: drop-shadow(0 0 5px rgba(255, 59, 48, 0.8)); }
-.rs-clock-lamps { display: flex; gap: 10px; margin-top: 14px; font: 700 11px/1 var(--rs-body); letter-spacing: 0.14em; }
-.rs-clock-lamps span { color: rgba(255, 255, 255, 0.22); }
-.rs-clock-lamps span.is-on { color: var(--led); text-shadow: 0 0 8px rgba(255, 59, 48, 0.7); }
-@media (prefers-reduced-motion: reduce) { .rs-colon rect { transition: none; } }
-@media (max-width: 520px) { .rs-clock-face { padding: 20px 18px 22px; } }
-
+/* The face-coloured outline makes every bar thinner than its shape, so the digits stay light. */
+.rs-seg { fill: var(--seg-off); stroke: var(--face); stroke-width: 3.2; stroke-linejoin: round; paint-order: stroke; }
+.rs-seg--on { fill: var(--seg); }
+.rs-colon rect { fill: var(--seg-off); }
+.rs-colon--on rect { fill: var(--seg); }
+.rs-clock-lamps { display: flex; gap: 10px; margin-top: 10px; font: 600 11px/1 var(--rs-body); letter-spacing: 0.12em; }
+.rs-clock-lamps span { color: var(--rs-ink-3); opacity: .45; }
+.rs-clock-lamps span.is-on { color: var(--seg); opacity: 1; }
+@media (max-width: 520px) { .rs-clock-face { padding: 18px 18px 14px; } }
 
 /* ---- Calm Clock: soft, quiet, trustworthy ---- */
 .rs h1, .rs h2, .rs h3, .rs h4 { font-weight: 600; letter-spacing: -0.02em; }
@@ -375,14 +375,15 @@ html[data-font="system"] .rs { --rs-display: ui-sans-serif, system-ui, sans-seri
 
 /* Phone lock screen in the hero */
 .rs-phone { margin: 0 auto; max-width: 360px; }
-.rs-phone-screen { padding: 22px 18px 20px; border-radius: 34px; background: linear-gradient(180deg, #1d2a2b 0%, #0f1516 100%); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 2px 4px rgba(20, 22, 31, .1), 0 30px 60px -24px rgba(15, 80, 78, .55); }
-.rs-phone-day { margin: 0 0 12px; text-align: center; color: rgba(255, 255, 255, .72); font-size: 14px; font-weight: 500; }
+.rs-phone-screen { padding: 22px 18px 20px; border-radius: 34px; background: linear-gradient(180deg, #eaf5f2 0%, #f8f4ea 100%); border: 1px solid var(--rs-line); box-shadow: 0 2px 4px rgba(20, 22, 31, .06), 0 30px 60px -28px rgba(15, 80, 78, .35); }
+html.dark .rs-phone-screen { background: linear-gradient(180deg, #172321 0%, #121010 100%); }
+.rs-phone-day { margin: 0 0 12px; text-align: center; color: var(--rs-ink-3); font-size: 14px; font-weight: 500; }
 .rs-phone .rs-clock { margin-bottom: 16px; }
-.rs-phone .rs-clock-face { padding: 18px 18px 20px; border-radius: 20px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08); }
-.rs-ring-card { display: flex; gap: 14px; align-items: center; padding: 14px 16px; border-radius: 20px; background: rgba(255, 255, 255, .94); color: #14161f; }
-.rs-ring-app { margin: 0; font-size: 12px; color: #55524b; font-weight: 600; }
+.rs-phone .rs-clock-face { box-shadow: none; background: transparent; border-color: transparent; padding: 6px 10px 4px; }
+.rs-ring-card { display: flex; gap: 14px; align-items: center; padding: 14px 16px; border-radius: 20px; background: var(--rs-card); color: var(--rs-ink); border: 1px solid var(--rs-line); box-shadow: 0 10px 24px -14px rgba(20, 22, 31, .25); }
+.rs-ring-app { margin: 0; font-size: 12px; color: var(--rs-ink-3); font-weight: 600; }
 .rs-ring-title { margin: 1px 0 0; font-family: var(--rs-display); font-size: 20px; font-weight: 600; line-height: 1.2; }
-.rs-ring-line { margin: 2px 0 0; font-size: 14px; color: #3b3a38; }
+.rs-ring-line { margin: 2px 0 0; font-size: 14px; color: var(--rs-ink-2); }
 .rs-ring-bell { position: relative; flex: none; width: 44px; height: 44px; display: grid; place-items: center; }
 .rs-ring-bell b { width: 22px; height: 22px; border-radius: 50%; background: var(--rs-blue); box-shadow: 0 0 0 4px var(--rs-blue-soft); }
 .rs-ring-bell i { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--rs-blue); opacity: 0; animation: rs-ring 2.4s ease-out infinite; }
