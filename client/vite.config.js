@@ -27,7 +27,7 @@ const pwaPlugin = VitePWA({
     globIgnores: ['og-image.png', 'screenshot-*.png', 'app-shell.html'],
     cleanupOutdatedCaches: true,
 
-    // Any page URL (/dashboard, /create-task, /profile ...) is answered with the cached index.html and
+    // Any page URL (/u, /create-task, /profile ...) is answered with the cached index.html and
     // React Router takes over. API calls and avatar images are never answered with HTML.
     navigateFallback: '/index.html',
     navigateFallbackDenylist: [/^\/uploads\//, /^\/v1\//, /^\/api\//, /\.[a-z0-9]+$/i],

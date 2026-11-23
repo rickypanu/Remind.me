@@ -82,7 +82,7 @@ export default function NotificationBell({ className = "" }) {
                   <li key={x.id}>
                     <button
                       type="button"
-                      onClick={() => { setOpen(false); navigate("/dashboard"); }}
+                      onClick={() => { setOpen(false); navigate("/u"); }}
                       className="flex w-full items-start gap-3 px-4 py-2.5 text-left transition-colors hover:bg-slate-50 focus:outline-none focus-visible:bg-slate-50"
                     >
                       <span className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${TONE[x.kind]}`}><Icon size={17} strokeWidth={2.4} /></span>

@@ -219,7 +219,7 @@ function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious }) {
             <h3
               data-no-translate
               className={`text-base sm:text-[17px] font-semibold leading-snug break-words transition-colors duration-500 ${
-                isCompleted ? 'text-slate-600 line-through decoration-slate-400' : 'text-slate-900'
+                isCompleted ? 'text-slate-600' : 'text-slate-900'
               }`}
             >
               {task.title}
@@ -241,7 +241,7 @@ function TaskCard({ task, onToggle, onDelete, onEdit, isPrevious }) {
                   <li key={x.id}>
                     <label className="flex cursor-pointer items-center gap-2 text-[13px] font-medium text-slate-700">
                       <input type="checkbox" checked={!!x.done} onChange={() => toggleStep(x.id)} className="h-4 w-4 shrink-0 rounded accent-blue-600" />
-                      <span data-no-translate className={x.done ? 'text-slate-500 line-through' : ''}>{x.text}</span>
+                      <span data-no-translate className={x.done ? 'text-slate-500' : ''}>{x.text}</span>
                     </label>
                   </li>
                 ))}

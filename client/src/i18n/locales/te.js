@@ -1223,4 +1223,9 @@ export default {
 "Night · 9 PM": "రాత్రి · 9 గంటలు",
 "3 hours": "3 గంటలు",
 "No category": "వర్గం లేదు",
+
+// Dashboard redesign
+"Today's progress": "నేటి పురోగతి",
+"Categories": "వర్గాలు",
+"{done} of {total} done": "{total}లో {done} పూర్తయ్యాయి",
 };

@@ -62,6 +62,17 @@
   --color-blue-800: #0f504e;
   --color-blue-900: #0f4141;
   --color-blue-950: #052828;
+  --color-indigo-50: #effaf8;
+  --color-indigo-100: #d5f2ee;
+  --color-indigo-200: #a9e4dc;
+  --color-indigo-300: #74d0c6;
+  --color-indigo-400: #3fb5aa;
+  --color-indigo-500: #1f9a90;
+  --color-indigo-600: #0f7f78;
+  --color-indigo-700: #0d6561;
+  --color-indigo-800: #0f504e;
+  --color-indigo-900: #0f4141;
+  --color-indigo-950: #052828;
   --color-sky-50: #effaf8;
   --color-sky-100: #d5f2ee;
   --color-sky-200: #a9e4dc;
@@ -204,3 +215,13 @@ html[data-density="compact"] { --spacing: 0.19rem; }
 /* Cards. Soft (default): no offset shadow, light border. Flat: border only. Bold outline keeps the original hard look. */
 html[data-cards="soft"]:not([data-theme="minimal"]) [class*="shadow-["][class*="px_0_0_"] { box-shadow: 0 1px 2px rgb(20 22 31 / .05), 0 10px 28px -10px rgb(20 22 31 / .16); border-width: 1px; border-color: var(--color-slate-200); }
 html[data-cards="flat"]:not([data-theme="minimal"]) [class*="shadow-["][class*="px_0_0_"] { box-shadow: none; border-width: 1px; border-color: var(--color-slate-200); }
+
+
+/* ---------- Brand mark: one colour that follows the theme ---------- */
+:root { --brand: var(--color-blue-600); --brand-on: #ffffff; }
+html.dark:not([data-theme="minimal"]) { --brand: var(--color-blue-500); }
+html[data-theme="minimal"] { --brand: #171717; --brand-on: #ffffff; }
+html.dark[data-theme="minimal"] { --brand: #ededed; --brand-on: #0a0a0a; }
+.rm-mark { background: var(--brand) !important; }
+.rm-mark::after { background: var(--brand-on) !important; }
+.rm-wordmark-accent { color: var(--brand); }

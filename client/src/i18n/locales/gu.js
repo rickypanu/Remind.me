@@ -1232,4 +1232,9 @@ export default {
 "Night · 9 PM": "રાત · ૯ વાગ્યે",
 "3 hours": "૩ કલાક",
 "No category": "કોઈ શ્રેણી નહીં",
+
+// Dashboard redesign
+"Today's progress": "આજની પ્રગતિ",
+"Categories": "શ્રેણીઓ",
+"{done} of {total} done": "{total} માંથી {done} પૂર્ણ",
 };

@@ -1232,4 +1232,9 @@ export default {
 "Night · 9 PM": "রাত · ৯টা",
 "3 hours": "৩ ঘণ্টা",
 "No category": "কোনো বিভাগ নেই",
+
+// Dashboard redesign
+"Today's progress": "আজকের অগ্রগতি",
+"Categories": "বিভাগ",
+"{done} of {total} done": "{total}-এর মধ্যে {done} সম্পূর্ণ",
 };

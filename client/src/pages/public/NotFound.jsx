@@ -24,7 +24,7 @@ export default function NotFound() {
             We couldn&apos;t find the page you were looking for. It may have moved, or the link might be mistyped.
           </p>
           <div className="rs-cta-row" style={{ justifyContent: "center" }}>
-            <Link to={isLoggedIn ? "/dashboard" : "/"} className="rs-btn rs-btn--gold">
+            <Link to={isLoggedIn ? "/u" : "/"} className="rs-btn rs-btn--gold">
               <Home size={18} /> {isLoggedIn ? "Go to dashboard" : "Back to home"}
             </Link>
             <button type="button" className="rs-btn rs-btn--line" onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/"))}>

@@ -106,7 +106,7 @@ export default function SiteHeader() {
             <Download size={16} /> {t("Android app")}
           </a>
           {loggedIn ? (
-            <Link to="/dashboard" className="rs-btn rs-btn--gold rs-btn--small rs-hide-sm">
+            <Link to="/u" className="rs-btn rs-btn--gold rs-btn--small rs-hide-sm">
               {t("Open dashboard")} <ArrowRight size={16} />
             </Link>
           ) : (
@@ -146,7 +146,7 @@ export default function SiteHeader() {
               <Download size={18} /> {t("Get the Android app")}
             </a>
             {loggedIn ? (
-              <Link to="/dashboard" className="rs-btn rs-btn--gold">
+              <Link to="/u" className="rs-btn rs-btn--gold">
                 {t("Open dashboard")}
               </Link>
             ) : (

@@ -20,7 +20,7 @@ const VISITOR_LINKS = [
   // { to: '/faqs', label: 'FAQs', icon: HelpCircle },
 ];
 const MEMBER_LINKS = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/u', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/updates', label: 'Updates', icon: Newspaper },
   { to: '/notifications', label: 'Notifications', icon: Bell },
   { to: '/about', label: 'About', icon: Info },
@@ -132,7 +132,7 @@ const Header = () => {
           isLoggedIn ? 'max-w-6xl px-4 sm:px-6 lg:px-8' : 'max-w-7xl px-4 sm:px-6 md:px-12 lg:px-20'
         }`}
       >
-        <Logo to={isLoggedIn ? '/dashboard' : '/'} />
+        <Logo to={isLoggedIn ? '/u' : '/'} />
 
         {/* Desktop navigation */}
         <nav aria-label="Main" className="hidden md:flex items-center gap-1 min-w-0">

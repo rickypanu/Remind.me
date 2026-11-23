@@ -38,7 +38,7 @@ const UpdatesPage = lazyRoute(() => import("./pages/user/UpdatePage"));
 // so logging out or in takes effect on the very next navigation.
 const ProtectedRoute = ({ children }) => (isLoggedIn() ? children : <Navigate to="/login" replace />);
 
-const PublicOnlyRoute = ({ children }) => (isLoggedIn() ? <Navigate to="/dashboard" replace /> : children);
+const PublicOnlyRoute = ({ children }) => (isLoggedIn() ? <Navigate to="/u" replace /> : children);
 
 // Sends the user to the login page when the API reports an expired session.
 function AuthWatcher() {
@@ -83,7 +83,8 @@ function App() {
                 <Route path="/join/:code" element={<Join />} />
 
                 {/* Protected user routes */}
-                <Route path="/dashboard" element={guarded(<Dashboard />)} />
+                <Route path="/u" element={guarded(<Dashboard />)} />
+                <Route path="/dashboard" element={<Navigate to="/u" replace />} />
                 <Route path="/create-task" element={guarded(<CreateTask />)} />
                 <Route path="/profile" element={guarded(<Profile />)} />
                 <Route path="/telegram-setup" element={guarded(<TelegramSetup />)} />

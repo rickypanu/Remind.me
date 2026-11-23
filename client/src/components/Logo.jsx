@@ -17,7 +17,7 @@ export default function Logo({ to = "/", className = "", size = "md" }) {
     >
       <LogoMark size={px} className="transition-transform group-hover:-rotate-6" />
       <span className="text-[19px] font-extrabold tracking-tight text-slate-800">
-        GetRemind<span className="text-blue-600">Me</span>
+        GetRemind<span className="rm-wordmark-accent">Me</span>
       </span>
     </Link>
   );

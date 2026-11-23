@@ -43,7 +43,7 @@ export default function Login() {
   // Check for existing token on mount
   useEffect(() => {
     if (isLoggedIn()) {
-      navigate("/dashboard", { replace: true });
+      navigate("/u", { replace: true });
     }
   }, [navigate]);
 
@@ -81,7 +81,7 @@ export default function Login() {
       // Stores the short-lived access token and the rotating refresh token (the API client renews the former silently)
       await login.mutateAsync({ email, password: formData.password });
       notify.success(t("Welcome back!"));
-      navigate("/dashboard");
+      navigate("/u");
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {

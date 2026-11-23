@@ -1223,4 +1223,9 @@ export default {
 "Night · 9 PM": "இரவு · 9 மணி",
 "3 hours": "3 மணி நேரம்",
 "No category": "வகை இல்லை",
+
+// Dashboard redesign
+"Today's progress": "இன்றைய முன்னேற்றம்",
+"Categories": "வகைகள்",
+"{done} of {total} done": "{total}-இல் {done} முடிந்தது",
 };

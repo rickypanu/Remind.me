@@ -25,6 +25,7 @@ import EmptyState from "./EmptyState";
 import MagicAddForm from "./MagicAddForm";
 import TaskGroups from "./TaskGroups";
 import OverdueBanner from "./OverdueBanner";
+import TodayPanel from "./TodayPanel";
 import TaskSkeleton from "./TaskSkeleton";
 import { useI18n } from "../../i18n/index.jsx";
 
@@ -64,7 +65,7 @@ export default function Dashboard() {
   // Reminders: read from IndexedDB, written to IndexedDB first, uploaded in the background
   const { tasks, ready, toggleTask, editTask, removeTask } = useOfflineTasks(userId);
   const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
-  const { missed, today, upcoming, upcomingGroups, completed } = useDashboardTasks(tasks);
+  const { missed, today, upcoming, upcomingGroups, completed, doneTodayCount, progressPct } = useDashboardTasks(tasks);
 
   // A reminder typed into the public home-page demo is saved here once the person has signed in.
   useEffect(() => {
@@ -163,12 +164,12 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[color:var(--rm-page)] pb-28 text-slate-900 antialiased font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Text','Helvetica_Neue',sans-serif] relative overflow-x-hidden">
+    <div className="min-h-screen bg-[color:var(--rm-page)] pb-28 text-slate-900 antialiased font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Text','Helvetica_Neue',sans-serif] relative overflow-x-clip">
       <Header />
 
-      <main id="main" className="max-w-3xl mx-auto px-4 sm:px-6">
+      <main id="main" className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         {/* Greeting */}
-        <div className="pt-7 pb-5">
+        <div className="pt-8 pb-6">
           <p className="text-sm font-medium text-slate-500 mb-1">
             {new Date().toLocaleDateString(locale, { weekday: "long", month: "long", day: "numeric", timeZone: APP_TIMEZONE })}
           </p>
@@ -178,9 +179,11 @@ export default function Dashboard() {
           </h1>
         </div>
 
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-10">
+        <div className="min-w-0 lg:order-1">
         <MagicAddForm isOffline={isOffline} titles={titles} />
 
-        <OverdueBanner tasks={byCat(missed)} cardProps={cardProps} />
+        <div id="overdue-anchor"><OverdueBanner tasks={byCat(missed)} cardProps={cardProps} /></div>
 
         <div className="mb-6 flex items-stretch gap-2">
           <div className="min-w-0 flex-1">
@@ -220,7 +223,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        <CategoryBar categories={categories} value={catFilter} onChange={setCatFilter} />
+        <div className="lg:hidden"><CategoryBar categories={categories} value={catFilter} onChange={setCatFilter} /></div>
 
         {selectedDate && (
           <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-2.5">
@@ -282,6 +285,22 @@ export default function Dashboard() {
         </div>
 
         <CompletedArchive tasks={completed} cardProps={cardProps} />
+        </div>
+
+        <div className="lg:order-2 max-lg:-order-1">
+          <TodayPanel
+            doneToday={doneTodayCount}
+            pendingToday={today.length}
+            pct={progressPct}
+            overdue={missed.length}
+            tasks={tasks}
+            categories={categories}
+            catFilter={catFilter}
+            onCategory={setCatFilter}
+            onOverdue={() => document.querySelector("#overdue-anchor button")?.click()}
+          />
+        </div>
+        </div>
       </main>
     </div>
   );

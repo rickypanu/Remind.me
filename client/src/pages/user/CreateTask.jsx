@@ -155,7 +155,7 @@ export default function CreateTask() {
       const created =
         scheduleType === "once" ? "Reminder created." : scheduleType === "daily" ? "Daily reminder created." : "Weekly reminder created.";
       notify.success(navigator.onLine ? created : `${created} Saved on this device. It will sync when you're back online.`);
-      navigate("/dashboard");
+      navigate("/u");
     } catch (err) {
       console.error("Could not save reminder locally", err);
       const message = "Couldn't save the reminder on this device. Please check your browser storage and try again.";
@@ -166,7 +166,7 @@ export default function CreateTask() {
   };
 
   return (
-    <AppPage title="New reminder" subtitle="One time, every day, or on the days you choose." backTo="/dashboard" backLabel="Dashboard" width="narrow">
+    <AppPage title="New reminder" subtitle="One time, every day, or on the days you choose." backTo="/u" backLabel="Dashboard" width="narrow">
         <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200/60 p-5 sm:p-8 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
           {error && (
             <div role="alert" className="mb-6 p-3 px-4 rounded-xl bg-rose-50 border border-rose-100 text-rose-700 flex items-start gap-2.5 text-sm font-medium">
@@ -421,7 +421,7 @@ export default function CreateTask() {
             <div className="pt-4 flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => navigate("/dashboard")}
+                onClick={() => navigate("/u")}
                 className="flex-1 md:flex-none px-5 py-2.5 bg-slate-100 hover:bg-slate-200/80 text-slate-700 font-medium rounded-xl text-sm transition-all active:scale-[0.98] flex items-center justify-center min-h-[44px]"
               >
                 Cancel

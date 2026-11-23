@@ -82,8 +82,8 @@ function InstallAppCard() {
     "flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-blue-600 text-white text-[15px] font-bold hover:bg-blue-700 active:scale-[0.99] transition shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2";
 
   return (
-    <div className="space-y-4">
-      <h3 className="px-3 text-[11px] font-bold text-gray-600 uppercase tracking-wider -mb-2">Get the app</h3>
+    <div className="mx-1 mb-8 mt-10 space-y-5 sm:mx-2">
+      <h3 className="px-3 text-[11px] font-bold text-gray-600 uppercase tracking-wider -mb-1">Get the app</h3>
 
       {/* 1. Web app (hidden only inside the Android app itself, where it makes no sense) */}
       {!install.webview && (
@@ -343,7 +343,7 @@ export default function Profile() {
   }
 
   return (
-    <AppPage title="Profile" backTo="/dashboard" backLabel="Dashboard" width="narrow" centerHeader>
+    <AppPage title="Profile" backTo="/u" backLabel="Dashboard" width="narrow" centerHeader>
         {/* Identity card: ultramarine band, avatar with a ring, name, then the streak numbers */}
         <section className="mb-8 overflow-hidden rounded-[28px] border-[1.5px] border-slate-900 bg-white shadow-[6px_6px_0_0_#14161f]">
           <div className="relative h-28 bg-blue-600">
@@ -380,7 +380,7 @@ export default function Profile() {
 
               <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
 
-              <div className="mt-16 min-w-0 flex-1 sm:mb-1">
+              <div className="mt-16 min-w-0 flex-1 sm:mb-1 sm:pt-16">
                 <div className="flex h-10 items-center justify-center sm:justify-start">
                   {isEditingName ? (
                     <div className="flex items-center gap-2">

@@ -25,7 +25,7 @@ export default function useRegisterForm() {
 
   // Already signed in: nothing to do here.
   useEffect(() => {
-    if (isLoggedIn()) navigate("/dashboard", { replace: true });
+    if (isLoggedIn()) navigate("/u", { replace: true });
   }, [navigate]);
 
   // After a successful signup, send the user to login automatically.

@@ -68,7 +68,7 @@ self.addEventListener('notificationclick', (event) => {
       for (const client of windows) {
         if ('focus' in client) return client.focus();
       }
-      return clients.openWindow('/dashboard');
+      return clients.openWindow('/u');
     })()
   );
 });

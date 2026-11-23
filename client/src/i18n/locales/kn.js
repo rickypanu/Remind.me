@@ -1223,4 +1223,9 @@ export default {
 "Night · 9 PM": "ರಾತ್ರಿ · 9 ಗಂಟೆ",
 "3 hours": "3 ಗಂಟೆ",
 "No category": "ವರ್ಗವಿಲ್ಲ",
+
+// Dashboard redesign
+"Today's progress": "ಇಂದಿನ ಪ್ರಗತಿ",
+"Categories": "ವರ್ಗಗಳು",
+"{done} of {total} done": "{total}ರಲ್ಲಿ {done} ಪೂರ್ಣ",
 };

@@ -1055,4 +1055,9 @@ export default {
 "Night · 9 PM": "Raat · 9 baje",
 "3 hours": "3 ghante",
 "No category": "Koi category nahi",
+
+// Dashboard redesign
+"Today's progress": "Aaj ki progress",
+"Categories": "Categories",
+"{done} of {total} done": "{done} / {total} ho gaye",
 };

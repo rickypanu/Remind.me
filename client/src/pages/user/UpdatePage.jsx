@@ -163,7 +163,7 @@ export default function UpdatesPage() {
     <AppPage
       title="What's new"
       subtitle="Product announcements and release notes, newest first."
-      backTo="/dashboard"
+      backTo="/u"
       backLabel="Dashboard"
       actions={
         !isLoading && (
