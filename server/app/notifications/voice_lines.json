@@ -1,0 +1,826 @@
+{
+ "friendly": {
+  "en": {
+   "due": [
+    "It's time. You've got this.",
+    "Here we go. Small step, big win.",
+    "Now's the moment. Go and get it done.",
+    "Ready when you are. Let's finish this one.",
+    "Your reminder is here. Future you says thanks.",
+    "Time to shine. One thing at a time."
+   ],
+   "lead60": [
+    "One hour to go. Plenty of time to get ready.",
+    "An hour left. A good moment to start.",
+    "Heads up, an hour from now. You're on track."
+   ],
+   "lead10": [
+    "Ten minutes left. Wrap up what you're doing.",
+    "Almost time. Take a breath and get ready.",
+    "10 minutes to go. You're nearly there."
+   ],
+   "lead1": [
+    "One minute. Here we go.",
+    "Right about now. You've got this."
+   ],
+   "far": [
+    "Coming up {when}. Plan a little ahead.",
+    "Due {when}. A calm head start helps.",
+    "Just a heads-up: this is due {when}."
+   ],
+   "digest": [
+    [
+     "{tasks} for today",
+     "Let's keep the momentum going. Starting with: {first}"
+    ],
+    [
+     "Today's plan: {tasks}",
+     "One by one, you'll be done before you know it. First up: {first}"
+    ],
+    [
+     "{tasks} on your list",
+     "You've got this. Begin with {first}."
+    ]
+   ],
+   "clear": [
+    [
+     "All clear today",
+     "Nothing pending. Enjoy your day!"
+    ],
+    [
+     "Nothing due today",
+     "A free day. You've earned it."
+    ]
+   ],
+   "tomorrow": [
+    [
+     "{tasks} tomorrow",
+     "Rest well tonight, you're prepared. First up: {first}"
+    ],
+    [
+     "Tomorrow's lineup: {tasks}",
+     "Sleep well, you've got this. It starts with {first}."
+    ]
+   ],
+   "tomorrowClear": [
+    [
+     "Clear skies tomorrow",
+     "Nothing on the radar. Rest easy."
+    ],
+    [
+     "A free day ahead",
+     "Nothing due tomorrow. Enjoy it."
+    ]
+   ],
+   "weekly": [
+    [
+     "Your week ahead",
+     "{week} due this coming week. A little planning goes a long way."
+    ],
+    [
+     "Week ahead: {week} due",
+     "Pick a good day to start. You've got this."
+    ]
+   ],
+   "weeklyOverdue": [
+    [
+     "Your week ahead",
+     "{week} due this week and {overdue} still pending. Let's clear a few."
+    ],
+    [
+     "Week ahead: {week} due",
+     "{overdue} from before are waiting too. One at a time."
+    ]
+   ],
+   "weeklyClear": [
+    [
+     "A calm week ahead",
+     "Nothing due this week. Enjoy it, or plan something new."
+    ]
+   ],
+   "test": [
+    "This is how your reminders will sound."
+   ]
+  },
+  "hinglish": {
+   "due": [
+    "Time ho gaya! Chal, ho jayega.",
+    "Ab karte hain. Ek kadam, bas.",
+    "Yehi hai woh pal. Nipta de isko.",
+    "Reminder aa gaya. Baad mein khud ko thanks bolega.",
+    "Chalo shuru. Ek ek karke sab ho jayega.",
+    "Tera time aa gaya. Kar de!"
+   ],
+   "lead60": [
+    "Ek ghanta bacha hai. Aaram se taiyaar ho ja.",
+    "Ek ghante mein time. Abhi shuru kar sakta hai.",
+    "Heads up, ek ghanta baaki. Tu track pe hai."
+   ],
+   "lead10": [
+    "Das minute bache. Jo kar raha hai wrap up kar.",
+    "Time pass aa gaya. Ek deep breath, ready ho ja.",
+    "10 min baaki. Bas thoda sa aur."
+   ],
+   "lead1": [
+    "Ek minute! Chal shuru.",
+    "Bas abhi. Tu kar lega."
+   ],
+   "far": [
+    "{when} aa raha hai. Thoda pehle se soch le.",
+    "{when} ka hai. Aaram se plan kar le.",
+    "Bas bata raha hun, ye {when} ka hai."
+   ],
+   "digest": [
+    [
+     "Aaj {tasks}",
+     "Chal momentum bana ke rakhte hain. Pehle: {first}"
+    ],
+    [
+     "Aaj ka plan: {tasks}",
+     "Ek ek karke ho jayenge. Pehle {first}."
+    ],
+    [
+     "List mein {tasks}",
+     "Tu kar lega. Shuru kar {first} se."
+    ]
+   ],
+   "clear": [
+    [
+     "Aaj sab clear",
+     "Kuch pending nahi. Maze kar!"
+    ],
+    [
+     "Aaj kuch due nahi",
+     "Free day hai. Tune kamaya hai."
+    ]
+   ],
+   "tomorrow": [
+    [
+     "Kal {tasks}",
+     "Aaj aaram se so ja, tu ready hai. Pehle: {first}"
+    ],
+    [
+     "Kal ka lineup: {tasks}",
+     "Achhi neend le. Shuruaat {first} se."
+    ]
+   ],
+   "tomorrowClear": [
+    [
+     "Kal kuch nahi",
+     "Radar pe kuch nahi. Chill kar."
+    ],
+    [
+     "Kal free",
+     "Kuch due nahi kal. Enjoy kar."
+    ]
+   ],
+   "weekly": [
+    [
+     "Aane wala hafta",
+     "Is hafte {week} due hain. Thoda plan, bahut aasaan."
+    ],
+    [
+     "Week ahead: {week} due",
+     "Koi achha din chun ke shuru kar. Tu kar lega."
+    ]
+   ],
+   "weeklyOverdue": [
+    [
+     "Aane wala hafta",
+     "Is hafte {week} due aur {overdue} abhi pending. Chal kuch nipta dete hain."
+    ],
+    [
+     "Week ahead: {week} due",
+     "Pehle ke {overdue} bhi wait kar rahe hain. Ek ek karke."
+    ]
+   ],
+   "weeklyClear": [
+    [
+     "Shaant hafta",
+     "Is hafte kuch due nahi. Maze kar ya kuch naya plan kar."
+    ]
+   ],
+   "test": [
+    "Tere reminders aise aayenge."
+   ]
+  }
+ },
+ "funny": {
+  "en": {
+   "due": [
+    "Plot twist: it's actually time now.",
+    "Your task called. It's not happy you're ignoring it.",
+    "Ding ding. This is the part where you do the thing.",
+    "Future you asked me to nag. Hi, I'm nagging.",
+    "No pressure, but also a lot of pressure.",
+    "Reminder reporting for duty. Are you?"
+   ],
+   "lead60": [
+    "One hour left. That's 60 chances to procrastinate.",
+    "An hour to go. Snack first? Fine. Then work.",
+    "T minus 60 minutes. The clock is not on your side."
+   ],
+   "lead10": [
+    "10 minutes. Pretend you've been working all along.",
+    "Ten minutes left. Time to look busy, then be busy.",
+    "Almost time. Put the phone down. Yes, this one."
+   ],
+   "lead1": [
+    "One minute. It's happening.",
+    "Sixty seconds. Run, don't walk."
+   ],
+   "far": [
+    "Due {when}. Future you is already stressed about it.",
+    "{when}. Plenty of time to forget it, so I'm reminding you.",
+    "Casual mention: this is due {when}."
+   ],
+   "digest": [
+    [
+     "{tasks} today",
+     "The to-do list woke up before you. Start with: {first}"
+    ],
+    [
+     "Today: {tasks}",
+     "Your list is long but you are longer. First up: {first}"
+    ],
+    [
+     "{tasks} on the menu",
+     "Eat the frog first: {first}"
+    ]
+   ],
+   "clear": [
+    [
+     "Nothing due today",
+     "Suspiciously free. Go enjoy it."
+    ],
+    [
+     "All clear",
+     "Zero tasks. Who even are you today?"
+    ]
+   ],
+   "tomorrow": [
+    [
+     "{tasks} tomorrow",
+     "Sleep now, panic never. First up: {first}"
+    ],
+    [
+     "Tomorrow: {tasks}",
+     "Set an alarm and trust the process. It begins with {first}."
+    ]
+   ],
+   "tomorrowClear": [
+    [
+     "Tomorrow is empty",
+     "Nothing due. Enjoy the plot hole."
+    ],
+    [
+     "Free tomorrow",
+     "No tasks. Do whatever, I won't tell."
+    ]
+   ],
+   "weekly": [
+    [
+     "Week ahead",
+     "{week} due this week. Your calendar has opinions."
+    ],
+    [
+     "{week} due this week",
+     "Ignore it and it won't go away. Trust me, I tried."
+    ]
+   ],
+   "weeklyOverdue": [
+    [
+     "Week ahead",
+     "{week} due this week and {overdue} still pending. They miss you."
+    ],
+    [
+     "{week} due, {overdue} overdue",
+     "The overdue ones are getting lonely. Pay them a visit."
+    ]
+   ],
+   "weeklyClear": [
+    [
+     "Quiet week",
+     "Nothing due. Are you sure? Yes. Enjoy."
+    ]
+   ],
+   "test": [
+    "This is what your reminders will sound like. Dramatic, right?"
+   ]
+  },
+  "hinglish": {
+   "due": [
+    "Plot twist: time sach mein ho gaya.",
+    "Tera task call kar raha hai. Naraz hai tu ignore kar raha hai.",
+    "Ting ting! Ab wo kaam karne ka time hai.",
+    "Future tu ne kaha tha nag karne ko. Hi, main nag kar raha hun.",
+    "Koi pressure nahi, par thoda bahut hai.",
+    "Reminder duty pe. Aur tu?"
+   ],
+   "lead60": [
+    "Ek ghanta bacha. Matlab 60 baar tal-matol ka mauka.",
+    "Ek ghanta baaki. Pehle snack? Thik hai. Phir kaam.",
+    "T minus 60 min. Ghadi tere side nahi hai."
+   ],
+   "lead10": [
+    "10 minute. Aisa dikha ki tu pehle se kaam kar raha tha.",
+    "Das minute bache. Busy dikh, phir busy ban.",
+    "Time pass aa gaya. Phone rakh de. Haan, isi waqt."
+   ],
+   "lead1": [
+    "Ek minute. Ho raha hai ye!",
+    "Sirf 60 second. Bhaag, chal mat."
+   ],
+   "far": [
+    "{when} due hai. Future tu already tension mein hai.",
+    "{when}. Bhoolne ka bahut time hai, isliye yaad dila raha hun.",
+    "Aise hi bata raha hun, {when} ka hai."
+   ],
+   "digest": [
+    [
+     "Aaj {tasks}",
+     "To-do list tujhse pehle uth gayi. Shuru kar: {first}"
+    ],
+    [
+     "Aaj: {tasks}",
+     "List lambi hai par tu usse lamba hai. Pehle: {first}"
+    ],
+    [
+     "{tasks} menu mein",
+     "Sabse mushkil pehle: {first}"
+    ]
+   ],
+   "clear": [
+    [
+     "Aaj kuch due nahi",
+     "Shak wala free. Ja ke maze kar."
+    ],
+    [
+     "Sab clear",
+     "Zero task. Aaj tu kaun hai bhai?"
+    ]
+   ],
+   "tomorrow": [
+    [
+     "Kal {tasks}",
+     "Abhi so ja, panic kal. Pehle: {first}"
+    ],
+    [
+     "Kal: {tasks}",
+     "Alarm laga aur trust kar. Shuruaat {first} se."
+    ]
+   ],
+   "tomorrowClear": [
+    [
+     "Kal khaali hai",
+     "Kuch due nahi. Maze le is plot hole ka."
+    ],
+    [
+     "Kal free",
+     "Koi task nahi. Jo marzi kar, main nahi bataunga."
+    ]
+   ],
+   "weekly": [
+    [
+     "Aane wala hafta",
+     "Is hafte {week} due. Calendar ki apni opinion hai."
+    ],
+    [
+     "Is hafte {week} due",
+     "Ignore karega toh bhi nahi jayenge. Maine try kiya hai."
+    ]
+   ],
+   "weeklyOverdue": [
+    [
+     "Aane wala hafta",
+     "Is hafte {week} due aur {overdue} pending. Tujhe miss kar rahe hain."
+    ],
+    [
+     "{week} due, {overdue} overdue",
+     "Overdue wale akele ho gaye hain. Mil aa unse."
+    ]
+   ],
+   "weeklyClear": [
+    [
+     "Shaant hafta",
+     "Kuch due nahi. Pakka? Haan. Enjoy."
+    ]
+   ],
+   "test": [
+    "Tere reminders aise lagenge. Dramatic hai na?"
+   ]
+  }
+ },
+ "strict": {
+  "en": {
+   "due": [
+    "Time's up. Start now.",
+    "It's due. No more delays.",
+    "Do it now, not in five minutes.",
+    "The deadline is here. Execute.",
+    "Stop scrolling. Start this.",
+    "This is the moment. Finish it."
+   ],
+   "lead60": [
+    "One hour left. Start now.",
+    "60 minutes. Clear your desk and begin.",
+    "An hour to the deadline. No excuses."
+   ],
+   "lead10": [
+    "10 minutes. Finish what you're doing and move.",
+    "Ten minutes left. Get ready now.",
+    "Almost due. Wrap up and focus."
+   ],
+   "lead1": [
+    "One minute. Go.",
+    "Now. No more waiting."
+   ],
+   "far": [
+    "Due {when}. Prepare today, not at the last minute.",
+    "{when}. Don't leave it for the end.",
+    "Due {when}. Plan it now."
+   ],
+   "digest": [
+    [
+     "{tasks} today",
+     "Get them done. Start with: {first}"
+    ],
+    [
+     "Today: {tasks}",
+     "No delays. First task: {first}"
+    ],
+    [
+     "{tasks} to finish",
+     "Focus. Begin with {first}."
+    ]
+   ],
+   "clear": [
+    [
+     "Nothing due today",
+     "All clear. Use the time well."
+    ],
+    [
+     "Today is clear",
+     "Stay ahead, don't relax too much."
+    ]
+   ],
+   "tomorrow": [
+    [
+     "{tasks} tomorrow",
+     "Prepare tonight. First: {first}"
+    ],
+    [
+     "Tomorrow: {tasks}",
+     "Be ready. It starts with {first}."
+    ]
+   ],
+   "tomorrowClear": [
+    [
+     "Tomorrow is clear",
+     "Nothing due. Use it to get ahead."
+    ],
+    [
+     "Nothing due tomorrow",
+     "Get ahead of next week."
+    ]
+   ],
+   "weekly": [
+    [
+     "Your week ahead",
+     "{week} due this week. Schedule them today."
+    ],
+    [
+     "Week ahead: {week} due",
+     "Plan the week now, not on the day."
+    ]
+   ],
+   "weeklyOverdue": [
+    [
+     "Your week ahead",
+     "{week} due this week and {overdue} already overdue. Clear the overdue first."
+    ],
+    [
+     "{week} due, {overdue} overdue",
+     "Overdue work comes first. Start today."
+    ]
+   ],
+   "weeklyClear": [
+    [
+     "A clear week",
+     "Nothing due. Get ahead while you can."
+    ]
+   ],
+   "test": [
+    "This is how your reminders will sound. Be ready."
+   ]
+  },
+  "hinglish": {
+   "due": [
+    "Time ho gaya. Abhi shuru kar.",
+    "Due ho gaya. Ab aur der nahi.",
+    "Abhi kar, paanch minute baad nahi.",
+    "Deadline aa gayi. Kaam pe lag.",
+    "Scrolling band. Ye shuru kar.",
+    "Yehi time hai. Khatam kar isko."
+   ],
+   "lead60": [
+    "Ek ghanta bacha. Abhi shuru kar.",
+    "60 minute. Desk saaf kar aur lag ja.",
+    "Deadline mein ek ghanta. Koi bahana nahi."
+   ],
+   "lead10": [
+    "10 minute. Jo kar raha hai khatam kar aur chal.",
+    "Das minute bache. Abhi taiyaar ho.",
+    "Lagbhag due. Wrap up kar aur focus kar."
+   ],
+   "lead1": [
+    "Ek minute. Chal.",
+    "Abhi. Ab wait nahi."
+   ],
+   "far": [
+    "{when} due hai. Aaj taiyaari kar, aakhri minute pe nahi.",
+    "{when}. Aakhir ke liye mat chhod.",
+    "{when} due. Abhi plan kar."
+   ],
+   "digest": [
+    [
+     "Aaj {tasks}",
+     "Nipta de. Pehle: {first}"
+    ],
+    [
+     "Aaj: {tasks}",
+     "Koi delay nahi. Pehla kaam: {first}"
+    ],
+    [
+     "{tasks} khatam karne hain",
+     "Focus. {first} se shuru."
+    ]
+   ],
+   "clear": [
+    [
+     "Aaj kuch due nahi",
+     "Sab clear. Time ka sahi use kar."
+    ],
+    [
+     "Aaj clear hai",
+     "Aage reh, zyada aaram mat kar."
+    ]
+   ],
+   "tomorrow": [
+    [
+     "Kal {tasks}",
+     "Aaj raat taiyaari kar. Pehle: {first}"
+    ],
+    [
+     "Kal: {tasks}",
+     "Ready reh. Shuruaat {first} se."
+    ]
+   ],
+   "tomorrowClear": [
+    [
+     "Kal clear hai",
+     "Kuch due nahi. Aage ka kaam nipta le."
+    ],
+    [
+     "Kal kuch due nahi",
+     "Agle hafte se aage reh."
+    ]
+   ],
+   "weekly": [
+    [
+     "Aane wala hafta",
+     "Is hafte {week} due. Aaj hi schedule kar."
+    ],
+    [
+     "Week ahead: {week} due",
+     "Hafta abhi plan kar, us din nahi."
+    ]
+   ],
+   "weeklyOverdue": [
+    [
+     "Aane wala hafta",
+     "Is hafte {week} due aur {overdue} overdue. Pehle overdue khatam kar."
+    ],
+    [
+     "{week} due, {overdue} overdue",
+     "Overdue kaam pehle. Aaj hi shuru."
+    ]
+   ],
+   "weeklyClear": [
+    [
+     "Clear hafta",
+     "Kuch due nahi. Jab tak time hai aage nikal."
+    ]
+   ],
+   "test": [
+    "Tere reminders aise aayenge. Ready reh."
+   ]
+  }
+ },
+ "calm": {
+  "en": {
+   "due": [
+    "It's time, whenever you're ready.",
+    "A gentle nudge: this is due now.",
+    "When you're ready, this is waiting for you.",
+    "Take a breath, then begin.",
+    "One thing, one step. This is the one.",
+    "Now is a good time. No rush."
+   ],
+   "lead60": [
+    "About an hour from now. No rush.",
+    "An hour left. Whenever you feel ready.",
+    "A gentle heads-up: an hour to go."
+   ],
+   "lead10": [
+    "About ten minutes left. Ease into it.",
+    "Ten minutes. Take your time to settle.",
+    "Soon. Finish what you're doing, then begin."
+   ],
+   "lead1": [
+    "Just about now.",
+    "A minute left. Breathe, then begin."
+   ],
+   "far": [
+    "Coming up {when}. Plenty of time.",
+    "Due {when}. Nothing to do yet.",
+    "A quiet note: this is due {when}."
+   ],
+   "digest": [
+    [
+     "{tasks} today",
+     "One at a time. You could begin with: {first}"
+    ],
+    [
+     "Today: {tasks}",
+     "Go at your own pace. {first} is a good place to start."
+    ],
+    [
+     "{tasks} for today",
+     "No hurry. Start when you're ready."
+    ]
+   ],
+   "clear": [
+    [
+     "Nothing due today",
+     "A quiet day. Enjoy it."
+    ],
+    [
+     "All clear",
+     "Nothing pending. Rest well."
+    ]
+   ],
+   "tomorrow": [
+    [
+     "{tasks} tomorrow",
+     "Rest tonight. Tomorrow can begin with {first}."
+    ],
+    [
+     "Tomorrow: {tasks}",
+     "Nothing to do now. Sleep well."
+    ]
+   ],
+   "tomorrowClear": [
+    [
+     "A quiet tomorrow",
+     "Nothing due. Rest easy."
+    ],
+    [
+     "Tomorrow is free",
+     "Nothing planned. Enjoy the calm."
+    ]
+   ],
+   "weekly": [
+    [
+     "Your week ahead",
+     "{week} due this week. Take it one day at a time."
+    ],
+    [
+     "Week ahead: {week} due",
+     "Nothing to rush. A little planning helps."
+    ]
+   ],
+   "weeklyOverdue": [
+    [
+     "Your week ahead",
+     "{week} due this week, and {overdue} waiting from before. One at a time."
+    ],
+    [
+     "{week} due, {overdue} waiting",
+     "No pressure. Pick one and start small."
+    ]
+   ],
+   "weeklyClear": [
+    [
+     "A calm week",
+     "Nothing due this week. Enjoy the space."
+    ]
+   ],
+   "test": [
+    "This is how your reminders will sound. Soft and steady."
+   ]
+  },
+  "hinglish": {
+   "due": [
+    "Time ho gaya, jab tu ready ho.",
+    "Halka sa yaad: ye abhi due hai.",
+    "Jab ready ho, ye tera wait kar raha hai.",
+    "Ek deep breath, phir shuru kar.",
+    "Ek kaam, ek kadam. Ye wala.",
+    "Abhi achha time hai. Koi jaldi nahi."
+   ],
+   "lead60": [
+    "Lagbhag ek ghanta baaki. Koi jaldi nahi.",
+    "Ek ghanta bacha. Jab ready ho tab.",
+    "Halka sa heads-up: ek ghanta."
+   ],
+   "lead10": [
+    "Lagbhag das minute. Aaram se shuru kar.",
+    "Das minute. Aaram se settle ho ja.",
+    "Jaldi hi. Jo kar raha hai pura kar, phir shuru."
+   ],
+   "lead1": [
+    "Bas abhi.",
+    "Ek minute. Saans le, phir shuru."
+   ],
+   "far": [
+    "{when} aa raha hai. Bahut time hai.",
+    "{when} due. Abhi kuch karna nahi.",
+    "Chupke se bata raha hun, ye {when} ka hai."
+   ],
+   "digest": [
+    [
+     "Aaj {tasks}",
+     "Ek ek karke. Shuru kar sakta hai: {first}"
+    ],
+    [
+     "Aaj: {tasks}",
+     "Apni raftaar se chal. {first} se shuru achha rahega."
+    ],
+    [
+     "Aaj ke liye {tasks}",
+     "Koi jaldi nahi. Jab ready ho shuru kar."
+    ]
+   ],
+   "clear": [
+    [
+     "Aaj kuch due nahi",
+     "Shaant din hai. Maze le."
+    ],
+    [
+     "Sab clear",
+     "Kuch pending nahi. Aaram kar."
+    ]
+   ],
+   "tomorrow": [
+    [
+     "Kal {tasks}",
+     "Aaj raat aaram kar. Kal {first} se shuru ho sakta hai."
+    ],
+    [
+     "Kal: {tasks}",
+     "Abhi kuch nahi karna. Achhi neend le."
+    ]
+   ],
+   "tomorrowClear": [
+    [
+     "Kal shaant",
+     "Kuch due nahi. Aaram se."
+    ],
+    [
+     "Kal free",
+     "Kuch plan nahi. Sukoon se enjoy kar."
+    ]
+   ],
+   "weekly": [
+    [
+     "Aane wala hafta",
+     "Is hafte {week} due. Ek din ek baar."
+    ],
+    [
+     "Week ahead: {week} due",
+     "Jaldi kuch nahi. Thoda plan kaam aayega."
+    ]
+   ],
+   "weeklyOverdue": [
+    [
+     "Aane wala hafta",
+     "Is hafte {week} due aur {overdue} pehle ke baaki. Ek ek karke."
+    ],
+    [
+     "{week} due, {overdue} baaki",
+     "Koi pressure nahi. Ek chun ke chhote se shuru kar."
+    ]
+   ],
+   "weeklyClear": [
+    [
+     "Shaant hafta",
+     "Is hafte kuch due nahi. Sukoon le."
+    ]
+   ],
+   "test": [
+    "Tere reminders aise aayenge. Halke aur steady."
+   ]
+  }
+ }
+}

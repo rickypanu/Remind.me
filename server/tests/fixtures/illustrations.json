@@ -1,0 +1,70 @@
+{
+ "Dev Icons": [
+  "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%231e293b%22%2F%3E%3Crect%20x%3D%2214%22%20y%3D%2222%22%20width%3D%2272%22%20height%3D%2256%22%20rx%3D%228%22%20fill%3D%22%230f172a%22%20stroke%3D%22%2338bdf8%22%20stroke-width%3D%223%22%2F%3E%3Crect%20x%3D%2214%22%20y%3D%2222%22%20width%3D%2272%22%20height%3D%2212%22%20rx%3D%228%22%20fill%3D%22%2338bdf8%22%2F%3E%3Ccircle%20cx%3D%2223%22%20cy%3D%2228%22%20r%3D%222.5%22%20fill%3D%22%230f172a%22%2F%3E%3Ccircle%20cx%3D%2231%22%20cy%3D%2228%22%20r%3D%222.5%22%20fill%3D%22%230f172a%22%2F%3E%3Cpath%20d%3D%22M26%2046l12%2010-12%2010%22%20fill%3D%22none%22%20stroke%3D%22%234ade80%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3Crect%20x%3D%2244%22%20y%3D%2263%22%20width%3D%2220%22%20height%3D%225%22%20rx%3D%222.5%22%20fill%3D%22%234ade80%22%2F%3E%3C%2Fsvg%3E",
+  "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%23bae6fd%22%2F%3E%3Cellipse%20cx%3D%2250%22%20cy%3D%2266%22%20rx%3D%2230%22%20ry%3D%2220%22%20fill%3D%22%23facc15%22%2F%3E%3Cpath%20d%3D%22M72%2058c10-2%2014%206%2010%2014%22%20fill%3D%22none%22%20stroke%3D%22%23eab308%22%20stroke-width%3D%224%22%20stroke-linecap%3D%22round%22%2F%3E%3Ccircle%20cx%3D%2242%22%20cy%3D%2238%22%20r%3D%2217%22%20fill%3D%22%23facc15%22%2F%3E%3Cpath%20d%3D%22M26%2042l-13%204%2013%205z%22%20fill%3D%22%23fb923c%22%2F%3E%3Ccircle%20cx%3D%2240%22%20cy%3D%2234%22%20r%3D%223.5%22%20fill%3D%22%230f172a%22%2F%3E%3Cellipse%20cx%3D%2252%22%20cy%3D%2270%22%20rx%3D%2214%22%20ry%3D%228%22%20fill%3D%22%23eab308%22%2F%3E%3C%2Fsvg%3E",
+  "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%23fecaca%22%2F%3E%3Cg%20stroke%3D%22%2314532d%22%20stroke-width%3D%224%22%20stroke-linecap%3D%22round%22%3E%3Cpath%20d%3D%22M30%2044L16%2036M30%2056H14M32%2068L18%2078M70%2044l14-8M70%2056h16M68%2068l14%2010M42%2026l-6-10M58%2026l6-10%22%2F%3E%3C%2Fg%3E%3Cellipse%20cx%3D%2250%22%20cy%3D%2258%22%20rx%3D%2222%22%20ry%3D%2226%22%20fill%3D%22%2322c55e%22%2F%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2232%22%20r%3D%2212%22%20fill%3D%22%2316a34a%22%2F%3E%3Cpath%20d%3D%22M50%2036v46%22%20stroke%3D%22%2314532d%22%20stroke-width%3D%223%22%2F%3E%3Ccircle%20cx%3D%2240%22%20cy%3D%2255%22%20r%3D%224%22%20fill%3D%22%2314532d%22%2F%3E%3Ccircle%20cx%3D%2260%22%20cy%3D%2255%22%20r%3D%224%22%20fill%3D%22%2314532d%22%2F%3E%3Ccircle%20cx%3D%2242%22%20cy%3D%2270%22%20r%3D%223.5%22%20fill%3D%22%2314532d%22%2F%3E%3Ccircle%20cx%3D%2258%22%20cy%3D%2270%22%20r%3D%223.5%22%20fill%3D%22%2314532d%22%2F%3E%3Ccircle%20cx%3D%2245%22%20cy%3D%2230%22%20r%3D%222%22%20fill%3D%22%23fff%22%2F%3E%3Ccircle%20cx%3D%2255%22%20cy%3D%2230%22%20r%3D%222%22%20fill%3D%22%23fff%22%2F%3E%3C%2Fsvg%3E",
+  "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%23312e81%22%2F%3E%3Cpath%20d%3D%22M50%2012c14%2010%2020%2026%2018%2046H32c-2-20%204-36%2018-46z%22%20fill%3D%22%23f8fafc%22%2F%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2240%22%20r%3D%228%22%20fill%3D%22%2338bdf8%22%20stroke%3D%22%231e293b%22%20stroke-width%3D%223%22%2F%3E%3Cpath%20d%3D%22M32%2050L18%2066l16-4zM68%2050l14%2016-16-4z%22%20fill%3D%22%23ef4444%22%2F%3E%3Cpath%20d%3D%22M40%2062h20l-10%2022z%22%20fill%3D%22%23fb923c%22%2F%3E%3Cpath%20d%3D%22M45%2062h10l-5%2012z%22%20fill%3D%22%23fde047%22%2F%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2220%22%20r%3D%222%22%20fill%3D%22%23fff%22%2F%3E%3Ccircle%20cx%3D%2282%22%20cy%3D%2230%22%20r%3D%221.5%22%20fill%3D%22%23fff%22%2F%3E%3Ccircle%20cx%3D%2276%22%20cy%3D%2214%22%20r%3D%222%22%20fill%3D%22%23fff%22%2F%3E%3C%2Fsvg%3E",
+  "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%23fde68a%22%2F%3E%3Cpath%20d%3D%22M26%2040h42v28a16%2016%200%200%201-16%2016H42a16%2016%200%200%201-16-16z%22%20fill%3D%22%23fff%22%20stroke%3D%22%2378350f%22%20stroke-width%3D%224%22%2F%3E%3Cpath%20d%3D%22M68%2048h6a9%209%200%200%201%200%2018h-6%22%20fill%3D%22none%22%20stroke%3D%22%2378350f%22%20stroke-width%3D%224%22%2F%3E%3Cpath%20d%3D%22M26%2052h42v6H26z%22%20fill%3D%22%2392400e%22%2F%3E%3Cpath%20d%3D%22M38%2030c-4-5%204-8%200-14M52%2030c-4-5%204-8%200-14%22%20fill%3D%22none%22%20stroke%3D%22%2378350f%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E",
+  "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%23ddd6fe%22%2F%3E%3Cpath%20d%3D%22M34%2028v44M34%2056c0-14%2032-6%2032-26%22%20fill%3D%22none%22%20stroke%3D%22%234c1d95%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%2F%3E%3Ccircle%20cx%3D%2234%22%20cy%3D%2226%22%20r%3D%229%22%20fill%3D%22%238b5cf6%22%20stroke%3D%22%234c1d95%22%20stroke-width%3D%224%22%2F%3E%3Ccircle%20cx%3D%2234%22%20cy%3D%2274%22%20r%3D%229%22%20fill%3D%22%238b5cf6%22%20stroke%3D%22%234c1d95%22%20stroke-width%3D%224%22%2F%3E%3Ccircle%20cx%3D%2266%22%20cy%3D%2228%22%20r%3D%229%22%20fill%3D%22%23f472b6%22%20stroke%3D%22%234c1d95%22%20stroke-width%3D%224%22%2F%3E%3C%2Fsvg%3E",
+  "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%23bbf7d0%22%2F%3E%3Cg%20stroke%3D%22%23064e3b%22%20stroke-width%3D%224%22%20stroke-linecap%3D%22round%22%3E%3Cpath%20d%3D%22M38%2014v14M50%2014v14M62%2014v14M38%2072v14M50%2072v14M62%2072v14M14%2038h14M14%2050h14M14%2062h14M72%2038h14M72%2050h14M72%2062h14%22%2F%3E%3C%2Fg%3E%3Crect%20x%3D%2228%22%20y%3D%2228%22%20width%3D%2244%22%20height%3D%2244%22%20rx%3D%226%22%20fill%3D%22%23065f46%22%2F%3E%3Crect%20x%3D%2238%22%20y%3D%2238%22%20width%3D%2224%22%20height%3D%2224%22%20rx%3D%223%22%20fill%3D%22%2334d399%22%2F%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%225%22%20fill%3D%22%23065f46%22%2F%3E%3C%2Fsvg%3E",
+  "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%23e0f2fe%22%2F%3E%3Cpath%20d%3D%22M30%2070a16%2016%200%200%201-2-32%2022%2022%200%200%201%2042-4%2017%2017%200%200%201%204%2036z%22%20fill%3D%22%23fff%22%20stroke%3D%22%230369a1%22%20stroke-width%3D%224%22%20stroke-linejoin%3D%22round%22%2F%3E%3Cpath%20d%3D%22M42%2048l-8%208%208%208M58%2048l8%208-8%208M53%2044l-6%2024%22%20fill%3D%22none%22%20stroke%3D%22%230369a1%22%20stroke-width%3D%224%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E"
+ ],
+ "Tech Bots": [
+  "https://api.dicebear.com/7.x/bottts/svg?seed=Felix&backgroundColor=b6e3f4",
+  "https://api.dicebear.com/7.x/bottts/svg?seed=Oliver&backgroundColor=c0aede",
+  "https://api.dicebear.com/7.x/bottts/svg?seed=Caleb&backgroundColor=ffdfbf",
+  "https://api.dicebear.com/7.x/bottts/svg?seed=Zoey&backgroundColor=ffd5dc"
+ ],
+ "Pixel Art": [
+  "https://api.dicebear.com/7.x/pixel-art/svg?seed=Hero1&backgroundColor=b6e3f4",
+  "https://api.dicebear.com/7.x/pixel-art/svg?seed=Hero2&backgroundColor=c0aede",
+  "https://api.dicebear.com/7.x/pixel-art/svg?seed=Hero3&backgroundColor=ffdfbf",
+  "https://api.dicebear.com/7.x/pixel-art/svg?seed=Hero4&backgroundColor=ffd5dc",
+  "https://api.dicebear.com/7.x/pixel-art/svg?seed=Hero5&backgroundColor=b6e3f4",
+  "https://api.dicebear.com/7.x/pixel-art/svg?seed=Hero6&backgroundColor=c0aede",
+  "https://api.dicebear.com/7.x/pixel-art/svg?seed=Hero7&backgroundColor=ffdfbf",
+  "https://api.dicebear.com/7.x/pixel-art/svg?seed=Hero8&backgroundColor=ffd5dc"
+ ],
+ "Identicons": [
+  "https://api.dicebear.com/7.x/identicon/svg?seed=octocat&backgroundColor=b6e3f4",
+  "https://api.dicebear.com/7.x/identicon/svg?seed=linus&backgroundColor=c0aede",
+  "https://api.dicebear.com/7.x/identicon/svg?seed=ada&backgroundColor=ffdfbf",
+  "https://api.dicebear.com/7.x/identicon/svg?seed=grace&backgroundColor=ffd5dc",
+  "https://api.dicebear.com/7.x/identicon/svg?seed=alan&backgroundColor=b6e3f4",
+  "https://api.dicebear.com/7.x/identicon/svg?seed=margaret&backgroundColor=c0aede",
+  "https://api.dicebear.com/7.x/identicon/svg?seed=dennis&backgroundColor=ffdfbf",
+  "https://api.dicebear.com/7.x/identicon/svg?seed=guido&backgroundColor=ffd5dc"
+ ],
+ "Shapes": [
+  "https://api.dicebear.com/7.x/shapes/svg?seed=alpha&backgroundColor=b6e3f4",
+  "https://api.dicebear.com/7.x/shapes/svg?seed=beta&backgroundColor=c0aede",
+  "https://api.dicebear.com/7.x/shapes/svg?seed=gamma&backgroundColor=ffdfbf",
+  "https://api.dicebear.com/7.x/shapes/svg?seed=delta&backgroundColor=ffd5dc",
+  "https://api.dicebear.com/7.x/shapes/svg?seed=epsilon&backgroundColor=b6e3f4",
+  "https://api.dicebear.com/7.x/shapes/svg?seed=zeta&backgroundColor=c0aede",
+  "https://api.dicebear.com/7.x/shapes/svg?seed=eta&backgroundColor=ffdfbf",
+  "https://api.dicebear.com/7.x/shapes/svg?seed=theta&backgroundColor=ffd5dc"
+ ],
+ "Rings": [
+  "https://api.dicebear.com/7.x/rings/svg?seed=merge&backgroundColor=b6e3f4",
+  "https://api.dicebear.com/7.x/rings/svg?seed=commit&backgroundColor=c0aede",
+  "https://api.dicebear.com/7.x/rings/svg?seed=deploy&backgroundColor=ffdfbf",
+  "https://api.dicebear.com/7.x/rings/svg?seed=build&backgroundColor=ffd5dc",
+  "https://api.dicebear.com/7.x/rings/svg?seed=push&backgroundColor=b6e3f4",
+  "https://api.dicebear.com/7.x/rings/svg?seed=fetch&backgroundColor=c0aede",
+  "https://api.dicebear.com/7.x/rings/svg?seed=rebase&backgroundColor=ffdfbf",
+  "https://api.dicebear.com/7.x/rings/svg?seed=stash&backgroundColor=ffd5dc"
+ ],
+ "Animals": [
+  "https://api.dicebear.com/7.x/fun-emoji/svg?seed=Milo&backgroundColor=b6e3f4",
+  "https://api.dicebear.com/7.x/fun-emoji/svg?seed=Bella&backgroundColor=c0aede",
+  "https://api.dicebear.com/7.x/fun-emoji/svg?seed=Lucy&backgroundColor=ffdfbf",
+  "https://api.dicebear.com/7.x/fun-emoji/svg?seed=Max&backgroundColor=ffd5dc"
+ ],
+ "Adventurers": [
+  "https://api.dicebear.com/7.x/adventurer/svg?seed=Jack&backgroundColor=b6e3f4",
+  "https://api.dicebear.com/7.x/adventurer/svg?seed=Jasmine&backgroundColor=c0aede",
+  "https://api.dicebear.com/7.x/adventurer/svg?seed=George&backgroundColor=ffdfbf",
+  "https://api.dicebear.com/7.x/adventurer/svg?seed=Mia&backgroundColor=ffd5dc"
+ ]
+}
