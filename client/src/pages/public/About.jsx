@@ -7,7 +7,7 @@ import { routeMeta } from "../../seo/routes";
 import useApiHealth from "../../hooks/useApiHealth";
 import { SITE, mailto } from "../../config/site";
 
-const APP_VERSION = "v230305";
+const APP_VERSION = "v021126";
 
 // Live service status (useApiHealth pings the backend's /health endpoint)
 const STATUS = {

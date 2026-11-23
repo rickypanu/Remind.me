@@ -51,28 +51,28 @@
   --color-gray-950: #0b0c12;
 
   /* Brand: ultramarine replaces Tailwind blue / sky everywhere (accent choices in Profile still override it). */
-  --color-blue-50: #eef1ff;
-  --color-blue-100: #e0e6ff;
-  --color-blue-200: #c4cfff;
-  --color-blue-300: #9badff;
-  --color-blue-400: #6f86fa;
-  --color-blue-500: #4262ee;
-  --color-blue-600: #2a47d9;
-  --color-blue-700: #2038b8;
-  --color-blue-800: #1b2f94;
-  --color-blue-900: #182a75;
-  --color-blue-950: #101a4a;
-  --color-sky-50: #eef1ff;
-  --color-sky-100: #e0e6ff;
-  --color-sky-200: #c4cfff;
-  --color-sky-300: #9badff;
-  --color-sky-400: #6f86fa;
-  --color-sky-500: #4262ee;
-  --color-sky-600: #2a47d9;
-  --color-sky-700: #2038b8;
-  --color-sky-800: #1b2f94;
-  --color-sky-900: #182a75;
-  --color-sky-950: #101a4a;
+  --color-blue-50: #effaf8;
+  --color-blue-100: #d5f2ee;
+  --color-blue-200: #a9e4dc;
+  --color-blue-300: #74d0c6;
+  --color-blue-400: #3fb5aa;
+  --color-blue-500: #1f9a90;
+  --color-blue-600: #0f7f78;
+  --color-blue-700: #0d6561;
+  --color-blue-800: #0f504e;
+  --color-blue-900: #0f4141;
+  --color-blue-950: #052828;
+  --color-sky-50: #effaf8;
+  --color-sky-100: #d5f2ee;
+  --color-sky-200: #a9e4dc;
+  --color-sky-300: #74d0c6;
+  --color-sky-400: #3fb5aa;
+  --color-sky-500: #1f9a90;
+  --color-sky-600: #0f7f78;
+  --color-sky-700: #0d6561;
+  --color-sky-800: #0f504e;
+  --color-sky-900: #0f4141;
+  --color-sky-950: #052828;
 }
 
 /* Page surfaces (light, classic): off-white page, white cards, tinted soft fills that follow the accent. */
@@ -190,15 +190,17 @@ html.dark:not([data-theme="minimal"]) .bg-white.border { border-color: rgba(255,
 
 
 /* ---------------------------------------------------------------------------------------------------------
- * Look: what the visitor picked in Profile > Look (utils/look.js). Defaults match the public site.
+ * Look: what the visitor picked in Profile > Look (utils/look.js). Calm Clock is the default.
  * ------------------------------------------------------------------------------------------------------- */
-html[data-font="clean"] { --font-sans: "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif; --font-display: "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif; --rs-display: var(--font-display); --rs-body: var(--font-sans); }
+html { --font-display: "Fraunces", "Iowan Old Style", ui-serif, Georgia, serif; --rs-display: var(--font-display); }
+html h1, html h2, html h3 { font-weight: 600; letter-spacing: -0.02em; }
+html[data-font="bricolage"] { --font-display: "Bricolage Grotesque", "Instrument Sans", ui-sans-serif, system-ui, sans-serif; --rs-display: var(--font-display); }
+html[data-font="bricolage"] h1, html[data-font="bricolage"] h2, html[data-font="bricolage"] h3 { font-weight: 700; letter-spacing: -0.03em; }
+html[data-font="clean"] { --font-sans: "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif; --font-display: var(--font-sans); --rs-display: var(--font-display); --rs-body: var(--font-sans); }
 html[data-font="system"] { --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Arial, sans-serif; --font-display: var(--font-sans); --rs-display: var(--font-sans); --rs-body: var(--font-sans); }
-html[data-font="serif"] { --font-display: ui-serif, Georgia, "Iowan Old Style", "Times New Roman", serif; --rs-display: var(--font-display); }
-html[data-font="serif"] h1, html[data-font="serif"] h2, html[data-font="serif"] h3 { font-weight: 650; letter-spacing: -0.015em; }
 
 html[data-density="compact"] { --spacing: 0.19rem; }
 
-/* Cards: Solid is the app's own style, so only the other two override it. */
-html[data-cards="soft"]:not([data-theme="minimal"]) [class*="shadow-[4px_4px_0_0"] { box-shadow: var(--shadow-md); border-width: 1px; border-color: var(--color-slate-200); }
-html[data-cards="flat"]:not([data-theme="minimal"]) [class*="shadow-[4px_4px_0_0"] { box-shadow: none; }
+/* Cards. Soft (default): no offset shadow, light border. Flat: border only. Bold outline keeps the original hard look. */
+html[data-cards="soft"]:not([data-theme="minimal"]) [class*="shadow-["][class*="px_0_0_"] { box-shadow: 0 1px 2px rgb(20 22 31 / .05), 0 10px 28px -10px rgb(20 22 31 / .16); border-width: 1px; border-color: var(--color-slate-200); }
+html[data-cards="flat"]:not([data-theme="minimal"]) [class*="shadow-["][class*="px_0_0_"] { box-shadow: none; border-width: 1px; border-color: var(--color-slate-200); }

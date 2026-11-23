@@ -3,7 +3,7 @@
  *   confetti({ x, y })              small burst from a point (a ticked reminder)
  *   confetti({ big: true })         the whole list is done
  */
-const COLORS = ["#2a47d9", "#f4b400", "#ff6b4a", "#19b394", "#8b5cf6", "#14161f"];
+const COLORS = ["#0f7f78", "#f4b400", "#ff6b4a", "#19b394", "#8b5cf6", "#14161f"];
 
 export default function confetti({ x, y, big = false } = {}) {
   if (typeof document === "undefined") return;

@@ -4,17 +4,17 @@ export const LOOK_OPTIONS = {
   font: {
     label: "Font",
     items: [
-      { id: "brand", label: "GetRemindMe", hint: "Bricolage + Instrument" },
+      { id: "brand", label: "Calm Clock", hint: "Serif headings, clean body" },
+      { id: "bricolage", label: "Bold", hint: "Bricolage Grotesque" },
       { id: "clean", label: "Clean", hint: "Schibsted Grotesk" },
       { id: "system", label: "System", hint: "Your device font" },
-      { id: "serif", label: "Editorial", hint: "Serif headings" },
     ],
   },
   cards: {
     label: "Cards",
     items: [
-      { id: "solid", label: "Solid", hint: "Hard border and offset shadow" },
       { id: "soft", label: "Soft", hint: "Light border, gentle shadow" },
+      { id: "solid", label: "Bold outline", hint: "Hard border and offset shadow" },
       { id: "flat", label: "Flat", hint: "Border only" },
     ],
   },
@@ -26,7 +26,7 @@ export const LOOK_OPTIONS = {
     ],
   },
 };
-export const LOOK_DEFAULTS = { font: "brand", cards: "solid", density: "cozy" };
+export const LOOK_DEFAULTS = { font: "brand", cards: "soft", density: "cozy" };
 const key = (name) => `remindme-look-${name}`;
 
 export function readLook() {

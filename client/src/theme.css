@@ -1029,7 +1029,7 @@ button:disabled.bg-blue-600, button:disabled.bg-indigo-600 { background-color: v
 button:disabled { cursor: not-allowed; }
 
 /* ---- 2. Accent colours: solid buttons keep the chosen colour in dark mode and pass AA with white text ----- */
-html { --rm-solid: #2a47d9; --rm-solid-hover: #2038b8; }
+html { --rm-solid: #0f7f78; --rm-solid-hover: #0d6561; }
 html[data-accent="indigo"] { --rm-solid: #4f46e5; --rm-solid-hover: #4338ca; }
 html[data-accent="violet"] { --rm-solid: #7c3aed; --rm-solid-hover: #6d28d9; }
 html[data-accent="pink"] { --rm-solid: #be185d; --rm-solid-hover: #9d174d; }

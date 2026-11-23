@@ -1,3 +1,4 @@
+import AlarmPhone, { RingTimeline } from "../../components/site/AlarmPhone";
 import React from "react";
 import { Link } from "react-router-dom";
 import {
@@ -142,6 +143,19 @@ export default function Home() {
                 <Lock size={17} /> Encrypted at rest
               </li>
             </ul>
+          </div>
+          <AlarmPhone />
+        </div>
+      </section>
+
+      {/* Proof: what happens, and a live try-it */}
+      <section className="rs-sec">
+        <div className="rs-wrap rs-proof">
+          <div>
+            <span className="rs-eyebrow">Why you can trust it</span>
+            <h2 className="rs-h2">A reminder that rings when it says it will</h2>
+            <p className="rs-lede" style={{ marginBottom: 28 }}>Heads-ups before, an alarm on the dot, and a way to tick it off. This is what happens for one reminder.</p>
+            <RingTimeline />
           </div>
           <TryIt />
         </div>

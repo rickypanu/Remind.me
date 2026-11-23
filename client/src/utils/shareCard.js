@@ -53,7 +53,7 @@ export function drawShareCard(canvas, { name, streak = 0, best = 0, doneToday = 
   ctx.fillStyle = "#14161f";
   rounded(ctx, 96, 176, 888, 1000, 48);
   ctx.fill();
-  ctx.fillStyle = "#2a47d9";
+  ctx.fillStyle = "#0f7f78";
   ctx.strokeStyle = "#14161f";
   ctx.lineWidth = 6;
   rounded(ctx, 80, 160, 888, 1000, 48);

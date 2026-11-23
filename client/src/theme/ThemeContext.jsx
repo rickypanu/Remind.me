@@ -14,7 +14,7 @@ export const ACCENT_KEY = "remindme-accent";
 
 /** Accent colours offered in Profile. "black" is not an accent: it switches on the Minimalism theme. */
 export const ACCENTS = [
-  { id: "blue", label: "Ultramarine", swatch: "#2a47d9" },
+  { id: "blue", label: "Teal", swatch: "#0f7f78" },
   { id: "indigo", label: "Indigo", swatch: "#4f46e5" },
   { id: "violet", label: "Violet", swatch: "#7c3aed" },
   { id: "pink", label: "Pink", swatch: "#db2777" },

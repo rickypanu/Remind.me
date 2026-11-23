@@ -30,7 +30,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Sans:wght@400..700&family=Schibsted+Grotesk:wght@400..800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500..700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Sans:wght@400..700&family=Schibsted+Grotesk:wght@400..800&display=swap"
     />
 
     <!-- PWA & Mobile Display Settings -->
@@ -52,7 +52,7 @@
           var accent = localStorage.getItem("remindme-accent");
           if (["blue", "indigo", "violet", "pink", "orange", "green", "teal"].indexOf(accent) === -1) accent = "blue";
           var root = document.documentElement;
-          var look = { font: ["brand", "clean", "system", "serif"], cards: ["solid", "soft", "flat"], density: ["cozy", "compact"] };
+          var look = { font: ["brand", "bricolage", "clean", "system"], cards: ["soft", "solid", "flat"], density: ["cozy", "compact"] };
           for (var k in look) {
             var v = localStorage.getItem("remindme-look-" + k);
             root.setAttribute("data-" + k, look[k].indexOf(v) === -1 ? look[k][0] : v);
