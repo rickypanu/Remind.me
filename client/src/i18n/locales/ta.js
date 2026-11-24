@@ -1228,4 +1228,6 @@ export default {
 "Today's progress": "இன்றைய முன்னேற்றம்",
 "Categories": "வகைகள்",
 "{done} of {total} done": "{total}-இல் {done} முடிந்தது",
+"A fresh day. Make it count.": "புதிய நாள். அதைச் சிறப்பாக்குங்கள்.",
+"Your day is a blank page. Let's fill it.": "உங்கள் நாள் ஒரு வெற்றுப் பக்கம். நிரப்புவோம்.",
 };

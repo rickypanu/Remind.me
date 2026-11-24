@@ -1228,4 +1228,6 @@ export default {
 "Today's progress": "আজিৰ অগ্ৰগতি",
 "Categories": "শ্ৰেণী",
 "{done} of {total} done": "{total}ৰ ভিতৰত {done} সম্পূৰ্ণ",
+"A fresh day. Make it count.": "নতুন দিন। ইয়াক বিশেষ কৰক।",
+"Your day is a blank page. Let's fill it.": "আপোনাৰ দিনটো এখন খালী পৃষ্ঠা। আহক ইয়াক পূৰ কৰোঁ।",
 };

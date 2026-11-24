@@ -1249,4 +1249,6 @@ export default {
 "Today's progress": "आज की प्रगति",
 "Categories": "श्रेणियाँ",
 "{done} of {total} done": "{total} में से {done} पूरे",
+"A fresh day. Make it count.": "नया दिन। इसे खास बनाइए।",
+"Your day is a blank page. Let's fill it.": "आपका दिन एक खाली पन्ना है। चलिए इसे भरें।",
 };

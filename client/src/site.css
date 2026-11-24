@@ -13,9 +13,9 @@
   --rs-ink-3: #6b6e7d;
   --rs-line: rgba(20, 22, 31, 0.16);
   --rs-line-strong: rgba(20, 22, 31, 0.2);
-  --rs-blue: #0f7f78;
-  --rs-blue-deep: #0f504e;
-  --rs-blue-soft: #dcf3ef;
+  --rs-blue: var(--color-blue-600, #2a47d9);
+  --rs-blue-deep: var(--color-blue-800, #1b2f94);
+  --rs-blue-soft: var(--color-blue-100, #e0e6ff);
   --rs-gold: #f4b400;
   --rs-gold-deep: #d99c00;
   --rs-gold-soft: #fbe9a8;
@@ -46,9 +46,9 @@ html.dark .rs {
   --rs-ink-3: #8f93a5;
   --rs-line: rgba(243, 239, 228, 0.16);
   --rs-line-strong: rgba(243, 239, 228, 0.22);
-  --rs-blue: #4fc4b8;
-  --rs-blue-deep: #9fe3da;
-  --rs-blue-soft: #123532;
+  --rs-blue: var(--color-blue-400, #6f86fa);
+  --rs-blue-deep: var(--color-blue-300, #9badff);
+  --rs-blue-soft: var(--color-blue-100, #1d2447);
   --rs-gold-soft: #3a3010;
   --rs-night: #0a0808;
   --rs-night-2: #161211;
@@ -329,7 +329,7 @@ html.dark .rs {
 @media (prefers-reduced-motion: reduce) { .rs *, .rs *::before, .rs *::after { animation: none !important; transition: none !important; } }
 
 /* Brand mark (the RM monogram, drawn from /rm-mark.png so it follows the colour of its tile) */
-.rm-mark { display: inline-flex; align-items: center; justify-content: center; flex: none; background: var(--rs-blue, #0f7f78); border-radius: 24%; position: relative; }
+.rm-mark { display: inline-flex; align-items: center; justify-content: center; flex: none; background: var(--rs-blue, #2a47d9); border-radius: 24%; position: relative; }
 .rm-mark::after { content: ""; width: 64%; height: 64%; background: #fff; -webkit-mask: url(/rm-mark.png) center / contain no-repeat; mask: url(/rm-mark.png) center / contain no-repeat; }
 
 /* No visible vertical scrollbar anywhere on the site; scrolling itself (wheel, touch, keys) is unchanged. */
@@ -339,7 +339,7 @@ html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0; height: 0; display:
 
 /* ---- Seven-segment clock: light, flat and simple ---- */
 .rs-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.rs-clock { --seg: #2f8f87; --seg-off: rgba(20, 22, 31, 0.07); --face: #fffdf8; margin-bottom: 18px; }
+.rs-clock { --seg: var(--rs-blue); --seg-off: rgba(20, 22, 31, 0.07); --face: #fffdf8; margin-bottom: 18px; }
 .rs-clock-face {
   position: relative;
   padding: 22px 26px 18px;
@@ -348,7 +348,7 @@ html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0; height: 0; display:
   border: 1px solid var(--rs-line);
   box-shadow: 0 1px 2px rgba(20, 22, 31, .05), 0 10px 26px -14px rgba(20, 22, 31, .18);
 }
-html.dark .rs-clock { --face: #1d1918; --seg: #5fd0c4; --seg-off: rgba(243, 239, 228, 0.07); }
+html.dark .rs-clock { --face: #1d1918; --seg: var(--rs-blue); --seg-off: rgba(243, 239, 228, 0.07); }
 .rs-clock-svg { display: block; width: 100%; height: auto; overflow: visible; }
 /* The face-coloured outline makes every bar thinner than its shape, so the digits stay light. */
 .rs-seg { fill: var(--seg-off); stroke: var(--face); stroke-width: 3.2; stroke-linejoin: round; paint-order: stroke; }
@@ -406,3 +406,25 @@ html.dark .rs-phone-screen { background: linear-gradient(180deg, #172321 0%, #12
 .rs-tl-note { margin: 2px 0 0; color: var(--rs-ink-3); font-size: 15px; }
 .rs-proof { display: grid; gap: 36px; align-items: start; }
 @media (min-width: 980px) { .rs-proof { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 64px; } }
+
+
+/* ---- Header: one tidy row ---- */
+.rs-header { border-bottom: 1px solid color-mix(in oklab, var(--rs-ink) 10%, transparent); }
+.rs-header-in { gap: 16px; }
+.rs-nav { gap: 2px; margin-left: 8px; flex: 0 1 auto; }
+.rs-nav a { white-space: nowrap; padding: 8px 12px; font-size: 14.5px; }
+.rs-header-end { flex: none; gap: 8px; }
+.rs-header-end .rs-btn, .rs-header-end .rs-icon-btn, .rs-lang { white-space: nowrap; flex: none; }
+.rs-icon-btn, .rs-lang select, .rs-header-end .rs-btn--line { border-color: color-mix(in oklab, var(--rs-ink) 14%, transparent); }
+.rs-logo-word i { color: var(--brand); }
+@media (min-width: 900px) and (max-width: 1099px) {
+  .rs-header-end .rs-lang select { padding-right: 8px; }
+  .rs-header-end .rs-hide-sm.rs-hide-md { display: none; }
+}
+
+/* Clock: only the lit bars are drawn, nothing ghosted */
+.rs-seg:not(.rs-seg--on) { display: none; }
+.rs-colon:not(.rs-colon--on) rect { display: none; }
+.rs-clock-lamps span:not(.is-on) { display: none; }
+.rs-nav a { white-space: nowrap !important; }
+.rs-nav { flex-wrap: nowrap; }

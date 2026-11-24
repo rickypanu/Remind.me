@@ -1060,4 +1060,6 @@ export default {
 "Today's progress": "Aaj ki progress",
 "Categories": "Categories",
 "{done} of {total} done": "{done} / {total} ho gaye",
+"A fresh day. Make it count.": "Naya din. Isse khaas banao.",
+"Your day is a blank page. Let's fill it.": "Aapka din ek khaali page hai. Chalo bharte hain.",
 };

@@ -1228,4 +1228,6 @@ export default {
 "Today's progress": "ଆଜିର ପ୍ରଗତି",
 "Categories": "ବର୍ଗ",
 "{done} of {total} done": "{total} ମଧ୍ୟରୁ {done} ସରିଲା",
+"A fresh day. Make it count.": "ନୂଆ ଦିନ। ଏହାକୁ ବିଶେଷ କରନ୍ତୁ।",
+"Your day is a blank page. Let's fill it.": "ଆପଣଙ୍କ ଦିନ ଏକ ଖାଲି ପୃଷ୍ଠା। ଚାଲନ୍ତୁ ଭରିବା।",
 };

@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { AlertCircle } from "../../components/icons";
 import NextDeadline from "./NextDeadline";
 import { useI18n } from "../../i18n/index.jsx";
@@ -35,6 +36,27 @@ export default function TodayPanel({ doneToday, pendingToday, pct, overdue, task
 
   return (
     <aside aria-label={t("Today's progress")} className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+      {total === 0 && overdue === 0 ? (
+        <section className="tp-empty relative overflow-hidden rounded-[26px] bg-white p-5 text-center shadow-[0_1px_2px_rgba(20,22,31,.04),0_10px_30px_-12px_rgba(20,22,31,.12)]">
+          <span aria-hidden="true" className="tp-dot tp-dot--a" />
+          <span aria-hidden="true" className="tp-dot tp-dot--b" />
+          <span aria-hidden="true" className="tp-dot tp-dot--c" />
+          <span aria-hidden="true" className="tp-dot tp-dot--d" />
+          <svg viewBox="0 0 64 64" width="72" height="72" aria-hidden="true" className="tp-bell mx-auto">
+            <path d="M32 8c-9 0-15 7-15 16v9l-5 8h40l-5-8v-9c0-9-6-16-15-16Z" className="fill-blue-600" />
+            <path d="M25 47a7 7 0 0 0 14 0Z" className="fill-blue-400" />
+            <circle cx="32" cy="8" r="3" className="fill-blue-600" />
+          </svg>
+          <h2 className="mt-3 text-[19px] font-bold leading-tight tracking-tight text-slate-900">{t("A fresh day. Make it count.")}</h2>
+          <p className="mx-auto mt-1.5 max-w-[22ch] text-[13.5px] font-medium leading-snug text-slate-600">{t("Your day is a blank page. Let's fill it.")}</p>
+          <Link
+            to="/create-task"
+            className="tp-cta mt-4 inline-flex items-center justify-center rounded-full bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-500/25 hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+          >
+            {t("Add a reminder")}
+          </Link>
+        </section>
+      ) : (
       <section className="rounded-[26px] bg-white p-5 shadow-[0_1px_2px_rgba(20,22,31,.04),0_10px_30px_-12px_rgba(20,22,31,.12)]">
         <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">{t("Today's progress")}</p>
         <div className="mt-3 flex items-center gap-4">
@@ -63,6 +85,7 @@ export default function TodayPanel({ doneToday, pendingToday, pct, overdue, task
           </button>
         )}
       </section>
+      )}
 
       <NextDeadline tasks={tasks} />
 

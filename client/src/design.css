@@ -51,39 +51,39 @@
   --color-gray-950: #0b0c12;
 
   /* Brand: ultramarine replaces Tailwind blue / sky everywhere (accent choices in Profile still override it). */
-  --color-blue-50: #effaf8;
-  --color-blue-100: #d5f2ee;
-  --color-blue-200: #a9e4dc;
-  --color-blue-300: #74d0c6;
-  --color-blue-400: #3fb5aa;
-  --color-blue-500: #1f9a90;
-  --color-blue-600: #0f7f78;
-  --color-blue-700: #0d6561;
-  --color-blue-800: #0f504e;
-  --color-blue-900: #0f4141;
-  --color-blue-950: #052828;
-  --color-indigo-50: #effaf8;
-  --color-indigo-100: #d5f2ee;
-  --color-indigo-200: #a9e4dc;
-  --color-indigo-300: #74d0c6;
-  --color-indigo-400: #3fb5aa;
-  --color-indigo-500: #1f9a90;
-  --color-indigo-600: #0f7f78;
-  --color-indigo-700: #0d6561;
-  --color-indigo-800: #0f504e;
-  --color-indigo-900: #0f4141;
-  --color-indigo-950: #052828;
-  --color-sky-50: #effaf8;
-  --color-sky-100: #d5f2ee;
-  --color-sky-200: #a9e4dc;
-  --color-sky-300: #74d0c6;
-  --color-sky-400: #3fb5aa;
-  --color-sky-500: #1f9a90;
-  --color-sky-600: #0f7f78;
-  --color-sky-700: #0d6561;
-  --color-sky-800: #0f504e;
-  --color-sky-900: #0f4141;
-  --color-sky-950: #052828;
+  --color-blue-50: #eef1ff;
+  --color-blue-100: #e0e6ff;
+  --color-blue-200: #c4cfff;
+  --color-blue-300: #9badff;
+  --color-blue-400: #6f86fa;
+  --color-blue-500: #4262ee;
+  --color-blue-600: #2a47d9;
+  --color-blue-700: #2038b8;
+  --color-blue-800: #1b2f94;
+  --color-blue-900: #182a75;
+  --color-blue-950: #101a4a;
+  --color-indigo-50: #eef1ff;
+  --color-indigo-100: #e0e6ff;
+  --color-indigo-200: #c4cfff;
+  --color-indigo-300: #9badff;
+  --color-indigo-400: #6f86fa;
+  --color-indigo-500: #4262ee;
+  --color-indigo-600: #2a47d9;
+  --color-indigo-700: #2038b8;
+  --color-indigo-800: #1b2f94;
+  --color-indigo-900: #182a75;
+  --color-indigo-950: #101a4a;
+  --color-sky-50: #eef1ff;
+  --color-sky-100: #e0e6ff;
+  --color-sky-200: #c4cfff;
+  --color-sky-300: #9badff;
+  --color-sky-400: #6f86fa;
+  --color-sky-500: #4262ee;
+  --color-sky-600: #2a47d9;
+  --color-sky-700: #2038b8;
+  --color-sky-800: #1b2f94;
+  --color-sky-900: #182a75;
+  --color-sky-950: #101a4a;
 }
 
 /* Page surfaces (light, classic): off-white page, white cards, tinted soft fills that follow the accent. */
@@ -225,3 +225,17 @@ html.dark[data-theme="minimal"] { --brand: #ededed; --brand-on: #0a0a0a; }
 .rm-mark { background: var(--brand) !important; }
 .rm-mark::after { background: var(--brand-on) !important; }
 .rm-wordmark-accent { color: var(--brand); }
+
+
+/* ---------- Empty "today" card: a bell that wiggles and a few floating dots ---------- */
+@keyframes tp-ring { 0%, 55%, 100% { transform: rotate(0); } 10% { transform: rotate(14deg); } 20% { transform: rotate(-12deg); } 30% { transform: rotate(9deg); } 40% { transform: rotate(-6deg); } 48% { transform: rotate(3deg); } }
+@keyframes tp-float { 0%, 100% { transform: translateY(0) scale(1); opacity: .55; } 50% { transform: translateY(-12px) scale(1.25); opacity: 1; } }
+@keyframes tp-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+.tp-bell { transform-origin: 50% 12%; animation: tp-ring 3.2s ease-in-out infinite; }
+.tp-cta { animation: tp-pulse 2.4s ease-in-out infinite; }
+.tp-dot { position: absolute; border-radius: 999px; animation: tp-float 3.4s ease-in-out infinite; }
+.tp-dot--a { width: 10px; height: 10px; left: 14%; top: 22%; background: var(--color-blue-300); }
+.tp-dot--b { width: 7px; height: 7px; right: 16%; top: 16%; background: #f4b400; animation-delay: .6s; }
+.tp-dot--c { width: 8px; height: 8px; left: 22%; bottom: 24%; background: #f43f5e; opacity: .7; animation-delay: 1.2s; }
+.tp-dot--d { width: 12px; height: 12px; right: 12%; bottom: 30%; background: var(--color-blue-200); animation-delay: 1.8s; }
+@media (prefers-reduced-motion: reduce) { .tp-bell, .tp-cta, .tp-dot { animation: none; } }

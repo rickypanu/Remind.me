@@ -1237,4 +1237,6 @@ export default {
 "Today's progress": "આજની પ્રગતિ",
 "Categories": "શ્રેણીઓ",
 "{done} of {total} done": "{total} માંથી {done} પૂર્ણ",
+"A fresh day. Make it count.": "નવો દિવસ. તેને ખાસ બનાવો.",
+"Your day is a blank page. Let's fill it.": "તમારો દિવસ એક કોરું પાનું છે. ચાલો ભરીએ.",
 };

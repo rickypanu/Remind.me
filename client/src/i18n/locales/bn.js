@@ -1237,4 +1237,6 @@ export default {
 "Today's progress": "আজকের অগ্রগতি",
 "Categories": "বিভাগ",
 "{done} of {total} done": "{total}-এর মধ্যে {done} সম্পূর্ণ",
+"A fresh day. Make it count.": "নতুন দিন। একে স্মরণীয় করুন।",
+"Your day is a blank page. Let's fill it.": "আপনার দিন একটি ফাঁকা পাতা। চলুন ভরে তুলি।",
 };

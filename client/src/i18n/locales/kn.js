@@ -1228,4 +1228,6 @@ export default {
 "Today's progress": "ಇಂದಿನ ಪ್ರಗತಿ",
 "Categories": "ವರ್ಗಗಳು",
 "{done} of {total} done": "{total}ರಲ್ಲಿ {done} ಪೂರ್ಣ",
+"A fresh day. Make it count.": "ಹೊಸ ದಿನ. ಅದನ್ನು ವಿಶೇಷವಾಗಿಸಿ.",
+"Your day is a blank page. Let's fill it.": "ನಿಮ್ಮ ದಿನ ಒಂದು ಖಾಲಿ ಪುಟ. ತುಂಬೋಣ.",
 };

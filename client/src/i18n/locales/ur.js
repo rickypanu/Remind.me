@@ -1228,4 +1228,6 @@ export default {
 "Today's progress": "آج کی پیش رفت",
 "Categories": "زمرے",
 "{done} of {total} done": "{total} میں سے {done} مکمل",
+"A fresh day. Make it count.": "نیا دن۔ اسے خاص بنائیں۔",
+"Your day is a blank page. Let's fill it.": "آپ کا دن ایک خالی صفحہ ہے۔ آئیں اسے بھریں۔",
 };

@@ -1228,4 +1228,6 @@ export default {
 "Today's progress": "నేటి పురోగతి",
 "Categories": "వర్గాలు",
 "{done} of {total} done": "{total}లో {done} పూర్తయ్యాయి",
+"A fresh day. Make it count.": "కొత్త రోజు. దాన్ని ప్రత్యేకంగా మార్చండి.",
+"Your day is a blank page. Let's fill it.": "మీ రోజు ఒక ఖాళీ పేజీ. నింపుదాం.",
 };

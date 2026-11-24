@@ -164,7 +164,7 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[color:var(--rm-page)] pb-28 text-slate-900 antialiased font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Text','Helvetica_Neue',sans-serif] relative overflow-x-clip">
+    <div className="min-h-screen bg-[color:var(--rm-page)] pb-28 text-slate-900 antialiased relative overflow-x-clip">
       <Header />
 
       <main id="main" className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">

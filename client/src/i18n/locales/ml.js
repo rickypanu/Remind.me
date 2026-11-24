@@ -1228,4 +1228,6 @@ export default {
 "Today's progress": "ഇന്നത്തെ പുരോഗതി",
 "Categories": "വിഭാഗങ്ങൾ",
 "{done} of {total} done": "{total}-ൽ {done} പൂർത്തിയായി",
+"A fresh day. Make it count.": "പുതിയ ദിവസം. അത് അർത്ഥവത്താക്കൂ.",
+"Your day is a blank page. Let's fill it.": "നിങ്ങളുടെ ദിവസം ഒരു ശൂന്യമായ താളാണ്. നമുക്ക് നിറയ്ക്കാം.",
 };
