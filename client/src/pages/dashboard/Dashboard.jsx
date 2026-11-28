@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Coffee, Sun, CalendarDays, X, Search } from "../../components/icons";
+import { Link } from "react-router-dom";
+import { Coffee, Sun, CalendarDays, X, Search, Plus } from "../../components/icons";
 import { APP_TIMEZONE, formatDueIst, formatIstDayLabel, getIstHour } from "../../utils/date";
 import TaskCard from "../tasks/TaskCard";
 import Header from "../components/Header";
@@ -25,7 +26,6 @@ import EmptyState from "./EmptyState";
 import MagicAddForm from "./MagicAddForm";
 import TaskGroups from "./TaskGroups";
 import OverdueBanner from "./OverdueBanner";
-import TodayPanel from "./TodayPanel";
 import TaskSkeleton from "./TaskSkeleton";
 import { useI18n } from "../../i18n/index.jsx";
 
@@ -33,6 +33,36 @@ const EMPTY_STATES = {
   today: { Icon: Coffee, title: "Nothing due today", body: "You're all caught up. Enjoy your break!", cta: "Add a reminder" },
   upcoming: { Icon: CalendarDays, title: "Nothing planned yet", body: "Add a reminder to plan ahead.", cta: "Add a reminder" },
 };
+
+/** Nothing left for today: a bell that wiggles, a few floating dots and one clear next step. */
+function TodayEmpty({ done, t }) {
+  return (
+    <section className="tp-empty relative overflow-hidden rounded-[26px] bg-white px-6 py-10 text-center shadow-[0_1px_2px_rgba(20,22,31,.04),0_10px_30px_-12px_rgba(20,22,31,.12)]">
+      <span aria-hidden="true" className="tp-dot tp-dot--a" />
+      <span aria-hidden="true" className="tp-dot tp-dot--b" />
+      <span aria-hidden="true" className="tp-dot tp-dot--c" />
+      <span aria-hidden="true" className="tp-dot tp-dot--d" />
+      <svg viewBox="0 0 64 64" width="68" height="68" aria-hidden="true" className="tp-bell mx-auto">
+        <path d="M32 8c-9 0-15 7-15 16v9l-5 8h40l-5-8v-9c0-9-6-16-15-16Z" className="fill-blue-600" />
+        <path d="M25 47a7 7 0 0 0 14 0Z" className="fill-blue-400" />
+        <circle cx="32" cy="8" r="3" className="fill-blue-600" />
+      </svg>
+      <h2 className="mt-3 text-[19px] font-bold leading-tight tracking-tight text-slate-900">
+        {done ? t("All done for today") : t("A fresh day. Make it count.")}
+      </h2>
+      <p className="mx-auto mt-1.5 max-w-[26ch] text-sm font-medium leading-snug text-slate-500">
+        {done ? t("You're all caught up. Enjoy your break!") : t("Your day is a blank page. Let's fill it.")}
+      </p>
+      <Link
+        to="/create-task"
+        className="tp-cta mt-5 inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-500/25 hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+      >
+        <Plus size={16} strokeWidth={2.5} aria-hidden="true" />
+        {t("Add a reminder")}
+      </Link>
+    </section>
+  );
+}
 
 const savedOfflineNote = (t) => (navigator.onLine ? "" : " " + t("Saved on this device."));
 
@@ -167,9 +197,9 @@ export default function Dashboard() {
     <div className="min-h-screen bg-[color:var(--rm-page)] pb-28 text-slate-900 antialiased relative overflow-x-clip">
       <Header />
 
-      <main id="main" className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        {/* Greeting */}
-        <div className="pt-8 pb-6">
+      <main id="main" className="mx-auto max-w-3xl px-4 sm:px-6">
+        {/* Greeting: one line of context, nothing else */}
+        <div className="pt-7 pb-5">
           <p className="text-sm font-medium text-slate-500 mb-1">
             {new Date().toLocaleDateString(locale, { weekday: "long", month: "long", day: "numeric", timeZone: APP_TIMEZONE })}
           </p>
@@ -177,10 +207,14 @@ export default function Dashboard() {
             {t(greeting)},{" "}
             <span data-no-translate className="text-blue-600 font-semibold">{userInfo?.username ? userInfo.username.split(" ")[0] : t("there")}</span>
           </h1>
+          {ready && (
+            <p className="mt-2 text-[15px] font-medium text-slate-500">
+              {today.length > 0 ? t("{n} to do today", { n: today.length }) : doneTodayCount > 0 ? t("All done for today") : t("Nothing due today")}
+              {missed.length > 0 && <span className="text-rose-600"> · {t("{n} overdue", { n: missed.length })}</span>}
+            </p>
+          )}
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-10">
-        <div className="min-w-0 lg:order-1">
         <MagicAddForm isOffline={isOffline} titles={titles} />
 
         <div id="overdue-anchor"><OverdueBanner tasks={byCat(missed)} cardProps={cardProps} /></div>
@@ -223,7 +257,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        <div className="lg:hidden"><CategoryBar categories={categories} value={catFilter} onChange={setCatFilter} /></div>
+        {categories.length > 1 && <CategoryBar categories={categories} value={catFilter} onChange={setCatFilter} />}
 
         {selectedDate && (
           <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-2.5">
@@ -275,7 +309,9 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="grid gap-3 mb-8">
-              {displayedTasks.length === 0 ? (
+              {displayedTasks.length === 0 && activeTab === "today" && !catFilter ? (
+                <TodayEmpty done={doneTodayCount > 0} t={t} />
+              ) : displayedTasks.length === 0 ? (
                 <EmptyState Icon={empty.Icon} title={t(empty.title)} body={t(empty.body)} cta={t(empty.cta)} />
               ) : (
                 displayedTasks.map((task) => <TaskCard key={task.id} {...cardProps(task)} isPrevious={false} />)
@@ -285,22 +321,6 @@ export default function Dashboard() {
         </div>
 
         <CompletedArchive tasks={completed} cardProps={cardProps} />
-        </div>
-
-        <div className="lg:order-2 max-lg:-order-1">
-          <TodayPanel
-            doneToday={doneTodayCount}
-            pendingToday={today.length}
-            pct={progressPct}
-            overdue={missed.length}
-            tasks={tasks}
-            categories={categories}
-            catFilter={catFilter}
-            onCategory={setCatFilter}
-            onOverdue={() => document.querySelector("#overdue-anchor button")?.click()}
-          />
-        </div>
-        </div>
       </main>
     </div>
   );

@@ -239,3 +239,16 @@ html.dark[data-theme="minimal"] { --brand: #ededed; --brand-on: #0a0a0a; }
 .tp-dot--c { width: 8px; height: 8px; left: 22%; bottom: 24%; background: #f43f5e; opacity: .7; animation-delay: 1.2s; }
 .tp-dot--d { width: 12px; height: 12px; right: 12%; bottom: 30%; background: var(--color-blue-200); animation-delay: 1.8s; }
 @media (prefers-reduced-motion: reduce) { .tp-bell, .tp-cta, .tp-dot { animation: none; } }
+
+/* ---------- Report: print = the report sheet only, as a clean A4 page ---------- */
+@page { size: A4; margin: 14mm; }
+@media print {
+  html, body { background: #fff !important; }
+  header, nav, .no-print, [role="status"], .toaster { display: none !important; }
+  main { padding: 0 !important; }
+  main > div { max-width: none !important; padding: 0 !important; }
+  .report-sheet { box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; }
+  .report-table tr { break-inside: avoid; }
+  .report-table thead { display: table-header-group; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

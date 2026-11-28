@@ -129,7 +129,7 @@ const Header = () => {
     >
       <div
         className={`flex items-center justify-between gap-3 h-16 mx-auto w-full ${
-          isLoggedIn ? 'max-w-6xl px-4 sm:px-6 lg:px-8' : 'max-w-7xl px-4 sm:px-6 md:px-12 lg:px-20'
+          isLoggedIn ? 'max-w-3xl px-4 sm:px-6' : 'max-w-7xl px-4 sm:px-6 md:px-12 lg:px-20'
         }`}
       >
         <Logo to={isLoggedIn ? '/u' : '/'} />
@@ -165,7 +165,6 @@ const Header = () => {
           ) : (
             <>
               <NotificationBell />
-              <PushButton pushStatus={pushStatus} onClick={toggle} />
               <Link
                 to="/create-task"
                 className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white w-10 h-10 lg:w-auto lg:px-4 rounded-full text-sm font-semibold shadow-md shadow-blue-500/20 active:scale-95 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
@@ -198,36 +197,51 @@ const Header = () => {
           )}
         </div>
 
-        {/* Mobile actions: theme toggle + hamburger */}
+        {/* Mobile actions. Members: add, notifications and the profile (one tap, no menu). Visitors: theme + menu. */}
         <div className="flex md:hidden items-center gap-2 shrink-0">
-          {/* Quick action: phones only (md and up already show "New reminder") */}
-          {isLoggedIn && (
-            <Link
-              to="/create-task"
-              aria-label={t('Add reminder')}
-              className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white shadow-md shadow-blue-500/25 hover:bg-blue-700 active:scale-90 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            >
-              <Plus size={22} strokeWidth={2.75} />
-            </Link>
+          {isLoggedIn ? (
+            <>
+              <Link
+                to="/create-task"
+                aria-label={t('Add reminder')}
+                className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white shadow-md shadow-blue-500/25 hover:bg-blue-700 active:scale-90 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              >
+                <Plus size={22} strokeWidth={2.75} />
+              </Link>
+              <NotificationBell />
+              <Link
+                to="/profile"
+                aria-label={t('Your profile')}
+                className="flex items-center justify-center rounded-full active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              >
+                {avatarUrl ? (
+                  <img src={getAvatarSrc()} alt="" width="40" height="40" className="h-10 w-10 rounded-full object-cover ring-2 ring-white shadow-sm" />
+                ) : (
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-500 ring-1 ring-blue-100"><CircleUser size={24} strokeWidth={2} /></span>
+                )}
+              </Link>
+            </>
+          ) : (
+            <>
+              <ThemeToggle />
+              <button
+                ref={menuButtonRef}
+                type="button"
+                onClick={() => setMenuOpen((o) => !o)}
+                aria-label={menuOpen ? t('Close menu') : t('Open menu')}
+                aria-expanded={menuOpen}
+                aria-controls="mobile-menu"
+                className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 active:scale-95 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                {menuOpen ? <X size={20} strokeWidth={2.25} /> : <Menu size={20} strokeWidth={2.25} />}
+              </button>
+            </>
           )}
-          {isLoggedIn && <NotificationBell />}
-          <ThemeToggle />
-          <button
-            ref={menuButtonRef}
-            type="button"
-            onClick={() => setMenuOpen((o) => !o)}
-            aria-label={menuOpen ? t('Close menu') : t('Open menu')}
-            aria-expanded={menuOpen}
-            aria-controls="mobile-menu"
-            className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 active:scale-95 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-          >
-            {menuOpen ? <X size={20} strokeWidth={2.25} /> : <Menu size={20} strokeWidth={2.25} />}
-          </button>
         </div>
       </div>
 
       {/* Mobile menu */}
-      {menuOpen && (
+      {menuOpen && !isLoggedIn && (
         <div className="md:hidden">
           <nav
             id="mobile-menu"

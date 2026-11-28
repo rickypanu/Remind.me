@@ -32,6 +32,8 @@ const CreateTask = lazyRoute(() => import("./pages/user/CreateTask"));
 const Profile = lazyRoute(() => import("./pages/user/profile"));
 const TelegramSetup = lazyRoute(() => import("./pages/user/TelegramSetup"));
 const Notifications = lazyRoute(() => import("./pages/user/Notifications"));
+const Activity = lazyRoute(() => import("./pages/user/Activity"));
+const Report = lazyRoute(() => import("./pages/user/Report"));
 const UpdatesPage = lazyRoute(() => import("./pages/user/UpdatePage"));
 
 // The token is read every time a route renders (never cached in a variable),
@@ -89,6 +91,8 @@ function App() {
                 <Route path="/profile" element={guarded(<Profile />)} />
                 <Route path="/telegram-setup" element={guarded(<TelegramSetup />)} />
                 <Route path="/notifications" element={guarded(<Notifications />)} />
+                <Route path="/activity" element={guarded(<Activity />)} />
+                <Route path="/report" element={guarded(<Report />)} />
                 <Route path="/updates" element={guarded(<UpdatesPage />)} />
 
                 {/* Anything else: friendly 404 page */}

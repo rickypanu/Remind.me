@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { istDateKey } from "../utils/date";
 import { Bell, CalendarDays, Clock, AlertCircle } from "./icons";
 import useNotificationFeed from "../hooks/useNotificationFeed";
 import { useI18n } from "../i18n";
@@ -32,6 +33,8 @@ export default function NotificationBell({ className = "" }) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { items, unread, markAllSeen } = useNotificationFeed(true);
+  const todayKey = istDateKey(Date.now());
+  const todays = items.filter((x) => x.kind === "soon" || istDateKey(x.at) === todayKey);
   const [open, setOpen] = useState(false);
   const box = useRef(null);
 
@@ -53,7 +56,7 @@ export default function NotificationBell({ className = "" }) {
   };
 
   return (
-    <div ref={box} className={`relative ${className}`}>
+    <div ref={box} className={`sm:relative ${className}`}>
       <button
         type="button"
         onClick={toggle}
@@ -70,13 +73,13 @@ export default function NotificationBell({ className = "" }) {
       </button>
 
       {open && (
-        <div role="dialog" aria-label={t("Notifications")} className="absolute right-0 top-12 z-[60] w-[min(360px,calc(100vw-24px))] overflow-hidden rounded-2xl bg-white shadow-2xl shadow-slate-900/15 ring-1 ring-slate-200">
+        <div role="dialog" aria-label={t("Notifications")} className="fixed inset-x-3 top-[4.25rem] z-[60] overflow-hidden sm:absolute sm:inset-x-auto sm:right-0 sm:top-12 sm:w-[360px] rounded-2xl bg-white shadow-2xl shadow-slate-900/15 ring-1 ring-slate-200">
           <div className="px-4 pb-2 pt-3.5 text-[15px] font-extrabold text-slate-900">{t("Notifications")}</div>
-          {items.length === 0 ? (
-            <p className="px-4 pb-6 pt-2 text-sm text-slate-500">{t("You are all caught up.")}</p>
+          {todays.length === 0 ? (
+            <p className="px-4 pb-4 pt-1 text-sm text-slate-500">{t("Nothing new today.")}</p>
           ) : (
             <ul className="max-h-[420px] overflow-y-auto pb-2">
-              {items.map((x) => {
+              {todays.map((x) => {
                 const Icon = ICON[x.kind];
                 return (
                   <li key={x.id}>
@@ -97,6 +100,13 @@ export default function NotificationBell({ className = "" }) {
               })}
             </ul>
           )}
+          <button
+            type="button"
+            onClick={() => { setOpen(false); navigate("/activity"); }}
+            className="block w-full border-t border-slate-100 px-4 py-3 text-center text-[13.5px] font-bold text-blue-700 hover:bg-slate-50 focus:outline-none focus-visible:bg-slate-50"
+          >
+            {t("See all")}
+          </button>
         </div>
       )}
     </div>

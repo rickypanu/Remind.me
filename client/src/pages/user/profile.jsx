@@ -40,6 +40,7 @@ import { resolveAvatarSrc } from "../../utils/avatar";
 import MenuItem from "../components/MenuItems";
 import AvatarPickerModal from "../components/AvatarPickerModal";
 import AppearanceSettings from "../components/AppearanceSettings";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 import AppPage from "../../components/AppPage";
 import InstallSheet from "../../components/InstallSheet";
 import useInstall, { isIos, promptInstall } from "../../utils/install";
@@ -444,6 +445,7 @@ export default function Profile() {
             <h3 className="px-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">General</h3>
             <div className="bg-white border-[1.5px] border-slate-900 rounded-[24px] overflow-hidden shadow-[4px_4px_0_0_#14161f]">
               <MenuItem icon={Bell} label="Notifications" subLabel="Browser alerts, Telegram, sound and vibration" to="/notifications" />
+              <MenuItem icon={Download} label="Report (PDF)" subLabel="Last day, week, month, year or your own dates" to="/report" />
               <MenuItem icon={Newspaper} label="Updates" to="/updates" badge={unreadUpdatesCount} />
               <MenuItem icon={HelpCircle} label="FAQs" to="/faqs" />
               <MenuItem icon={Shield} label="Legal & Privacy" to="/terms" />
@@ -457,6 +459,10 @@ export default function Profile() {
           <InstallAppCard />
 
           {/* Appearance: dark mode + Minimalism theme toggles */}
+          <div>
+            <h3 className="px-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Language</h3>
+            <div className="bg-white border border-gray-100 rounded-[24px] p-4 shadow-[0_4px_20px_rgb(0,0,0,0.03)]"><LanguageSwitcher /></div>
+          </div>
           <AppearanceSettings />
 
           {/* Quick add: what it learned from the person's own category choices (stored on this device only) */}
